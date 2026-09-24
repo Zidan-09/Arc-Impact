@@ -1,0 +1,30 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Arc Impact"
+config/description="Um jogo de puzzle e precisão em 2D onde o jogador controla um canhão futurista para acertar um alvo lateral em cenários neon gerados de forma procedural. Cada fase possui obstáculos com propriedades de materiais únicas (frágil, equilibrado e resistente) e uma quantidade limitada de disparos."
+config/features=PackedStringArray("4.7", "Mobile")
+config/icon="uid://d1mb38w5gs31u"
+
+[display]
+
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+
+[rendering]
+
+rendering_device/driver.windows="d3d12"
+renderer/rendering_method="mobile"
