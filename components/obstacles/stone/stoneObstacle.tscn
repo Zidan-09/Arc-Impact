@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://cr3negmvstljq"]
+
+[ext_resource type="Script" uid="uid://p2n448nhioee" path="res://components/obstacles/stone/stone_obstacle.gd" id="1_utl4d"]
+[ext_resource type="Texture2D" uid="uid://braafldca38mm" path="res://assets/obstacles/cracked_stone_square.jpg" id="2_nwgg5"]
+[ext_resource type="Texture2D" uid="uid://cjnkkbq7w6aey" path="res://assets/obstacles/stone_square.jpg" id="3_6cefm"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_od3o3"]
+size = Vector2(500, 500)
+
+[node name="StoneObstacle" type="StaticBody2D" unique_id=1462746437]
+script = ExtResource("1_utl4d")
+
+[node name="CrackedStone" type="Sprite2D" parent="." unique_id=573296918]
+texture = ExtResource("2_nwgg5")
+
+[node name="PolishedStone" type="Sprite2D" parent="." unique_id=1867206072]
+texture = ExtResource("3_6cefm")
+
+[node name="HitBox" type="CollisionShape2D" parent="." unique_id=1324819537]
+shape = SubResource("RectangleShape2D_od3o3")

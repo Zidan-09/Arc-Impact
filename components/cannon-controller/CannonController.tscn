@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://xhfgi01bn84e" path="res://components/power-slider/powerSlider.tscn" id="2_vu4is"]
 [ext_resource type="PackedScene" uid="uid://dyp35o0rt733p" path="res://components/obstacles/glass/glassObstacle.tscn" id="4_hpp5o"]
 [ext_resource type="PackedScene" uid="uid://cdwyigup7yi7r" path="res://components/obstacles/metal/metalObstacle.tscn" id="5_pkjfq"]
+[ext_resource type="PackedScene" uid="uid://cr3negmvstljq" path="res://components/obstacles/stone/stoneObstacle.tscn" id="6_rysqw"]
 
 [node name="CannonController" type="Node2D" unique_id=1089180017]
 script = ExtResource("1_vu4is")
@@ -43,4 +44,8 @@ scale = Vector2(0.1, 0.1)
 
 [node name="MetalSquare" parent="." unique_id=759896926 instance=ExtResource("5_pkjfq")]
 position = Vector2(923, 590)
+scale = Vector2(0.2, 0.2)
+
+[node name="StoneObstacle" parent="." unique_id=1462746437 instance=ExtResource("6_rysqw")]
+position = Vector2(898, 207)
 scale = Vector2(0.2, 0.2)

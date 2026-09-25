@@ -1,7 +1,6 @@
 class_name MetalObstacle
 extends Obstacle
 
-
 func _ready() -> void:
 	super._ready()
 	var mat := PhysicsMaterial.new()
