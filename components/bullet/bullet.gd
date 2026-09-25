@@ -1,5 +1,14 @@
 class_name Bullet
 extends RigidBody2D
+## Projétil do canhão — notas de física (Etapa 0, docs/plan.md):
+## - Corpo: CircleShape2D raio 46.173584; HitDetector: Area2D raio 56.0
+##   (valores-base em `bullet.tscn`; `apply_cannon_scale()` os reescala
+##   por instância sem mutar o recurso compartilhado).
+## - collision_layer/mask: defaults (1/1). Colide fisicamente com
+##   StaticBody2D (metal/pedra, paredes do cano) e detecta logicamente
+##   via HitDetector -> `Obstacle.hit()`.
+## - Vidro usa Area2D atravessável (atenua *= 0.85 em vez de rebater);
+##   ver `glass_obstacle.gd`. Shards são ignorados pelos obstáculos.
 
 var is_broken: bool = false
 

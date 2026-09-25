@@ -11,6 +11,11 @@ var rotation_sensitivity: float = 0.5
 
 @export var bullet_scene: PackedScene
 
+## Nó opcional que recebe os bullets instanciados.
+## Se nulo (padrão), usa `get_tree().current_scene`.
+## A Etapa 7 do docs/plan.md vai apontá-lo para o nó World.
+@export var bullet_container: Node
+
 @export var base_shot_speed: float = 2000.0
 
 @onready var barrel_pivot: Node2D = $BarrelPivot
@@ -44,26 +49,43 @@ func rotate_cannon(delta_y: float) -> void:
 func update_cannon_rotation() -> void:
 	barrel_pivot.rotation_degrees = -current_angle
 
+## Origem e direção do disparo com a MESMA matemática do shoot().
+## O LevelSolver (Etapa 4+ do docs/plan.md) reutiliza este método para
+## garantir fidelidade entre simulação e jogo real.
+func get_muzzle_state() -> Dictionary:
+	return {
+		"origin": muzzle.global_position,
+		"direction": Vector2.RIGHT.rotated(muzzle.global_rotation),
+	}
+
+
+func get_spawn_parent() -> Node:
+	if is_instance_valid(bullet_container):
+		return bullet_container
+	return get_tree().current_scene
+
+
 func shoot(power: float = 1.0) -> void:
 	if bullet_scene == null:
 		push_warning("Cannon.shoot() sem bullet_scene definida.")
 		return
-	
+
 	play_recoil()
 
 	var bullet := bullet_scene.instantiate() as Bullet
 
-	get_tree().current_scene.add_child(bullet)
+	get_spawn_parent().add_child(bullet)
 
 	# Mantém o bullet proporcional ao canhão: aplica a escala global
 	# do canhão nos shapes (física de verdade) e no sprite.
 	# Só copiar node.scale/global_scale não basta, pois a escala de um
 	# RigidBody2D nem sempre propaga para o raio de colisão.
 	bullet.apply_cannon_scale(global_scale)
-	bullet.global_position = muzzle.global_position
 
-	var direction := Vector2.RIGHT.rotated(muzzle.global_rotation)
+	var muzzle_state := get_muzzle_state()
+	bullet.global_position = muzzle_state["origin"]
 
+	var direction: Vector2 = muzzle_state["direction"]
 	bullet.linear_velocity = direction * base_shot_speed * clampf(power, 0.0, 1.0)
 
 func play_recoil() -> void:
