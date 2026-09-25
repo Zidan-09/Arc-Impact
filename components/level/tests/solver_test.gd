@@ -10,12 +10,12 @@ extends SceneTree
 
 
 func _initialize() -> void:
-	super._initialize()
-	Engine.time_scale = 8.0
+	Engine.time_scale = 1.0
 	_run_all() # async: segue nos physics_frames e termina com quit()
 
 
 func _run_all() -> void:
+	await physics_frame
 	var failures: int = 0
 	failures += await _case_single_shot()
 	failures += await _case_two_shot()
@@ -44,7 +44,9 @@ func _make_ob(id: String, kind: StringName, pos: Vector2, scl: Vector2) -> Obsta
 	return ob
 
 
-# Tiro aberto: solução em 1 tiro (ângulo 10°, potência 1.0 estão na grade).
+# Tiro aberto: solução em 1 tiro, sem ricochete. Não fixa o tiro exato
+# (a grade acha o 1º vencedor na ordem de iteração); em vez disso
+# re-simula o SolutionRecord move a move e exige acerto (ponta a ponta).
 func _case_single_shot() -> int:
 	var def := LevelDefinition.new()
 	def.ammo = 1
@@ -59,11 +61,13 @@ func _case_single_shot() -> int:
 		return _fail("single (sem solução)")
 	if record.total_shots != 1:
 		return _fail("single (shots=%d)" % record.total_shots)
-	if record.shots[0]["angle"] != 10.0 or record.shots[0]["power"] != 1.0:
-		return _fail("single (tiro=%s)" % str(record.shots[0]))
+	if record.total_ricochets != 0:
+		return _fail("single (ricochetes=%d)" % record.total_ricochets)
 	if record.solutions_found < 1:
 		return _fail("single (solutions_found)")
-	print("  [single] margin=%s ricochets=%d" % [str(record.min_angle_margin), record.total_ricochets])
+	if not await _replay_hits(def, record):
+		return _fail("single (replay do SolutionRecord não atingiu o alvo)")
+	print("  [single] tiro=%s margin=%s" % [str(record.shots[0]), str(record.min_angle_margin)])
 	return 0
 
 
@@ -114,6 +118,19 @@ func _u_def(plug_kind: StringName) -> LevelDefinition:
 	def.obstacles.append(_make_ob("right", ObstacleDefinition.KIND_METAL, Vector2(1080, 360), metal))
 	def.obstacles.append(_make_ob("plug", plug_kind, Vector2(700, 360), Vector2(0.3, 0.3)))
 	return def
+
+
+## Re-simula a sequência do SolutionRecord e exige acerto (Etapa 8:
+## a verdade é re-simular, não fixar ângulo/força no teste).
+func _replay_hits(def: LevelDefinition, record: SolutionRecord) -> bool:
+	var state := LevelSolver.initial_state(def)
+	for shot in record.shots:
+		var result := await LevelSolver.simulate_shot(
+			def, state, float(shot["angle"]), float(shot["power"]), root)
+		if bool(result["hit_target"]):
+			return true
+		state = result["end_state"]
+	return false
 
 
 func _fail(message: String) -> int:

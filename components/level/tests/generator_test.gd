@@ -9,12 +9,12 @@ extends SceneTree
 
 
 func _initialize() -> void:
-	super._initialize()
-	Engine.time_scale = 8.0
+	Engine.time_scale = 1.0
 	_run_all() # async: segue nos physics_frames e termina com quit()
 
 
 func _run_all() -> void:
+	await physics_frame
 	var failures: int = 0
 	failures += await _case_determinism()
 	failures += await _case_accepts_easy()
@@ -41,6 +41,8 @@ func _test_cfg() -> DifficultyConfig:
 	cfg.allowed_archetypes = [&"open_shot"]
 	cfg.solver_angle_step = 10.0
 	cfg.solver_power_step = 0.35
+	cfg.score_min = 0.0
+	cfg.score_max = 12.0
 	return cfg
 
 

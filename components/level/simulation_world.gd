@@ -76,7 +76,9 @@ func run_shot(def: LevelDefinition, state: Dictionary, angle: float, power: floa
 	var destroyed: Array[String] = []
 	var end_state := {"stone_hp": {}, "glass_alive": {}}
 	for entry in _spawned:
-		var node: Node = entry["node"]
+		# Sem tipo: o Node pode ter sido liberado (vidro/pedra destruídos)
+		# e atribuir instância liberada a var tipada dá erro de parse/exec.
+		var node = entry["node"]
 		if entry["kind"] == ObstacleDefinition.KIND_GLASS:
 			var alive := is_instance_valid(node)
 			end_state["glass_alive"][entry["id"]] = alive

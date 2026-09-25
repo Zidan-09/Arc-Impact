@@ -11,7 +11,7 @@ func _init() -> void:
 	var failures: int = 0
 	failures += _check_full_roundtrip()
 	failures += _check_empty_roundtrip()
-	failures += _check_table_coverage()
+	failures += _check_table_coverage() # inclui curva crescente (Etapa 8)
 	if failures == 0:
 		print("LEVEL_DATA_TEST: PASS")
 	else:
@@ -88,6 +88,11 @@ func _check_table_coverage() -> int:
 		if cfg.solver_angle_step <= 0.0 or cfg.solver_power_step <= 0.0:
 			printerr("  [table] fase %d com passo de grade inválido." % level)
 			failures += 1
+		# Etapa 9: física em tempo real (~745ms/sim) impõe grade grossa
+		# na v1; grade fina volta com física acelerada.
+		if cfg.solver_angle_step != 10.0 or cfg.solver_power_step != 0.35:
+			printerr("  [table] fase %d fora da grade v1 (10 x 0.35)." % level)
+			failures += 1
 		if cfg.score_min > cfg.score_max:
 			printerr("  [table] fase %d com banda de score invertida." % level)
 			failures += 1
@@ -107,6 +112,25 @@ func _check_table_coverage() -> int:
 	var over := DifficultyTable.get_config(999)
 	if over.level_number != 999 or over.max_obstacles != DifficultyTable.get_config(20).max_obstacles:
 		printerr("  [table] fase 999 não reutilizou a banda mais difícil.")
+		failures += 1
+	# Etapa 8 (DoD: curva crescente): teto e piso das bandas sobem com
+	# a fase; fases 1-3 aceitam tiro direto (teto >= 6.3 medido) e o
+	# endgame exige mais (piso 16+ > piso 1-3).
+	var floors := [1, 4, 7, 11, 16]
+	var last_min := -1.0
+	var last_max := -1.0
+	for level in floors:
+		var cfg := DifficultyTable.get_config(level)
+		if cfg.score_min < last_min or cfg.score_max < last_max:
+			printerr("  [table] banda da fase %d regrediu (curva deve subir)." % level)
+			failures += 1
+		last_min = cfg.score_min
+		last_max = cfg.score_max
+	if DifficultyTable.get_config(1).score_max < 6.3:
+		printerr("  [table] banda 1-3 rejeitaria tiro direto típico (6.2).")
+		failures += 1
+	if DifficultyTable.get_config(16).score_min <= DifficultyTable.get_config(1).score_min:
+		printerr("  [table] endgame sem piso mais alto que a banda inicial.")
 		failures += 1
 	return failures
 

@@ -204,9 +204,11 @@ func _check_bulk_valid() -> int:
 	# 200 defs determinísticas em grade espaçada: todas devem passar.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
+	# Grade espaçada fora do corredor do muzzle (canhão + (280,-60)):
+	# (450,420) continha o fim do corredor e gerava MUZZLE_BLOCKED.
 	var cells := [Vector2(450, 120), Vector2(600, 120), Vector2(750, 120),
 		Vector2(450, 270), Vector2(600, 270), Vector2(750, 270),
-		Vector2(450, 420), Vector2(600, 420), Vector2(750, 420),
+		Vector2(900, 420), Vector2(600, 420), Vector2(750, 420),
 		Vector2(450, 570), Vector2(600, 570), Vector2(750, 570)]
 	for i in 200:
 		var def := LevelDefinition.new()

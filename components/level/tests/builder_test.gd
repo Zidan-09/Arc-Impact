@@ -10,11 +10,11 @@ extends SceneTree
 
 
 func _initialize() -> void:
-	super._initialize()
 	_run_all() # async: precisa de 1 physics_frame por build
 
 
 func _run_all() -> void:
+	await physics_frame
 	var failures: int = 0
 	failures += await _case_rebuild_identical()
 	if failures == 0:
