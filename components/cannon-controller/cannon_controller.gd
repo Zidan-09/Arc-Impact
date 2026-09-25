@@ -2,16 +2,17 @@ extends Node2D
 
 @onready var cannon = $Cannon
 @onready var power_slider = $PowerSlider
+@onready var fire_button: TextureButton = $FireButton
 
 var _dragging_angle := false
 
 
-func _input(event: InputEvent) -> void:
-	if event is InputEventKey:
-		if event.keycode == KEY_SPACE and event.pressed and not event.echo:
-			shoot()
-		return
+func _ready() -> void:
+	fire_button.focus_mode = Control.FOCUS_NONE
+	fire_button.pressed.connect(shoot)
 
+
+func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 			_dragging_angle = false
