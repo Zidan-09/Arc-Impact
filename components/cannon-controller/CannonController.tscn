@@ -3,7 +3,8 @@
 [ext_resource type="PackedScene" uid="uid://bangr24luog7a" path="res://components/cannon/cannon.tscn" id="1_l1rob"]
 [ext_resource type="Script" uid="uid://hck6j1gsbvgk" path="res://components/cannon-controller/cannon_controller.gd" id="1_vu4is"]
 [ext_resource type="PackedScene" uid="uid://xhfgi01bn84e" path="res://components/power-slider/powerSlider.tscn" id="2_vu4is"]
-[ext_resource type="PackedScene" uid="uid://dyp35o0rt733p" path="res://components/obstacles/glass/glassSquare.tscn" id="4_hpp5o"]
+[ext_resource type="PackedScene" uid="uid://dyp35o0rt733p" path="res://components/obstacles/glass/glassObstacle.tscn" id="4_hpp5o"]
+[ext_resource type="PackedScene" uid="uid://cdwyigup7yi7r" path="res://components/obstacles/metal/metalObstacle.tscn" id="5_pkjfq"]
 
 [node name="CannonController" type="Node2D" unique_id=1089180017]
 script = ExtResource("1_vu4is")
@@ -21,7 +22,7 @@ pivot_offset = Vector2(348, 362)
 mouse_filter = 0
 
 [node name="GlassSquare" parent="." unique_id=741610891 instance=ExtResource("4_hpp5o")]
-position = Vector2(828, 598)
+position = Vector2(815, 485)
 scale = Vector2(0.1, 0.1)
 
 [node name="GlassSquare2" parent="." unique_id=1403924009 instance=ExtResource("4_hpp5o")]
@@ -39,3 +40,7 @@ scale = Vector2(0.1, 0.1)
 [node name="GlassSquare5" parent="." unique_id=1317840172 instance=ExtResource("4_hpp5o")]
 position = Vector2(841, 84)
 scale = Vector2(0.1, 0.1)
+
+[node name="MetalSquare" parent="." unique_id=759896926 instance=ExtResource("5_pkjfq")]
+position = Vector2(923, 590)
+scale = Vector2(0.2, 0.2)
