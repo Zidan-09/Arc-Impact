@@ -15,12 +15,18 @@ func _ready() -> void:
 	
 	crackedTexture.visible = false
 
-func on_hit_completed(_bullet: RigidBody2D, _impact_position: Vector2) -> void:
-	stoneLife -= 1
-	
-	if stoneLife == 1:
+func on_hit_started(_bullet: RigidBody2D) -> void:
+	if stoneLife == 2:
 		crackedTexture.visible = true
 		polishedTexture.visible = false
-	
-	if stoneLife == 0:
+
+
+func on_hit_completed(_bullet: RigidBody2D, _impact_position: Vector2) -> void:
+	stoneLife -= 1
+
+	if stoneLife <= 1:
+		crackedTexture.visible = true
+		polishedTexture.visible = false
+
+	if stoneLife <= 0:
 		queue_free()
