@@ -24,6 +24,13 @@ var rotation_sensitivity: float = 0.5
 var recoil_tween: Tween
 var barrel_initial_position: Vector2
 
+# Offsets de layout lidos de cannon.tscn ($BarrelPivot e $BarrelPivot/Muzzle).
+# Espelham o transform vivo usado por get_muzzle_state(); o solver usa a
+# versão estática abaixo (assume canhão sem rotação e escala 1, o padrão
+# da LevelDefinition v1).
+const PIVOT_OFFSET := Vector2(-2, -44)
+const MUZZLE_OFFSET := Vector2(267, -48)
+
 const RECOIL_DISTANCE := 25.0
 const RECOIL_BACK_TIME := 0.06
 const RECOIL_RETURN_TIME := 0.12
@@ -48,6 +55,17 @@ func rotate_cannon(delta_y: float) -> void:
 
 func update_cannon_rotation() -> void:
 	barrel_pivot.rotation_degrees = -current_angle
+
+## Versão pura (sem Nodes) da matemática do disparo, para o solver
+## montar a origem/direção sem instanciar o canhão. Assume canhão sem
+## rotação e escala 1 (padrão da LevelDefinition v1).
+static func muzzle_state_for(cannon_position: Vector2, angle_degrees: float) -> Dictionary:
+	var rotation := deg_to_rad(-angle_degrees)
+	return {
+		"origin": cannon_position + PIVOT_OFFSET + MUZZLE_OFFSET.rotated(rotation),
+		"direction": Vector2.RIGHT.rotated(rotation),
+	}
+
 
 ## Origem e direção do disparo com a MESMA matemática do shoot().
 ## O LevelSolver (Etapa 4+ do docs/plan.md) reutiliza este método para
