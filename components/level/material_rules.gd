@@ -60,6 +60,23 @@ static func passes_through(kind: StringName) -> bool:
 	return bool(get_rule(kind).get("passes_through", false))
 
 
+## Tamanho base do colisor em px, escala 1.0 (Etapa 3: usado pelo
+## LevelValidator para aproximar o AABB como `base_size * scale`).
+## Valores lidos dos .tscn: metal 548x548, pedra 500x500, vidro 952x934
+## (hitbox Area2D). Com scale 0.2 (padrão da cena de teste),
+## metal ~= 110x110.
+static func base_size(kind: StringName) -> Vector2:
+	match kind:
+		ObstacleDefinition.KIND_GLASS:
+			return Vector2(952, 934)
+		ObstacleDefinition.KIND_STONE:
+			return Vector2(500, 500)
+		ObstacleDefinition.KIND_METAL:
+			return Vector2(548, 548)
+	push_error("MaterialRules.base_size: kind desconhecido '%s'." % String(kind))
+	return Vector2.ZERO
+
+
 static func _rules() -> Dictionary:
 	return {
 		ObstacleDefinition.KIND_GLASS: {
