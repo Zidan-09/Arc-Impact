@@ -175,7 +175,9 @@ static func _target_boxed(def: LevelDefinition, boxes: Array[Rect2]) -> bool:
 	var directions := [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN]
 	for direction in directions:
 		var blocked := false
-		var ray_end := center + direction * BOXED_RAY_LENGTH
+		# Tipo explícito: `direction` vem de Array sem tipo (Variant)
+		# e o `:=` não infere — erro de parse que quebra a cena.
+		var ray_end: Vector2 = center + direction * BOXED_RAY_LENGTH
 		for i in def.obstacles.size():
 			if def.obstacles[i].kind != ObstacleDefinition.KIND_METAL:
 				continue

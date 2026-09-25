@@ -18,7 +18,8 @@ const MAX_CANDIDATES := 40
 ##          "ms": int, "fallback_used": bool, "ultimate": bool,
 ##          "log": Array[String]}. `cfg_override` é gancho de teste.
 static func generate(seed_value: int, level_number: int, parent: Node, max_candidates: int = MAX_CANDIDATES, cfg_override: DifficultyConfig = null) -> Dictionary:
-	var cfg := cfg_override if cfg_override != null else DifficultyTable.get_config(level_number)
+	# Tipo explícito: o ramo null do ternário impede a inferência do `:=`.
+	var cfg: DifficultyConfig = cfg_override if cfg_override != null else DifficultyTable.get_config(level_number)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d:%d" % [seed_value, LevelDefinition.GENERATOR_VERSION, level_number])
 	var total_sims := 0
