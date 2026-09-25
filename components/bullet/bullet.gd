@@ -9,6 +9,8 @@ func _ready() -> void:
 
 
 func _on_hit_detector_body_entered(body: Node) -> void:
+	if is_broken:
+		return
 	if not body.has_method("hit"):
 		return
 

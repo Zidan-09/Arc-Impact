@@ -29,10 +29,17 @@ func hit(bullet: RigidBody2D, impact_position: Vector2 = Vector2.INF) -> void:
 	await play_hit_animation()
 
 	if not is_instance_valid(self):
-		is_processing_hit = false
 		return
 
- 	on_hit_completed(bullet, impact_position)
+	# O bullet pode ter sido liberado (queue_free via del_bullet, por exemplo
+	# ao atingir o bullet_return_detector) durante o await da animação.
+	# Passar uma instância liberada para um parâmetro tipado causa:
+	# "Invalid type... (previously freed) is not a subclass...".
+	# Por isso revalidamos aqui. null é um valor válido para o parâmetro
+	# tipado; as implementações de on_hit_completed ignoram o bullet.
+	var live_bullet: RigidBody2D = bullet if is_instance_valid(bullet) else null
+
+	on_hit_completed(live_bullet, impact_position)
 
 	is_processing_hit = false
 
