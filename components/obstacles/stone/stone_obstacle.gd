@@ -33,9 +33,7 @@ func _ready() -> void:
 func hit(bullet: RigidBody2D, impact_position: Vector2 = Vector2.INF) -> void:
 	if is_destroyed:
 		return
-	if bullet is GlassShard:
-		return
-	if bullet is StoneShard:
+	if bullet is Shard:
 		return
 	if stoneLife <= 1:
 		if not is_instance_valid(bullet):
