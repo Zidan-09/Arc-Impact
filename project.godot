@@ -20,6 +20,8 @@ config/icon="uid://d1mb38w5gs31u"
 
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/description=""
+window/icon="res://icon.svg"
 
 [physics]
 

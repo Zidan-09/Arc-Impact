@@ -1,0 +1,73 @@
+[gd_scene format=3 uid="uid://xhfgi01bn84e"]
+
+[ext_resource type="Script" uid="uid://egaply34rg1l" path="res://components/power-slider/power_slider.gd" id="1_dcloh"]
+[ext_resource type="Texture2D" uid="uid://43qytpv3va" path="res://assets/power-slider/base.png" id="1_gi7pw"]
+[ext_resource type="Texture2D" uid="uid://byq78dvh5wco" path="res://assets/power-slider/inactiveHandle.png" id="2_dcloh"]
+[ext_resource type="Texture2D" uid="uid://cmgaa6midn0yj" path="res://assets/power-slider/activeHandle.png" id="3_777x3"]
+
+[sub_resource type="GDScript" id="GDScript_777x3"]
+script/source = "extends Control
+
+@onready var normal: TextureRect = $Normal
+@onready var pressed: TextureRect = $Pressed
+
+var dragging := false
+
+
+func _ready() -> void:
+	update_visual()
+
+
+func set_dragging(value: bool) -> void:
+	dragging = value
+	update_visual()
+
+
+func update_visual() -> void:
+	normal.visible = not dragging
+	pressed.visible = dragging
+"
+
+[node name="PowerSlider" type="Control" unique_id=199311976]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_dcloh")
+
+[node name="Track" type="TextureRect" parent="." unique_id=642828453]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+texture = ExtResource("1_gi7pw")
+
+[node name="Handle" type="Control" parent="." unique_id=1090266475]
+layout_mode = 1
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+scale = Vector2(1.4, 1.4)
+mouse_filter = 1
+script = SubResource("GDScript_777x3")
+
+[node name="Normal" type="TextureRect" parent="Handle" unique_id=679803136]
+layout_mode = 0
+offset_left = -21.0
+offset_top = -215.0
+offset_right = 479.0
+offset_bottom = 285.0
+scale = Vector2(1.1, 1.1)
+mouse_filter = 2
+texture = ExtResource("2_dcloh")
+
+[node name="Pressed" type="TextureRect" parent="Handle" unique_id=75994612]
+layout_mode = 0
+offset_left = 7.0
+offset_top = -205.0
+offset_right = 507.0
+offset_bottom = 295.0
+mouse_filter = 2
+texture = ExtResource("3_777x3")
