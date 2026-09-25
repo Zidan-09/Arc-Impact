@@ -10,5 +10,5 @@ func _ready() -> void:
 	physics_material_override = mat
 
 
-func on_hit_completed(_bullet: RigidBody2D) -> void:
+func on_hit_completed(_bullet: RigidBody2D, _impact_position: Vector2) -> void:
 	pass

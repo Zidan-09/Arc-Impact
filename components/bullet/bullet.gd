@@ -12,7 +12,7 @@ func _on_hit_detector_body_entered(body: Node) -> void:
 	if not body.has_method("hit"):
 		return
 
-	body.hit(self)
+	body.hit(self, global_position)
 
 func del_bullet():
 	if is_broken:

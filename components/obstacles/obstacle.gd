@@ -15,11 +15,14 @@ func _ready() -> void:
 	original_scale = scale
 
 
-func hit(bullet: RigidBody2D) -> void:
+func hit(bullet: RigidBody2D, impact_position: Vector2 = Vector2.INF) -> void:
 	if is_processing_hit or not is_instance_valid(bullet):
 		return
 
 	is_processing_hit = true
+
+	if impact_position == Vector2.INF:
+		impact_position = global_position
 
 	on_hit_started(bullet)
 
@@ -29,7 +32,7 @@ func hit(bullet: RigidBody2D) -> void:
 		is_processing_hit = false
 		return
 
-	on_hit_completed(bullet)
+	on_hit_completed(bullet, impact_position)
 
 	is_processing_hit = false
 
@@ -64,7 +67,7 @@ func play_hit_animation() -> void:
 	scale = original_scale
 
 
-func on_hit_completed(_bullet: RigidBody2D) -> void:
+func on_hit_completed(_bullet: RigidBody2D, _impact_position: Vector2) -> void:
 	push_error(
 		"on_hit_completed() must be implemented by a child class."
 	)
