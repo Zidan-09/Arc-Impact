@@ -30,6 +30,8 @@ func _on_hit_box_body_entered(body: Node2D) -> void:
 		return
 	if body is GlassShard:
 		return
+	if body is StoneShard:
+		return
 	if body is RigidBody2D:
 		hit(body, body.global_position)
 
@@ -38,6 +40,8 @@ func hit(bullet: RigidBody2D, impact_position: Vector2 = Vector2.INF) -> void:
 	if is_broken or is_processing_hit:
 		return
 	if bullet is GlassShard:
+		return
+	if bullet is StoneShard:
 		return
 	if not is_instance_valid(bullet):
 		return
