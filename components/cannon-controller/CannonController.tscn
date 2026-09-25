@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://b3llp28thv1t7"]
+
+[ext_resource type="PackedScene" uid="uid://bangr24luog7a" path="res://components/cannon/cannon.tscn" id="1_l1rob"]
+[ext_resource type="Script" uid="uid://hck6j1gsbvgk" path="res://components/cannon-controller/cannon_controller.gd" id="1_vu4is"]
+[ext_resource type="PackedScene" uid="uid://xhfgi01bn84e" path="res://components/power-slider/powerSlider.tscn" id="2_vu4is"]
+
+[node name="CannonController" type="Node2D" unique_id=1089180017]
+script = ExtResource("1_vu4is")
+
+[node name="Cannon" parent="." unique_id=1115613926 instance=ExtResource("1_l1rob")]
+position = Vector2(173, 523)
+
+[node name="PowerSlider" parent="." unique_id=199311976 instance=ExtResource("2_vu4is")]
+offset_left = 682.99994
+offset_top = -36.000008
+offset_right = 682.99994
+offset_bottom = -36.000008
+scale = Vector2(0.7, 0.7)
+pivot_offset = Vector2(348, 362)
+mouse_filter = 0

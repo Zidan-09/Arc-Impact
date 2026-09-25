@@ -11,35 +11,16 @@ var rotation_sensitivity: float = 0.5
 
 @export var bullet_scene: PackedScene
 
+@export var base_shot_speed: float = 1000.0
+
 @onready var barrel_pivot: Node2D = $BarrelPivot
 @onready var muzzle: Marker2D = $BarrelPivot/Muzzle
 
 var current_angle: float = 45.0
-var dragging: bool = false
 
 
 func _ready() -> void:
 	update_cannon_rotation()
-
-
-func _input(event: InputEvent) -> void:
-	if event is InputEventKey:
-		if event.keycode == KEY_SPACE and event.pressed:
-			shoot()
-			
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			dragging = event.pressed
-
-	elif event is InputEventMouseMotion and dragging:
-		rotate_cannon(-event.relative.y)
-
-	elif event is InputEventScreenTouch:
-		if event.index == 0:
-			dragging = event.pressed
-
-	elif event is InputEventScreenDrag and dragging:
-		rotate_cannon(-event.relative.y)
 
 
 func rotate_cannon(delta_y: float) -> void:
@@ -57,8 +38,12 @@ func rotate_cannon(delta_y: float) -> void:
 func update_cannon_rotation() -> void:
 	barrel_pivot.rotation_degrees = -current_angle
 
-func shoot() -> void:
-	var bullet := bullet_scene.instantiate()
+func shoot(power: float = 1.0) -> void:
+	if bullet_scene == null:
+		push_warning("Cannon.shoot() sem bullet_scene definida.")
+		return
+
+	var bullet := bullet_scene.instantiate() as RigidBody2D
 
 	get_tree().current_scene.add_child(bullet)
 
@@ -66,4 +51,4 @@ func shoot() -> void:
 
 	var direction := Vector2.RIGHT.rotated(muzzle.global_rotation)
 
-	bullet.linear_velocity = direction * 1000.0
+	bullet.linear_velocity = direction * base_shot_speed * clampf(power, 0.0, 1.0)

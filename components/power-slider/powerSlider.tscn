@@ -41,6 +41,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_dcloh")
 
 [node name="Track" type="TextureRect" parent="." unique_id=642828453]
@@ -48,7 +49,7 @@ z_index = 2
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
-mouse_filter = 2
+mouse_filter = 0
 texture = ExtResource("1_gi7pw")
 
 [node name="PowerGradient" type="ColorRect" parent="." unique_id=1406279972]
@@ -68,7 +69,7 @@ anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 scale = Vector2(1.4, 1.4)
-mouse_filter = 1
+mouse_filter = 2
 script = SubResource("GDScript_777x3")
 
 [node name="Normal" type="TextureRect" parent="Handle" unique_id=679803136]
@@ -78,7 +79,7 @@ offset_top = -215.0
 offset_right = 479.0
 offset_bottom = 285.0
 scale = Vector2(1.1, 1.1)
-mouse_filter = 2
+mouse_filter = 0
 texture = ExtResource("2_dcloh")
 
 [node name="Pressed" type="TextureRect" parent="Handle" unique_id=75994612]
@@ -87,5 +88,5 @@ offset_left = 7.0
 offset_top = -205.0
 offset_right = 507.0
 offset_bottom = 295.0
-mouse_filter = 2
+mouse_filter = 0
 texture = ExtResource("3_777x3")
