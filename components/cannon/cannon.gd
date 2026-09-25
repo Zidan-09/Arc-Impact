@@ -51,10 +51,15 @@ func shoot(power: float = 1.0) -> void:
 	
 	play_recoil()
 
-	var bullet := bullet_scene.instantiate() as RigidBody2D
+	var bullet := bullet_scene.instantiate() as Bullet
 
 	get_tree().current_scene.add_child(bullet)
 
+	# Mantém o bullet proporcional ao canhão: aplica a escala global
+	# do canhão nos shapes (física de verdade) e no sprite.
+	# Só copiar node.scale/global_scale não basta, pois a escala de um
+	# RigidBody2D nem sempre propaga para o raio de colisão.
+	bullet.apply_cannon_scale(global_scale)
 	bullet.global_position = muzzle.global_position
 
 	var direction := Vector2.RIGHT.rotated(muzzle.global_rotation)

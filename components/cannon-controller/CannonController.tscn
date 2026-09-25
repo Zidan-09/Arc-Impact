@@ -12,7 +12,8 @@
 script = ExtResource("1_vu4is")
 
 [node name="Cannon" parent="." unique_id=1115613926 instance=ExtResource("1_l1rob")]
-position = Vector2(154, 609)
+position = Vector2(80, 664)
+scale = Vector2(0.5, 0.5)
 
 [node name="GlassSquare" parent="." unique_id=741610891 instance=ExtResource("4_hpp5o")]
 position = Vector2(815, 485)
