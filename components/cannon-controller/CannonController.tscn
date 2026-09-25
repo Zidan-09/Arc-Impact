@@ -12,16 +12,7 @@
 script = ExtResource("1_vu4is")
 
 [node name="Cannon" parent="." unique_id=1115613926 instance=ExtResource("1_l1rob")]
-position = Vector2(173, 523)
-
-[node name="PowerSlider" parent="." unique_id=199311976 instance=ExtResource("2_vu4is")]
-offset_left = 706.0
-offset_top = -104.0
-offset_right = 706.0
-offset_bottom = -104.0
-scale = Vector2(0.7, 0.7)
-pivot_offset = Vector2(348, 362)
-mouse_filter = 0
+position = Vector2(154, 609)
 
 [node name="GlassSquare" parent="." unique_id=741610891 instance=ExtResource("4_hpp5o")]
 position = Vector2(815, 485)
@@ -37,7 +28,7 @@ hit_scale = null
 hit_duration = null
 
 [node name="GlassSquare2" parent="." unique_id=1403924009 instance=ExtResource("4_hpp5o")]
-position = Vector2(212.00006, 47.00006)
+position = Vector2(647, 68)
 scale = Vector2(0.1, 0.1)
 velocity_retain = null
 shard_count = null
@@ -50,7 +41,7 @@ hit_scale = null
 hit_duration = null
 
 [node name="GlassSquare3" parent="." unique_id=1478812978 instance=ExtResource("4_hpp5o")]
-position = Vector2(376, 101)
+position = Vector2(616, 424.99997)
 scale = Vector2(0.1, 0.1)
 velocity_retain = null
 shard_count = null
@@ -63,7 +54,7 @@ hit_scale = null
 hit_duration = null
 
 [node name="GlassSquare4" parent="." unique_id=571272308 instance=ExtResource("4_hpp5o")]
-position = Vector2(554, 47.000008)
+position = Vector2(1016, 205)
 scale = Vector2(0.1, 0.1)
 velocity_retain = null
 shard_count = null
@@ -76,7 +67,7 @@ hit_scale = null
 hit_duration = null
 
 [node name="GlassSquare5" parent="." unique_id=1317840172 instance=ExtResource("4_hpp5o")]
-position = Vector2(841, 84)
+position = Vector2(1034, 61)
 scale = Vector2(0.1, 0.1)
 velocity_retain = null
 shard_count = null
@@ -89,61 +80,61 @@ hit_scale = null
 hit_duration = null
 
 [node name="MetalSquare" parent="." unique_id=759896926 instance=ExtResource("5_pkjfq")]
-position = Vector2(988, 613)
+position = Vector2(1115, 662.99994)
 scale = Vector2(0.2, 0.2)
 hit_scale = null
 hit_duration = null
 
 [node name="MetalSquare8" parent="." unique_id=1435183163 instance=ExtResource("5_pkjfq")]
-position = Vector2(876, 613)
+position = Vector2(1003, 662.99994)
 scale = Vector2(0.2, 0.2)
 hit_scale = null
 hit_duration = null
 
 [node name="MetalSquare9" parent="." unique_id=1158163678 instance=ExtResource("5_pkjfq")]
-position = Vector2(767, 612)
+position = Vector2(894, 661.99994)
 scale = Vector2(0.2, 0.2)
 hit_scale = null
 hit_duration = null
 
 [node name="MetalSquare2" parent="." unique_id=1921474090 instance=ExtResource("5_pkjfq")]
-position = Vector2(1093, 58.00006)
+position = Vector2(1220, 108)
 scale = Vector2(0.2, 0.2)
 hit_scale = null
 hit_duration = null
 
 [node name="MetalSquare3" parent="." unique_id=32481408 instance=ExtResource("5_pkjfq")]
-position = Vector2(1094, 168)
+position = Vector2(1221, 217.99994)
 scale = Vector2(0.2, 0.2)
 hit_scale = null
 hit_duration = null
 
 [node name="MetalSquare4" parent="." unique_id=192707492 instance=ExtResource("5_pkjfq")]
-position = Vector2(1095, 278)
+position = Vector2(1222, 327.99994)
 scale = Vector2(0.2, 0.2)
 hit_scale = null
 hit_duration = null
 
 [node name="MetalSquare5" parent="." unique_id=2110278795 instance=ExtResource("5_pkjfq")]
-position = Vector2(1095, 388)
+position = Vector2(1222, 437.99994)
 scale = Vector2(0.2, 0.2)
 hit_scale = null
 hit_duration = null
 
 [node name="MetalSquare6" parent="." unique_id=844114284 instance=ExtResource("5_pkjfq")]
-position = Vector2(1095, 500)
+position = Vector2(1222, 549.99994)
 scale = Vector2(0.2, 0.2)
 hit_scale = null
 hit_duration = null
 
 [node name="MetalSquare7" parent="." unique_id=816500154 instance=ExtResource("5_pkjfq")]
-position = Vector2(1095, 612)
+position = Vector2(1222, 661.99994)
 scale = Vector2(0.2, 0.2)
 hit_scale = null
 hit_duration = null
 
 [node name="StoneObstacle" parent="." unique_id=1462746437 instance=ExtResource("6_rysqw")]
-position = Vector2(898, 207)
+position = Vector2(867, 73.000015)
 scale = Vector2(0.2, 0.2)
 velocity_retain = null
 shard_count = null
@@ -169,7 +160,7 @@ hit_scale = null
 hit_duration = null
 
 [node name="StoneObstacle3" parent="." unique_id=275346122 instance=ExtResource("6_rysqw")]
-position = Vector2(572, 197.00002)
+position = Vector2(685, 218)
 scale = Vector2(0.2, 0.2)
 velocity_retain = null
 shard_count = null
@@ -182,7 +173,7 @@ hit_scale = null
 hit_duration = null
 
 [node name="StoneObstacle4" parent="." unique_id=1033066754 instance=ExtResource("6_rysqw")]
-position = Vector2(72.00003, 61.000015)
+position = Vector2(487.99997, 248.99998)
 scale = Vector2(0.2, 0.2)
 velocity_retain = null
 shard_count = null
@@ -194,10 +185,19 @@ shard_max_angular_velocity = null
 hit_scale = null
 hit_duration = null
 
+[node name="PowerSlider" parent="." unique_id=199311976 instance=ExtResource("2_vu4is")]
+offset_left = 1199.9999
+offset_top = 33.999985
+offset_right = 1199.9999
+offset_bottom = 33.999985
+scale = Vector2(0.7, 0.7)
+pivot_offset = Vector2(2.2856445, 281.99997)
+mouse_filter = 0
+
 [node name="FireButton" parent="." unique_id=844494482 instance=ExtResource("7_fqlvo")]
-offset_left = 1008.0
-offset_top = 518.0
-offset_right = 1108.0
-offset_bottom = 618.0
+offset_left = 1148.0
+offset_top = 581.0
+offset_right = 1248.0
+offset_bottom = 681.0
 ignore_texture_size = true
 stretch_mode = 6
