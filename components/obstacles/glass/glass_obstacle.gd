@@ -6,26 +6,34 @@ extends Obstacle
 var is_broken: bool = false
 
 @onready var sprite: Sprite2D = $Sprite
-@onready var hit_box: CollisionShape2D = $HitBox
+@onready var hit_box: Area2D = $HitBox
 
 
 func _ready() -> void:
 	super._ready()
+	hit_box.body_entered.connect(_on_hit_box_body_entered)
 
 
-func on_hit_started(_bullet: RigidBody2D) -> void:
-	hit_box.set_deferred("disabled", true)
+func _on_hit_box_body_entered(body: Node2D) -> void:
+	if is_broken:
+		return
+	if body is RigidBody2D:
+		hit(body)
 
 
-func on_hit_completed(bullet: RigidBody2D) -> void:
-	shatter(bullet)
+func on_hit_started(bullet: RigidBody2D) -> void:
+	if is_instance_valid(bullet):
+		bullet.linear_velocity *= velocity_retain
+	hit_box.set_deferred("monitoring", false)
 
 
-func shatter(bullet: RigidBody2D) -> void:
+func on_hit_completed(_bullet: RigidBody2D) -> void:
+	shatter()
+
+
+func shatter() -> void:
 	if is_broken:
 		return
 	is_broken = true
-	if is_instance_valid(bullet):
-		bullet.linear_velocity *= velocity_retain
 	sprite.hide()
 	queue_free()

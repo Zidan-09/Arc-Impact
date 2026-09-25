@@ -13,5 +13,7 @@ script = ExtResource("1_c8a0y")
 modulate = Color(1, 1, 1, 0.8627451)
 texture = ExtResource("1_ud1dm")
 
-[node name="HitBox" type="CollisionShape2D" parent="." unique_id=2042098229]
+[node name="HitBox" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitBox"]
 shape = SubResource("RectangleShape2D_dlv83")
