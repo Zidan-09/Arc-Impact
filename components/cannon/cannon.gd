@@ -94,6 +94,8 @@ func shoot(power: float = 1.0) -> void:
 	var bullet := bullet_scene.instantiate() as Bullet
 
 	get_spawn_parent().add_child(bullet)
+	# Grupo para o fluxo de fim de fase (derrota quando não restam balas).
+	bullet.add_to_group("bullets")
 
 	# Mantém o bullet proporcional ao canhão: aplica a escala global
 	# do canhão nos shapes (física de verdade) e no sprite.

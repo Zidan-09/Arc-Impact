@@ -12,11 +12,9 @@ class_name SimulationWorld extends Node2D
 ## as evita no jogo e na sim), e o BulletReturnDetector vira um raio de
 ## 80px ao redor do canhão (muzzle real fica a ~270px, com folga).
 
-const METAL_SCENE := preload("res://components/obstacles/metal/metalObstacle.tscn")
-const STONE_SCENE := preload("res://components/obstacles/stone/stoneObstacle.tscn")
-const GLASS_SCENE := preload("res://components/obstacles/glass/glassObstacle.tscn")
 const TARGET_SCENE := preload("res://components/target/target.tscn")
 const BULLET_SCENE := preload("res://components/bullet/bullet.tscn")
+## Cenas dos obstáculos via MaterialRules.scene_for (fonte única).
 
 const TIMEOUT_FRAMES := 360 # 6 s a 60 ticks
 const STOP_SPEED := 30.0
@@ -116,12 +114,12 @@ func _build(def: LevelDefinition, state: Dictionary) -> void:
 	for obstacle in def.obstacles:
 		match obstacle.kind:
 			ObstacleDefinition.KIND_METAL:
-				_spawned.append(_spawn(METAL_SCENE, obstacle))
+				_spawned.append(_spawn(MaterialRules.scene_for(obstacle.kind), obstacle))
 			ObstacleDefinition.KIND_STONE:
 				var hp := int(stone_hp.get(obstacle.id, MaterialRules.max_hp(obstacle.kind)))
 				if hp <= 0:
 					continue
-				var entry := _spawn(STONE_SCENE, obstacle)
+				var entry := _spawn(MaterialRules.scene_for(obstacle.kind), obstacle)
 				var node := entry["node"] as StoneObstacle
 				node.stoneLife = hp
 				if hp == 1:
@@ -131,7 +129,7 @@ func _build(def: LevelDefinition, state: Dictionary) -> void:
 			ObstacleDefinition.KIND_GLASS:
 				if not bool(glass_alive.get(obstacle.id, true)):
 					continue
-				_spawned.append(_spawn(GLASS_SCENE, obstacle))
+				_spawned.append(_spawn(MaterialRules.scene_for(obstacle.kind), obstacle))
 			_:
 				continue # kind inválido: o validador barra antes; a sim não quebra
 	if def.target != null:

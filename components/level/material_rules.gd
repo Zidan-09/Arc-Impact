@@ -60,6 +60,20 @@ static func passes_through(kind: StringName) -> bool:
 	return bool(get_rule(kind).get("passes_through", false))
 
 
+## Cena correspondente ao kind — fonte única usada pelo LevelBuilder
+## (Etapa 7) e pelo SimulationWorld. Preloads resolvidos no parse.
+static func scene_for(kind: StringName) -> PackedScene:
+	match kind:
+		ObstacleDefinition.KIND_GLASS:
+			return preload("res://components/obstacles/glass/glassObstacle.tscn")
+		ObstacleDefinition.KIND_STONE:
+			return preload("res://components/obstacles/stone/stoneObstacle.tscn")
+		ObstacleDefinition.KIND_METAL:
+			return preload("res://components/obstacles/metal/metalObstacle.tscn")
+	push_error("MaterialRules.scene_for: kind desconhecido '%s'." % String(kind))
+	return null
+
+
 ## Tamanho base do colisor em px, escala 1.0 (Etapa 3: usado pelo
 ## LevelValidator para aproximar o AABB como `base_size * scale`).
 ## Valores lidos dos .tscn: metal 548x548, pedra 500x500, vidro 952x934
