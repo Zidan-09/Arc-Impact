@@ -1,3 +1,4 @@
+class_name Cannon
 extends Node2D
 
 @export_range(-20.0, 90.0, 1.0)
