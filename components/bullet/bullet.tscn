@@ -1,12 +1,17 @@
 [gd_scene format=3 uid="uid://bsnxkop782soy"]
 
 [ext_resource type="Texture2D" uid="uid://6dk5f481h10g" path="res://assets/cannons/default/ball.png" id="1_142lv"]
+[ext_resource type="Script" uid="uid://6dx7xs50gitw" path="res://components/bullet/bullet.gd" id="1_j7bu3"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_dlv83"]
 radius = 46.173584
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_iel4s"]
+radius = 56.0
+
 [node name="Bullet" type="RigidBody2D" unique_id=1821898189]
 z_index = 2
+script = ExtResource("1_j7bu3")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=763157955]
 scale = Vector2(0.3, 0.3)
@@ -15,3 +20,9 @@ texture = ExtResource("1_142lv")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=530604187]
 z_index = 2
 shape = SubResource("CircleShape2D_dlv83")
+
+[node name="HitDetector" type="Area2D" parent="." unique_id=1464932487]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitDetector" unique_id=1770242531]
+rotation = 1.5707964
+shape = SubResource("CircleShape2D_iel4s")

@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://dyp35o0rt733p"]
+
+[ext_resource type="Script" uid="uid://c8homuad21fyo" path="res://components/obstacles/glass/glass_square.gd" id="1_c8a0y"]
+[ext_resource type="Texture2D" uid="uid://dg5laarkn12ii" path="res://assets/obstacles/glass_square.jpg" id="1_ud1dm"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_dlv83"]
+size = Vector2(952, 934)
+
+[node name="GlassSquare" type="StaticBody2D" unique_id=741610891]
+script = ExtResource("1_c8a0y")
+
+[node name="Sprite" type="Sprite2D" parent="." unique_id=890882565]
+modulate = Color(1, 1, 1, 0.8627451)
+texture = ExtResource("1_ud1dm")
+
+[node name="HitBox" type="CollisionShape2D" parent="." unique_id=2042098229]
+shape = SubResource("RectangleShape2D_dlv83")
