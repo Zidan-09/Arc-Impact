@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://dyp35o0rt733p" path="res://components/obstacles/glass/glassObstacle.tscn" id="4_hpp5o"]
 [ext_resource type="PackedScene" uid="uid://cdwyigup7yi7r" path="res://components/obstacles/metal/metalObstacle.tscn" id="5_pkjfq"]
 [ext_resource type="PackedScene" uid="uid://cr3negmvstljq" path="res://components/obstacles/stone/stoneObstacle.tscn" id="6_rysqw"]
+[ext_resource type="PackedScene" uid="uid://b5hbfx8760rd3" path="res://components/fire-button/fireButton.tscn" id="7_fqlvo"]
 
 [node name="CannonController" type="Node2D" unique_id=1089180017]
 script = ExtResource("1_vu4is")
@@ -14,10 +15,10 @@ script = ExtResource("1_vu4is")
 position = Vector2(173, 523)
 
 [node name="PowerSlider" parent="." unique_id=199311976 instance=ExtResource("2_vu4is")]
-offset_left = 682.99994
-offset_top = -36.000008
-offset_right = 682.99994
-offset_bottom = -36.000008
+offset_left = 706.0
+offset_top = -104.0
+offset_right = 706.0
+offset_bottom = -104.0
 scale = Vector2(0.7, 0.7)
 pivot_offset = Vector2(348, 362)
 mouse_filter = 0
@@ -25,27 +26,178 @@ mouse_filter = 0
 [node name="GlassSquare" parent="." unique_id=741610891 instance=ExtResource("4_hpp5o")]
 position = Vector2(815, 485)
 scale = Vector2(0.1, 0.1)
+velocity_retain = null
+shard_count = null
+shard_min_speed = null
+shard_max_speed = null
+shard_spread = null
+shard_min_angular_velocity = null
+shard_max_angular_velocity = null
+hit_scale = null
+hit_duration = null
 
 [node name="GlassSquare2" parent="." unique_id=1403924009 instance=ExtResource("4_hpp5o")]
 position = Vector2(212.00006, 47.00006)
 scale = Vector2(0.1, 0.1)
+velocity_retain = null
+shard_count = null
+shard_min_speed = null
+shard_max_speed = null
+shard_spread = null
+shard_min_angular_velocity = null
+shard_max_angular_velocity = null
+hit_scale = null
+hit_duration = null
 
 [node name="GlassSquare3" parent="." unique_id=1478812978 instance=ExtResource("4_hpp5o")]
-position = Vector2(211, 144)
+position = Vector2(376, 101)
 scale = Vector2(0.1, 0.1)
+velocity_retain = null
+shard_count = null
+shard_min_speed = null
+shard_max_speed = null
+shard_spread = null
+shard_min_angular_velocity = null
+shard_max_angular_velocity = null
+hit_scale = null
+hit_duration = null
 
 [node name="GlassSquare4" parent="." unique_id=571272308 instance=ExtResource("4_hpp5o")]
 position = Vector2(554, 47.000008)
 scale = Vector2(0.1, 0.1)
+velocity_retain = null
+shard_count = null
+shard_min_speed = null
+shard_max_speed = null
+shard_spread = null
+shard_min_angular_velocity = null
+shard_max_angular_velocity = null
+hit_scale = null
+hit_duration = null
 
 [node name="GlassSquare5" parent="." unique_id=1317840172 instance=ExtResource("4_hpp5o")]
 position = Vector2(841, 84)
 scale = Vector2(0.1, 0.1)
+velocity_retain = null
+shard_count = null
+shard_min_speed = null
+shard_max_speed = null
+shard_spread = null
+shard_min_angular_velocity = null
+shard_max_angular_velocity = null
+hit_scale = null
+hit_duration = null
 
 [node name="MetalSquare" parent="." unique_id=759896926 instance=ExtResource("5_pkjfq")]
-position = Vector2(923, 590)
+position = Vector2(988, 613)
 scale = Vector2(0.2, 0.2)
+hit_scale = null
+hit_duration = null
+
+[node name="MetalSquare8" parent="." unique_id=1435183163 instance=ExtResource("5_pkjfq")]
+position = Vector2(876, 613)
+scale = Vector2(0.2, 0.2)
+hit_scale = null
+hit_duration = null
+
+[node name="MetalSquare9" parent="." unique_id=1158163678 instance=ExtResource("5_pkjfq")]
+position = Vector2(767, 612)
+scale = Vector2(0.2, 0.2)
+hit_scale = null
+hit_duration = null
+
+[node name="MetalSquare2" parent="." unique_id=1921474090 instance=ExtResource("5_pkjfq")]
+position = Vector2(1093, 58.00006)
+scale = Vector2(0.2, 0.2)
+hit_scale = null
+hit_duration = null
+
+[node name="MetalSquare3" parent="." unique_id=32481408 instance=ExtResource("5_pkjfq")]
+position = Vector2(1094, 168)
+scale = Vector2(0.2, 0.2)
+hit_scale = null
+hit_duration = null
+
+[node name="MetalSquare4" parent="." unique_id=192707492 instance=ExtResource("5_pkjfq")]
+position = Vector2(1095, 278)
+scale = Vector2(0.2, 0.2)
+hit_scale = null
+hit_duration = null
+
+[node name="MetalSquare5" parent="." unique_id=2110278795 instance=ExtResource("5_pkjfq")]
+position = Vector2(1095, 388)
+scale = Vector2(0.2, 0.2)
+hit_scale = null
+hit_duration = null
+
+[node name="MetalSquare6" parent="." unique_id=844114284 instance=ExtResource("5_pkjfq")]
+position = Vector2(1095, 500)
+scale = Vector2(0.2, 0.2)
+hit_scale = null
+hit_duration = null
+
+[node name="MetalSquare7" parent="." unique_id=816500154 instance=ExtResource("5_pkjfq")]
+position = Vector2(1095, 612)
+scale = Vector2(0.2, 0.2)
+hit_scale = null
+hit_duration = null
 
 [node name="StoneObstacle" parent="." unique_id=1462746437 instance=ExtResource("6_rysqw")]
 position = Vector2(898, 207)
 scale = Vector2(0.2, 0.2)
+velocity_retain = null
+shard_count = null
+shard_min_speed = null
+shard_max_speed = null
+shard_spread = null
+shard_min_angular_velocity = null
+shard_max_angular_velocity = null
+hit_scale = null
+hit_duration = null
+
+[node name="StoneObstacle2" parent="." unique_id=658829644 instance=ExtResource("6_rysqw")]
+position = Vector2(849, 353)
+scale = Vector2(0.2, 0.2)
+velocity_retain = null
+shard_count = null
+shard_min_speed = null
+shard_max_speed = null
+shard_spread = null
+shard_min_angular_velocity = null
+shard_max_angular_velocity = null
+hit_scale = null
+hit_duration = null
+
+[node name="StoneObstacle3" parent="." unique_id=275346122 instance=ExtResource("6_rysqw")]
+position = Vector2(572, 197.00002)
+scale = Vector2(0.2, 0.2)
+velocity_retain = null
+shard_count = null
+shard_min_speed = null
+shard_max_speed = null
+shard_spread = null
+shard_min_angular_velocity = null
+shard_max_angular_velocity = null
+hit_scale = null
+hit_duration = null
+
+[node name="StoneObstacle4" parent="." unique_id=1033066754 instance=ExtResource("6_rysqw")]
+position = Vector2(72.00003, 61.000015)
+scale = Vector2(0.2, 0.2)
+velocity_retain = null
+shard_count = null
+shard_min_speed = null
+shard_max_speed = null
+shard_spread = null
+shard_min_angular_velocity = null
+shard_max_angular_velocity = null
+hit_scale = null
+hit_duration = null
+
+[node name="FireButton" parent="." unique_id=844494482 instance=ExtResource("7_fqlvo")]
+offset_left = 1008.0
+offset_top = 518.0
+offset_right = 1108.0
+offset_bottom = 618.0
+ignore_texture_size = true
+stretch_mode = 6

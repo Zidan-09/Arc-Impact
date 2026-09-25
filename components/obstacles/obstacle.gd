@@ -32,7 +32,7 @@ func hit(bullet: RigidBody2D, impact_position: Vector2 = Vector2.INF) -> void:
 		is_processing_hit = false
 		return
 
-	on_hit_completed(bullet, impact_position)
+ 	on_hit_completed(bullet, impact_position)
 
 	is_processing_hit = false
 
