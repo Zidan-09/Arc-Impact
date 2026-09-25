@@ -1,11 +1,13 @@
 [gd_scene format=3 uid="uid://cdwyigup7yi7r"]
 
+[ext_resource type="Script" uid="uid://c7jhg4dtsdfck" path="res://components/obstacles/metal/metal_square.gd" id="1_n5duv"]
 [ext_resource type="Texture2D" uid="uid://kp0y5mldwih3" path="res://assets/obstacles/metal_square.jpg" id="1_vkk2j"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_dlv83"]
 size = Vector2(548, 548)
 
 [node name="MetalSquare" type="Node2D" unique_id=759896926]
+script = ExtResource("1_n5duv")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1450032902]
 texture = ExtResource("1_vkk2j")
@@ -13,4 +15,5 @@ texture = ExtResource("1_vkk2j")
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1790928636]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=1144503427]
+visible = false
 shape = SubResource("RectangleShape2D_dlv83")
