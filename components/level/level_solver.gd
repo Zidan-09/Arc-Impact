@@ -118,8 +118,8 @@ static func _make_record(shots: Array) -> SolutionRecord:
 ## acertam => 0.5; um só => 0.25; nenhum => 0.0 (solução estreita).
 ## A Etapa 8 refina a métrica com a calibragem de dificuldade.
 static func _probe_margin(def: LevelDefinition, shots: Array, parent: Node) -> float:
-	var plus := _replay_perturbed(def, shots, parent, MARGIN_PROBE_DEGREES)
-	var minus := _replay_perturbed(def, shots, parent, -MARGIN_PROBE_DEGREES)
+	var plus := await _replay_perturbed(def, shots, parent, MARGIN_PROBE_DEGREES)
+	var minus := await _replay_perturbed(def, shots, parent, -MARGIN_PROBE_DEGREES)
 	if plus and minus:
 		return MARGIN_PROBE_DEGREES
 	if plus or minus:
