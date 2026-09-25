@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://djwula3u81ni3"]
+
+[ext_resource type="PackedScene" uid="uid://xhfgi01bn84e" path="res://components/power-slider/powerSlider.tscn" id="1_kjhcr"]
+[ext_resource type="PackedScene" uid="uid://b5hbfx8760rd3" path="res://components/fire-button/fireButton.tscn" id="2_w10xe"]
+
+[node name="Hud" type="Control" unique_id=2117122883]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 117.0
+offset_bottom = 83.0
+
+[node name="TopLeft" type="MarginContainer" parent="." unique_id=1480317829]
+layout_mode = 1
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+
+[node name="Column" type="VBoxContainer" parent="TopLeft" unique_id=531532555]
+layout_mode = 2
+
+[node name="Phase" type="Label" parent="TopLeft/Column" unique_id=827370571]
+layout_mode = 2
+text = "Fase: 0"
+
+[node name="Points" type="Label" parent="TopLeft/Column" unique_id=417934894]
+layout_mode = 2
+text = "Pontos: 0"
+
+[node name="Shoots" type="Label" parent="TopLeft/Column" unique_id=916773507]
+layout_mode = 2
+text = "Disparos: 0"
+
+[node name="PowerSlider" parent="." unique_id=199311976 instance=ExtResource("1_kjhcr")]
+layout_mode = 1
+offset_left = 1185.0
+offset_top = 183.0
+offset_right = 1185.0
+offset_bottom = 183.0
+scale = Vector2(0.6799951, 0.5999999)
+
+[node name="FireButton" parent="." unique_id=844494482 instance=ExtResource("2_w10xe")]
+layout_mode = 0
+offset_left = 1136.0
+offset_top = 583.0
+offset_right = 1236.0
+offset_bottom = 683.0
+ignore_texture_size = true
+stretch_mode = 6

@@ -36,21 +36,19 @@ func update_visual() -> void:
 
 [node name="PowerSlider" type="Control" unique_id=199311976]
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+anchors_preset = 0
+size_flags_horizontal = 0
+size_flags_vertical = 0
 mouse_filter = 2
 script = ExtResource("1_dcloh")
 
 [node name="Track" type="TextureRect" parent="." unique_id=642828453]
 z_index = 2
 layout_mode = 0
-offset_left = 257.0
-offset_top = -1.0
-offset_right = 451.0
-offset_bottom = 717.0
+offset_left = -96.0
+offset_top = -72.0
+offset_right = 98.0
+offset_bottom = 646.0
 mouse_filter = 0
 texture = ExtResource("1_gi7pw")
 
@@ -58,38 +56,44 @@ texture = ExtResource("1_gi7pw")
 z_index = 1
 material = SubResource("ShaderMaterial_2qr02")
 layout_mode = 0
-offset_left = 286.0
-offset_top = 71.0
-offset_right = 416.0
-offset_bottom = 111.0
+offset_left = -67.0
+offset_right = 63.0
+offset_bottom = 40.0
 mouse_filter = 2
 
 [node name="Handle" type="Control" parent="." unique_id=1090266475]
 z_index = 5
 layout_mode = 1
 anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+offset_left = -27.99997
+offset_top = -31.0
+offset_right = 12.0000305
+offset_bottom = 9.0
 scale = Vector2(1.4, 1.4)
 mouse_filter = 2
 script = SubResource("GDScript_777x3")
 
 [node name="Normal" type="TextureRect" parent="Handle" unique_id=679803136]
 layout_mode = 0
-offset_left = 182.14285
-offset_top = -16.428572
-offset_right = 682.1428
-offset_bottom = 483.57144
+offset_left = -49.28573
+offset_top = -42.857143
+offset_right = 450.71423
+offset_bottom = 457.14285
 scale = Vector2(0.28, 0.28)
 mouse_filter = 0
 texture = ExtResource("2_dcloh")
 
 [node name="Pressed" type="TextureRect" parent="Handle" unique_id=75994612]
-layout_mode = 0
-offset_left = 188.57144
-offset_top = -11.428571
-offset_right = 688.5714
-offset_bottom = 488.57144
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 6.2770004
+anchor_top = 1.2770001
+anchor_right = 6.2770004
+anchor_bottom = 1.2770001
+offset_left = -293.93713
+offset_top = -88.93713
+offset_right = 206.0628
+offset_bottom = 411.06287
 scale = Vector2(0.25, 0.25)
 mouse_filter = 0
 texture = ExtResource("3_777x3")
