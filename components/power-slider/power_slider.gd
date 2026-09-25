@@ -3,6 +3,7 @@ extends Control
 @onready var handle: Control = $Handle
 @onready var normal: TextureRect = $Handle/Normal
 @onready var pressed: TextureRect = $Handle/Pressed
+@onready var power_gradient: ColorRect = $PowerGradient
 
 @export var min_power: float = 0.3
 @export var max_power: float = 1.0
@@ -58,6 +59,9 @@ func update_handle_position() -> void:
 		limits.x,
 		t
 	)
+	
+	power_gradient.position.y = handle.position.y + 50
+	power_gradient.size.y = limits.y - handle.position.y + 50
 
 func get_handle_limits() -> Vector2:
 	var half_handle_height := handle.size.y / 2.0
