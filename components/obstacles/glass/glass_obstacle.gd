@@ -15,7 +15,6 @@ extends Obstacle
 const SHARD_SCENE_FALLBACK := preload("res://components/obstacles/glass/glass_shard.tscn")
 
 var is_broken: bool = false
-var impact_velocity: Vector2 = Vector2.ZERO
 
 @onready var sprite: Sprite2D = $Sprite
 @onready var hit_box: Area2D = $HitBox
@@ -35,31 +34,37 @@ func _on_hit_box_body_entered(body: Node2D) -> void:
 		hit(body, body.global_position)
 
 
-func on_hit_started(bullet: RigidBody2D) -> void:
-	if is_instance_valid(bullet):
-		impact_velocity = bullet.linear_velocity
-		bullet.linear_velocity *= velocity_retain
-	hit_box.set_deferred("monitoring", false)
-
-
-func on_hit_completed(bullet: RigidBody2D, impact_position: Vector2) -> void:
-	var shatter_velocity := impact_velocity
-	if is_instance_valid(bullet) and shatter_velocity == Vector2.ZERO:
-		shatter_velocity = bullet.linear_velocity
-	shatter(shatter_velocity, impact_position)
-
-
-func shatter(shatter_velocity: Vector2, impact_position: Vector2) -> void:
-	if is_broken:
+func hit(bullet: RigidBody2D, impact_position: Vector2 = Vector2.INF) -> void:
+	if is_broken or is_processing_hit:
 		return
+	if bullet is GlassShard:
+		return
+	if not is_instance_valid(bullet):
+		return
+
+	is_processing_hit = true
 	is_broken = true
-	sprite.hide()
+
+	if impact_position == Vector2.INF:
+		impact_position = bullet.global_position
+
+	var shatter_velocity := bullet.linear_velocity
+	bullet.linear_velocity *= velocity_retain
 	hit_box.set_deferred("monitoring", false)
 
 	if shatter_velocity != Vector2.ZERO:
 		_spawn_shards(shatter_velocity, impact_position)
 
+	sprite.hide()
 	queue_free()
+
+
+func on_hit_started(_bullet: RigidBody2D) -> void:
+	pass
+
+
+func on_hit_completed(_bullet: RigidBody2D, _impact_position: Vector2) -> void:
+	pass
 
 
 func _spawn_shards(shatter_velocity: Vector2, impact_position: Vector2) -> void:
