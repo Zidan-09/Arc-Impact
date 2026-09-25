@@ -83,8 +83,12 @@ func on_hit_completed(_bullet: RigidBody2D, _impact_position: Vector2) -> void:
 
 
 func _spawn_shards(shatter_velocity: Vector2, impact_position: Vector2) -> void:
-	var impact_direction := shatter_velocity.normalized()
-	var explosion_direction := impact_direction
+	var to_center := global_position - impact_position
+	var explosion_direction: Vector2
+	if to_center.length() > 1.0:
+		explosion_direction = to_center.normalized()
+	else:
+		explosion_direction = shatter_velocity.normalized()
 	var bullet_speed := shatter_velocity.length()
 	var parent := get_parent()
 	if parent == null:
