@@ -7,7 +7,6 @@
 [ext_resource type="Texture2D" uid="uid://boll36wsxgjxm" path="res://assets/cannons/default/barrelFront.png" id="4_k4uss"]
 
 [node name="Cannon" type="Node2D" unique_id=1115613926]
-position = Vector2(409, 352)
 script = ExtResource("1_nydaa")
 bullet_scene = ExtResource("2_xexr0")
 
