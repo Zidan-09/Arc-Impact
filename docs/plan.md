@@ -403,6 +403,16 @@ LevelBuilder.build(world: Node2D, def: LevelDefinition):
 
 Geração de dados nunca importa `World`/`Node` — recebe só `RNG + config`.
 
+### Decisão registrada: `screens/game.tscn` é a tela final
+`CannonController.tscn` segue como harness jogável do gerador (onde as
+Etapas 0–7 foram integradas e testadas), mas **não** é a tela final. Na
+migração (após as Etapas 8–9, salvo pedido explícito): a lógica de host
+(`load_level`, munição, vitória/derrota, hoje em `cannon_controller.gd`)
+move-se para um host sob `game.tscn` (`World` como parent canônico,
+`Hud` ligado de verdade); `PowerSlider`/`FireButton` duplicados entre
+`hud.tscn` e `CannonController.tscn` são unificados; `builder`, `solver`,
+`generator` e `validator` não mudam (são agnósticos à cena).
+
 ---
 
 ## 13. Tratamento de falhas
