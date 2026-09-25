@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://xhfgi01bn84e"]
 
 [ext_resource type="Script" uid="uid://egaply34rg1l" path="res://components/power-slider/power_slider.gd" id="1_dcloh"]
-[ext_resource type="Texture2D" uid="uid://43qytpv3va" path="res://assets/power-slider/base.png" id="1_gi7pw"]
-[ext_resource type="Texture2D" uid="uid://byq78dvh5wco" path="res://assets/power-slider/inactiveHandle.png" id="2_dcloh"]
+[ext_resource type="Texture2D" uid="uid://csvndsyf2mbdb" path="res://assets/power-slider/base.png" id="1_gi7pw"]
+[ext_resource type="Texture2D" uid="uid://b0twjw4yvp1ed" path="res://assets/power-slider/inactiveHandle.png" id="2_dcloh"]
 [ext_resource type="Shader" uid="uid://ttffisbqge7q" path="res://components/power-slider/powerSlider.gdshader" id="3_2qr02"]
-[ext_resource type="Texture2D" uid="uid://cmgaa6midn0yj" path="res://assets/power-slider/activeHandle.png" id="3_777x3"]
+[ext_resource type="Texture2D" uid="uid://buui4qm8k7lr1" path="res://assets/power-slider/activeHandle.png" id="3_777x3"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_2qr02"]
 shader = ExtResource("3_2qr02")
@@ -47,8 +47,10 @@ script = ExtResource("1_dcloh")
 [node name="Track" type="TextureRect" parent="." unique_id=642828453]
 z_index = 2
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+offset_left = 257.0
+offset_top = -1.0
+offset_right = 451.0
+offset_bottom = 717.0
 mouse_filter = 0
 texture = ExtResource("1_gi7pw")
 
@@ -74,19 +76,20 @@ script = SubResource("GDScript_777x3")
 
 [node name="Normal" type="TextureRect" parent="Handle" unique_id=679803136]
 layout_mode = 0
-offset_left = -21.0
-offset_top = -215.0
-offset_right = 479.0
-offset_bottom = 285.0
-scale = Vector2(1.1, 1.1)
+offset_left = 182.14285
+offset_top = -16.428572
+offset_right = 682.1428
+offset_bottom = 483.57144
+scale = Vector2(0.28, 0.28)
 mouse_filter = 0
 texture = ExtResource("2_dcloh")
 
 [node name="Pressed" type="TextureRect" parent="Handle" unique_id=75994612]
 layout_mode = 0
-offset_left = 7.0
-offset_top = -205.0
-offset_right = 507.0
-offset_bottom = 295.0
+offset_left = 188.57144
+offset_top = -11.428571
+offset_right = 688.5714
+offset_bottom = 488.57144
+scale = Vector2(0.25, 0.25)
 mouse_filter = 0
 texture = ExtResource("3_777x3")
