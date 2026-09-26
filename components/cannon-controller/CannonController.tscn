@@ -9,8 +9,12 @@
 script = ExtResource("1_vu4is")
 
 [node name="Cannon" parent="." unique_id=1115613926 instance=ExtResource("1_l1rob")]
-position = Vector2(80, 664)
-scale = Vector2(0.5, 0.5)
+position = Vector2(38.000004, 697)
+scale = Vector2(0.2, 0.2)
+min_angle = -20.0
+max_angle = 83.0
+rotation_sensitivity = 0.5
+base_shot_speed = 2000.0
 
 [node name="PowerSlider" parent="." unique_id=199311976 instance=ExtResource("2_vu4is")]
 offset_left = 1199.9999
@@ -29,9 +33,9 @@ offset_bottom = 681.0
 ignore_texture_size = true
 stretch_mode = 6
 
-[node name="Level" type="Node2D" parent="."]
+[node name="Level" type="Node2D" parent="." unique_id=348385948]
 
-[node name="StatusLabel" type="Label" parent="."]
+[node name="StatusLabel" type="Label" parent="." unique_id=495087033]
 offset_left = 24.0
 offset_top = 16.0
 offset_right = 640.0

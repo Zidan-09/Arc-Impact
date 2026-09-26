@@ -36,6 +36,8 @@ func _ready() -> void:
 	fire_button.focus_mode = Control.FOCUS_NONE
 	fire_button.pressed.connect(shoot)
 	cannon.bullet_container = level_node
+	cannon.current_power = power_slider.power
+	power_slider.power_changed.connect(_on_power_changed)
 	builder = LevelBuilder.new()
 	add_child(builder)
 	load_level(DEFAULT_SEED, DEFAULT_LEVEL)
@@ -112,6 +114,10 @@ func _defeat() -> void:
 
 func _status(text: String) -> void:
 	status_label.text = text
+
+
+func _on_power_changed(value: float) -> void:
+	cannon.current_power = value
 
 
 func _input(event: InputEvent) -> void:

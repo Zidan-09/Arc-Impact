@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cy3krluiopvrl"]
+
+[ext_resource type="Script" uid="uid://dxfjoorxl5j0y" path="res://components/trajectory-line/trajectory_line.gd" id="1_sa3aq"]
+
+[node name="TrajectoryLine" type="Line2D" unique_id=1755430529]
+script = ExtResource("1_sa3aq")

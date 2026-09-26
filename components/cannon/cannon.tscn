@@ -3,6 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://j5igso5q88ki" path="res://assets/cannons/default/base.png" id="1_67o6l"]
 [ext_resource type="Script" uid="uid://bxaev1j6ry3cu" path="res://components/cannon/cannon.gd" id="1_nydaa"]
 [ext_resource type="PackedScene" uid="uid://bsnxkop782soy" path="res://components/bullet/bullet.tscn" id="2_xexr0"]
+[ext_resource type="PackedScene" uid="uid://cy3krluiopvrl" path="res://components/trajectory-line/TrajectoryLine.tscn" id="3_f366u"]
 [ext_resource type="Texture2D" uid="uid://bsk0lnitudl7e" path="res://assets/cannons/default/barrelBack.png" id="3_lxeh7"]
 [ext_resource type="Texture2D" uid="uid://boll36wsxgjxm" path="res://assets/cannons/default/barrelFront.png" id="4_k4uss"]
 [ext_resource type="Script" uid="uid://d4gek1ol4btmj" path="res://components/cannon/bullet_return_detector.gd" id="5_k4uss"]
@@ -20,13 +21,21 @@ size = Vector2(36, 136)
 
 [node name="Cannon" type="Node2D" unique_id=1115613926]
 script = ExtResource("1_nydaa")
+min_angle = null
+max_angle = null
+rotation_sensitivity = null
 bullet_scene = ExtResource("2_xexr0")
+base_shot_speed = null
 
 [node name="BarrelPivot" type="Node2D" parent="." unique_id=371141371]
 position = Vector2(-2, -44)
 
 [node name="Muzzle" type="Marker2D" parent="BarrelPivot" unique_id=981597018]
 position = Vector2(267, -48)
+
+[node name="TrajectoryLine" parent="BarrelPivot/Muzzle" unique_id=1755430529 instance=ExtResource("3_f366u")]
+position = Vector2(2, 0)
+points = PackedVector2Array(-2, 0)
 
 [node name="barrelBack" type="Sprite2D" parent="BarrelPivot" unique_id=1529286645]
 z_index = 1

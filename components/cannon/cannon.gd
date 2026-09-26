@@ -12,23 +12,17 @@ var rotation_sensitivity: float = 0.5
 
 @export var bullet_scene: PackedScene
 
-## Nó opcional que recebe os bullets instanciados.
-## Se nulo (padrão), usa `get_tree().current_scene`.
-## A Etapa 7 do docs/plan.md vai apontá-lo para o nó World.
 @export var bullet_container: Node
 
 @export var base_shot_speed: float = 2000.0
 
 @onready var barrel_pivot: Node2D = $BarrelPivot
 @onready var muzzle: Marker2D = $BarrelPivot/Muzzle
+@onready var trajectory_line: Line2D = $BarrelPivot/Muzzle/TrajectoryLine
 
 var recoil_tween: Tween
 var barrel_initial_position: Vector2
 
-# Offsets de layout lidos de cannon.tscn ($BarrelPivot e $BarrelPivot/Muzzle).
-# Espelham o transform vivo usado por get_muzzle_state(); o solver usa a
-# versão estática abaixo (assume canhão sem rotação e escala 1, o padrão
-# da LevelDefinition v1).
 const PIVOT_OFFSET := Vector2(-2, -44)
 const MUZZLE_OFFSET := Vector2(267, -48)
 
@@ -37,12 +31,29 @@ const RECOIL_BACK_TIME := 0.06
 const RECOIL_RETURN_TIME := 0.12
 
 var current_angle: float = 45.0
+var current_power: float = 1.0
+
+@onready var gravity: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 
 func _ready() -> void:
 	barrel_initial_position = barrel_pivot.position
 	update_cannon_rotation()
 
-
+func _process(_delta: float) -> void:
+	if is_instance_valid(trajectory_line):
+		update_trajectory_preview(current_power)
+		
+func update_trajectory_preview(power: float = -1.0) -> void:
+	if power < 0.0:
+		power = current_power
+	var muzzle_state := get_muzzle_state()
+	var origin: Vector2 = muzzle_state["origin"]
+	var direction: Vector2 = muzzle_state["direction"]
+	
+	var initial_velocity := direction * base_shot_speed * clampf(power, 0.0, 1.0)
+	
+	trajectory_line.update_trajectory(origin, initial_velocity, gravity)
+	
 func rotate_cannon(delta_y: float) -> void:
 	current_angle += delta_y * rotation_sensitivity
 
@@ -57,9 +68,6 @@ func rotate_cannon(delta_y: float) -> void:
 func update_cannon_rotation() -> void:
 	barrel_pivot.rotation_degrees = -current_angle
 
-## Versão pura (sem Nodes) da matemática do disparo, para o solver
-## montar a origem/direção sem instanciar o canhão. Assume canhão sem
-## rotação e escala 1 (padrão da LevelDefinition v1).
 static func muzzle_state_for(cannon_position: Vector2, angle_degrees: float) -> Dictionary:
 	var rotation := deg_to_rad(-angle_degrees)
 	return {
@@ -67,16 +75,11 @@ static func muzzle_state_for(cannon_position: Vector2, angle_degrees: float) -> 
 		"direction": Vector2.RIGHT.rotated(rotation),
 	}
 
-
-## Origem e direção do disparo com a MESMA matemática do shoot().
-## O LevelSolver (Etapa 4+ do docs/plan.md) reutiliza este método para
-## garantir fidelidade entre simulação e jogo real.
 func get_muzzle_state() -> Dictionary:
 	return {
 		"origin": muzzle.global_position,
 		"direction": Vector2.RIGHT.rotated(muzzle.global_rotation),
 	}
-
 
 func get_spawn_parent() -> Node:
 	if is_instance_valid(bullet_container):
@@ -94,13 +97,9 @@ func shoot(power: float = 1.0) -> void:
 	var bullet := bullet_scene.instantiate() as Bullet
 
 	get_spawn_parent().add_child(bullet)
-	# Grupo para o fluxo de fim de fase (derrota quando não restam balas).
+	
 	bullet.add_to_group("bullets")
 
-	# Mantém o bullet proporcional ao canhão: aplica a escala global
-	# do canhão nos shapes (física de verdade) e no sprite.
-	# Só copiar node.scale/global_scale não basta, pois a escala de um
-	# RigidBody2D nem sempre propaga para o raio de colisão.
 	bullet.apply_cannon_scale(global_scale)
 
 	var muzzle_state := get_muzzle_state()
@@ -115,17 +114,14 @@ func play_recoil() -> void:
 
 	barrel_pivot.position = barrel_initial_position
 
-	# Direção do cano no espaço global.
 	var forward_direction := Vector2.RIGHT.rotated(
 		barrel_pivot.global_rotation
 	).normalized()
 
-	# Recuo no sentido oposto ao disparo.
 	var recoil_global_position := barrel_pivot.global_position - (
 		forward_direction * RECOIL_DISTANCE
 	)
 
-	# Converte para posição local do pai.
 	var recoil_position := barrel_pivot.to_global(
 		barrel_pivot.position
 	)
