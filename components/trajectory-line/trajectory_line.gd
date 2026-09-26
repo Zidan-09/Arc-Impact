@@ -2,9 +2,10 @@ extends Line2D
 
 @export var preview_time: float = 0.35
 @export var time_step: float = 1.0 / 60.0
-@export var max_distance: float = 320.0
+@export var max_distance: float = 400.0
 @export var dot_count: int = 7
-@export var dot_radius: float = 6.0
+@export var start_radius: float = 10.0
+@export var end_radius: float = 5.0
 @export var dot_color: Color = Color(1.0, 1.0, 1.0, 0.9)
 @export var flow_speed: float = 4.0
 @export var fade_tail: bool = true
@@ -46,7 +47,8 @@ func _draw() -> void:
 			f_idx = fmod(f_idx, float(total - 1))
 		var idx := clampi(int(f_idx), 0, total - 1)
 		var pos := _path_local[idx]
+		var radius := lerpf(start_radius, end_radius, float(i) / float(maxi(dot_count - 1, 1)))
 		var c := dot_color
 		if fade_tail:
 			c.a *= 1.0 - float(i) / float(dot_count) * 0.7
-		draw_circle(pos, dot_radius, c)
+		draw_circle(pos, radius, c)

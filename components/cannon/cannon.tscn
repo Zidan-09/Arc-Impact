@@ -21,11 +21,7 @@ size = Vector2(36, 136)
 
 [node name="Cannon" type="Node2D" unique_id=1115613926]
 script = ExtResource("1_nydaa")
-min_angle = null
-max_angle = null
-rotation_sensitivity = null
 bullet_scene = ExtResource("2_xexr0")
-base_shot_speed = null
 
 [node name="BarrelPivot" type="Node2D" parent="." unique_id=371141371]
 position = Vector2(-2, -44)

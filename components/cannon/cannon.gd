@@ -14,7 +14,7 @@ var rotation_sensitivity: float = 0.5
 
 @export var bullet_container: Node
 
-@export var base_shot_speed: float = 2000.0
+@export var base_shot_speed: float = 1000.0
 
 @onready var barrel_pivot: Node2D = $BarrelPivot
 @onready var muzzle: Marker2D = $BarrelPivot/Muzzle
