@@ -117,7 +117,7 @@ func _status(text: String) -> void:
 
 
 func _on_power_changed(value: float) -> void:
-	cannon.current_power = value
+	cannon.set_power(value)
 
 
 func _input(event: InputEvent) -> void:

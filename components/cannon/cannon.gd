@@ -40,8 +40,11 @@ func _ready() -> void:
 	update_cannon_rotation()
 
 func _process(_delta: float) -> void:
-	if is_instance_valid(trajectory_line):
-		update_trajectory_preview(current_power)
+	if not is_instance_valid(trajectory_line):
+		return
+	if not trajectory_line.visible:
+		return
+	update_trajectory_preview(current_power)
 		
 func update_trajectory_preview(power: float = -1.0) -> void:
 	if power < 0.0:
@@ -64,6 +67,11 @@ func rotate_cannon(delta_y: float) -> void:
 	)
 
 	update_cannon_rotation()
+	update_trajectory_preview(current_power)
+
+func set_power(value: float) -> void:
+	current_power = value
+	update_trajectory_preview(current_power)
 
 func update_cannon_rotation() -> void:
 	barrel_pivot.rotation_degrees = -current_angle
@@ -91,6 +99,9 @@ func shoot(power: float = 1.0) -> void:
 	if bullet_scene == null:
 		push_warning("Cannon.shoot() sem bullet_scene definida.")
 		return
+
+	if is_instance_valid(trajectory_line):
+		trajectory_line.visible = false
 
 	play_recoil()
 

@@ -18,6 +18,7 @@ func _ready() -> void:
 	width = 0.0
 
 func update_trajectory(origin: Vector2, initial_velocity: Vector2, gravity: float) -> void:
+	visible = true
 	clear_points()
 	_path_local.clear()
 	var gravity_vec := Vector2(0.0, gravity)
@@ -31,6 +32,8 @@ func update_trajectory(origin: Vector2, initial_velocity: Vector2, gravity: floa
 	queue_redraw()
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	if _path_local.size() < 2:
 		return
 	_anim = fmod(_anim + delta * flow_speed, 1.0) if dot_count > 0 else 0.0
