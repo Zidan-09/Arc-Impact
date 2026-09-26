@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://dumyp43ikp2a4"]
+
+[ext_resource type="Texture2D" uid="uid://rrnqcx88qao5" path="res://assets/background/background.jpg" id="1_xi7s7"]
+[ext_resource type="PackedScene" uid="uid://d1u475kwrl2io" path="res://components/play-button/PlayButton.tscn" id="2_xtd6d"]
+
+[node name="Home" type="Control" unique_id=1216157525]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="TextureRect" parent="." unique_id=2059246852]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("1_xi7s7")
+
+[node name="Play" parent="." unique_id=1159510543 instance=ExtResource("2_xtd6d")]
+layout_mode = 1
