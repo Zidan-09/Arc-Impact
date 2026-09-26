@@ -5,45 +5,78 @@
 
 [node name="Hud" type="Control" unique_id=2117122883]
 layout_mode = 3
-anchors_preset = 0
-offset_right = 117.0
-offset_bottom = 83.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="TopLeft" type="MarginContainer" parent="." unique_id=1480317829]
+[node name="Info" type="MarginContainer" parent="." unique_id=1480317829]
 layout_mode = 1
-offset_right = 40.0
-offset_bottom = 40.0
+offset_right = 320.0
+offset_bottom = 130.0
+mouse_filter = 2
 theme_override_constants/margin_left = 24
 theme_override_constants/margin_top = 20
 
-[node name="Column" type="VBoxContainer" parent="TopLeft" unique_id=531532555]
+[node name="Column" type="VBoxContainer" parent="Info" unique_id=531532555]
 layout_mode = 2
+mouse_filter = 2
 
-[node name="Phase" type="Label" parent="TopLeft/Column" unique_id=827370571]
+[node name="Level" type="Label" parent="Info/Column" unique_id=827370571]
 layout_mode = 2
 text = "Fase: 0"
 
-[node name="Points" type="Label" parent="TopLeft/Column" unique_id=417934894]
+[node name="Score" type="Label" parent="Info/Column" unique_id=417934894]
 layout_mode = 2
 text = "Pontos: 0"
 
-[node name="Shoots" type="Label" parent="TopLeft/Column" unique_id=916773507]
+[node name="Ammo" type="Label" parent="Info/Column" unique_id=916773507]
 layout_mode = 2
-text = "Disparos: 0"
+text = "Munição: 0"
 
-[node name="PowerSlider" parent="." unique_id=199311976 instance=ExtResource("1_kjhcr")]
+[node name="Controls" type="Control" parent="." unique_id=199311977]
 layout_mode = 1
-offset_left = 1185.0
-offset_top = 183.0
-offset_right = 1185.0
-offset_bottom = 183.0
-scale = Vector2(0.6799951, 0.5999999)
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -200.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="FireButton" parent="." unique_id=844494482 instance=ExtResource("2_w10xe")]
-layout_mode = 0
-offset_left = 1136.0
-offset_top = 583.0
-offset_right = 1236.0
-offset_bottom = 683.0
+[node name="PowerSlider" parent="Controls" unique_id=199311976 instance=ExtResource("1_kjhcr")]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -1.0
+offset_top = -373.0
+offset_right = 39.0
+offset_bottom = 52.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.68, 0.6)
+pivot_offset = Vector2(2.28, 282)
+mouse_filter = 0
+
+[node name="FireButton" parent="Controls" unique_id=844494482 instance=ExtResource("2_w10xe")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -61.0
+offset_top = -171.0
+offset_right = 39.0
+offset_bottom = -71.0
+grow_horizontal = 2
+grow_vertical = 0
+scale = Vector2(1.2, 1.2)
 ignore_texture_size = true
 stretch_mode = 6
