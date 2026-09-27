@@ -7,6 +7,7 @@ const DEFAULT_SEED := 1
 @onready var world: Node2D = $WorldArea/World
 @onready var level_node: Node2D = $WorldArea/World/Level
 @onready var cannon: Cannon = $WorldArea/World/Cannon
+@onready var game_camera: GameCamera = $WorldArea/World/GameCamera
 @onready var hud = $Hud
 @onready var power_slider = $Hud/Controls/PowerSlider
 @onready var fire_button: TextureButton = $Hud/Controls/FireButton

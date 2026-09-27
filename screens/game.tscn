@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://screens/game.gd" id="1_game"]
 [ext_resource type="PackedScene" uid="uid://bangr24luog7a" path="res://components/cannon/cannon.tscn" id="2_cannon"]
 [ext_resource type="PackedScene" uid="uid://dlrnlvqly8g6u" path="res://components/victory-popup/LevelCompletePopup.tscn" id="3_popup"]
+[ext_resource type="Script" path="res://components/camera/game_camera.gd" id="4_camera"]
 
 [node name="Game" type="Control" unique_id=1263011264]
 layout_mode = 3
@@ -48,6 +49,12 @@ scale = Vector2(0.2, 0.2)
 min_angle = -20.0
 max_angle = 83.0
 base_shot_speed = 2000.0
+
+[node name="GameCamera" type="Camera2D" parent="WorldArea/World" unique_id=771234567]
+position = Vector2(640, 360)
+enabled = true
+editor_draw_limits = true
+script = ExtResource("4_camera")
 
 [node name="ControlsArea" type="Control" parent="." unique_id=393842946]
 layout_mode = 1
