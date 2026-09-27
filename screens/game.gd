@@ -70,6 +70,7 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 	current_target = built["target"] as Target
 	if current_target != null:
 		current_target.hit.connect(_on_target_hit)
+	_update_camera_bounds()
 	game_over = false
 	_loading = false
 	hud.set_level(level_number)
@@ -154,3 +155,19 @@ func _unhandled_input(event: InputEvent) -> void:
 func _press_in_world(viewport_pos: Vector2) -> bool:
 	var local: Vector2 = world_area.get_global_transform_with_canvas().affine_inverse() * viewport_pos
 	return Rect2(Vector2.ZERO, world_area.size).has_point(local)
+
+
+## Informa à câmera os limites da fase atual e reenquadra no ponto médio
+## canhão↔alvo (docs/plan.md §10). Fallback para `play_bounds` em defs
+## antigas/degeneradas.
+func _update_camera_bounds() -> void:
+	if not is_instance_valid(game_camera) or current_def == null:
+		return
+	var bounds := current_def.world_bounds
+	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
+		bounds = current_def.play_bounds
+	game_camera.set_bounds(bounds)
+	if current_target != null:
+		game_camera.reset_view(cannon.position, current_target.position)
+	else:
+		game_camera.reset_view(cannon.position)

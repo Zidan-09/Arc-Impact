@@ -119,6 +119,7 @@ static func skeleton(seed_value: int, level_number: int, cfg: DifficultyConfig) 
 	def.seed = seed_value
 	def.level_number = level_number
 	def.ammo = cfg.ammo
+	def.world_bounds = def.play_bounds
 	return def
 
 

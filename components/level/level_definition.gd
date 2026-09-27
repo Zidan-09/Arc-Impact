@@ -17,6 +17,10 @@ const GENERATOR_VERSION: int = 1 # bump quando o algoritmo mudar (Etapa 6+)
 @export var power_max: float = 1.0
 @export var base_shot_speed: float = 2000.0 # espelha cannon.gd
 @export var play_bounds: Rect2 = Rect2(0, 0, 1280, 720) # viewport base
+## Área visível total da fase para a câmera (docs/plan.md §§8/10). Na v1
+## espelha `play_bounds`; o gerador futuro pode ampliá-la sem tocar nas
+## regras (validador/solver/kill continuam lendo `play_bounds`).
+@export var world_bounds: Rect2 = Rect2(0, 0, 1280, 720)
 @export var target: TargetDefinition
 @export var obstacles: Array[ObstacleDefinition] = []
 
@@ -44,6 +48,10 @@ func to_dict() -> Dictionary:
 			"x": play_bounds.position.x, "y": play_bounds.position.y,
 			"w": play_bounds.size.x, "h": play_bounds.size.y,
 		},
+		"world_bounds": {
+			"x": world_bounds.position.x, "y": world_bounds.position.y,
+			"w": world_bounds.size.x, "h": world_bounds.size.y,
+		},
 		"target": target.to_dict() if target != null else {},
 		"obstacles": obstacle_dicts,
 		"solution": solution.to_dict() if solution != null else {},
@@ -67,6 +75,16 @@ static func from_dict(data: Dictionary) -> LevelDefinition:
 	def.play_bounds = Rect2(
 		float(bounds.get("x", 0.0)), float(bounds.get("y", 0.0)),
 		float(bounds.get("w", 1280.0)), float(bounds.get("h", 720.0))
+	)
+	# Compatibilidade: dicts serializados antes de `world_bounds` caem no
+	# `play_bounds` (na v1 os dois coincidem por construção).
+	var wbounds: Dictionary = data.get("world_bounds", {
+		"x": def.play_bounds.position.x, "y": def.play_bounds.position.y,
+		"w": def.play_bounds.size.x, "h": def.play_bounds.size.y,
+	})
+	def.world_bounds = Rect2(
+		float(wbounds.get("x", 0.0)), float(wbounds.get("y", 0.0)),
+		float(wbounds.get("w", 1280.0)), float(wbounds.get("h", 720.0))
 	)
 	var target_data: Dictionary = data.get("target", {})
 	def.target = TargetDefinition.from_dict(target_data) if not target_data.is_empty() else null
