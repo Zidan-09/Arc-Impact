@@ -27,6 +27,12 @@ var _loading := false
 var _awaiting_end := false
 var _end_timer := 0.0
 var _dragging_angle := false
+var _panning := false
+# Toques ativos (index -> posição) para pan/pinça com 2 dedos.
+var _touch_points: Dictionary = {}
+var _has_touch_centroid := false
+var _last_touch_centroid := Vector2.ZERO
+var _last_pinch_distance := 0.0
 
 
 func _ready() -> void:
@@ -133,28 +139,91 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 			_dragging_angle = false
+		elif (event.button_index == MOUSE_BUTTON_RIGHT or event.button_index == MOUSE_BUTTON_MIDDLE) and not event.pressed:
+			_panning = false
 	elif event is InputEventScreenTouch:
-		if event.index == 0 and not event.pressed:
-			_dragging_angle = false
+		if not event.pressed:
+			_touch_points.erase(event.index)
+			if _touch_points.size() < 2:
+				_has_touch_centroid = false
+				_last_pinch_distance = 0.0
+			if event.index == 0:
+				_dragging_angle = false
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_dragging_angle = event.pressed and _press_in_world(event.position)
-	elif event is InputEventMouseMotion and _dragging_angle:
-		cannon.rotate_cannon(-event.relative.y)
+			if event.pressed and _dragging_angle:
+				_panning = false
+		elif event.button_index == MOUSE_BUTTON_RIGHT or event.button_index == MOUSE_BUTTON_MIDDLE:
+			# Pan: botão esquerdo segue exclusivo da mira (§6). Pan e mira
+			# nunca ficam ativos ao mesmo tempo.
+			if event.pressed and _press_in_world(event.position):
+				_panning = true
+				_dragging_angle = false
+				get_viewport().set_input_as_handled()
+	elif event is InputEventMouseMotion and (_panning or _dragging_angle):
+		if _panning:
+			game_camera.pan_by(-event.relative)
+		else:
+			cannon.rotate_cannon(-event.relative.y)
 	elif event is InputEventScreenTouch:
 		if event.index == 0:
 			_dragging_angle = event.pressed and _press_in_world(event.position)
+			if event.pressed:
+				_touch_points[event.index] = event.position
+				if _dragging_angle:
+					_cancel_touch_camera()
+		else:
+			if event.pressed:
+				# Segundo dedo: sai da mira e entra em modo câmera (pan/pinça).
+				_touch_points[event.index] = event.position
+				_dragging_angle = false
+				_begin_touch_camera()
+				get_viewport().set_input_as_handled()
 	elif event is InputEventScreenDrag:
-		if event.index == 0 and _dragging_angle:
+		if _touch_points.has(event.index) and _touch_points.size() >= 2:
+			_touch_points[event.index] = event.position
+			_update_touch_camera()
+		elif event.index == 0 and _dragging_angle:
 			cannon.rotate_cannon(-event.relative.y)
 
 
 func _press_in_world(viewport_pos: Vector2) -> bool:
 	var local: Vector2 = world_area.get_global_transform_with_canvas().affine_inverse() * viewport_pos
 	return Rect2(Vector2.ZERO, world_area.size).has_point(local)
+
+
+## Centroide dos toques ativos (modo câmera com 2 dedos).
+func _touch_centroid() -> Vector2:
+	var sum := Vector2.ZERO
+	for key in _touch_points:
+		sum += _touch_points[key] as Vector2
+	return sum / float(maxi(_touch_points.size(), 1))
+
+
+func _begin_touch_camera() -> void:
+	if _touch_points.size() < 2:
+		return
+	_last_touch_centroid = _touch_centroid()
+	_has_touch_centroid = true
+
+
+func _cancel_touch_camera() -> void:
+	_has_touch_centroid = false
+	_last_pinch_distance = 0.0
+
+
+func _update_touch_camera() -> void:
+	if _touch_points.size() < 2:
+		return
+	var centroid := _touch_centroid()
+	if _has_touch_centroid:
+		game_camera.pan_by(-(centroid - _last_touch_centroid))
+	_last_touch_centroid = centroid
+	_has_touch_centroid = true
 
 
 ## Informa à câmera os limites da fase atual e reenquadra no ponto médio
