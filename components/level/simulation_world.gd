@@ -138,7 +138,7 @@ func _build(def: LevelDefinition, state: Dictionary) -> void:
 		var target := TARGET_SCENE.instantiate() as Target
 		add_child(target)
 		target.global_position = def.target.position
-		target.hit.connect(_on_target_hit)
+		target.target_hit.connect(_on_target_hit)
 
 
 func _spawn(scene: PackedScene, obstacle: ObstacleDefinition) -> Dictionary:

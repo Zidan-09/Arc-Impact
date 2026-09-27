@@ -1,7 +1,7 @@
 class_name Target
-extends Area2D
+extends StaticBody2D
 
-signal hit(body: Bullet)
+signal target_hit(body: Bullet)
 
 @onready var activeTexture = $Active
 @onready var inactiveTexture = $Inactive
@@ -18,21 +18,25 @@ var animation_played = false
 
 func _ready() -> void:
 	add_to_group("target")
-	body_entered.connect(_on_body_entered)
 
 	initial_position = position
 
 	activeTexture.visible = false
 	inactiveTexture.visible = true
 
+	var mat := PhysicsMaterial.new()
+	mat.friction = 0.0
+	mat.bounce = 1.0
+	physics_material_override = mat
 
-func _on_body_entered(body: Node2D) -> void:
-	if body is Bullet:
-		hit.emit(body)
-		
-		if not animation_played:
-			animation_played = true
-			_play_animation()
+func hit(bullet: Bullet, _impact_position: Vector2 = Vector2.INF) -> void:
+	if not is_instance_valid(bullet):
+		return
+	target_hit.emit(bullet)
+
+	if not animation_played:
+		animation_played = true
+		_play_animation()
 		
 		
 func _play_animation():
@@ -45,6 +49,10 @@ func _play_animation():
 func play_recoil() -> void:
 	if recoil_tween and recoil_tween.is_valid():
 		recoil_tween.kill()
+	else:
+		# Re-ancora: a posição pode ter sido definida após o _ready
+		# (SimulationWorld faz add_child antes de posicionar).
+		initial_position = position
 
 	position = initial_position
 

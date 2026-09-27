@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://bb7bq58xupa0c" path="res://assets/target/active_target.png" id="2_1esyr"]
 [ext_resource type="Texture2D" uid="uid://c8wh6dom1hj4j" path="res://assets/target/inactive_target.png" id="3_k1821"]
 
-[node name="Target" type="Area2D" unique_id=192068329]
+[node name="Target" type="StaticBody2D" unique_id=192068329]
 script = ExtResource("1")
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="." unique_id=1413171782]

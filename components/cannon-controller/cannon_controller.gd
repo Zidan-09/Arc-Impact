@@ -70,7 +70,7 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 	ammo_left = def.ammo
 	current_target = built["target"] as Target
 	if current_target != null:
-		current_target.hit.connect(_on_target_hit)
+		current_target.target_hit.connect(_on_target_hit)
 	game_over = false
 	_loading = false
 	_status("Fase %d — %d tiros" % [level_number, ammo_left])
