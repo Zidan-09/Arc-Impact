@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://xhfgi01bn84e" path="res://components/power-slider/powerSlider.tscn" id="1_kjhcr"]
 [ext_resource type="PackedScene" uid="uid://b5hbfx8760rd3" path="res://components/fire-button/fireButton.tscn" id="2_w10xe"]
+[ext_resource type="Script" path="res://components/hud/hud.gd" id="3_hud"]
 
 [node name="Hud" type="Control" unique_id=2117122883]
 layout_mode = 3
@@ -11,6 +12,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+script = ExtResource("3_hud")
 
 [node name="Info" type="MarginContainer" parent="." unique_id=1480317829]
 layout_mode = 1
