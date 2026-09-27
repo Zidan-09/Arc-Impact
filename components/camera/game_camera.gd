@@ -1,10 +1,12 @@
 class_name GameCamera
 extends Camera2D
-## Câmera de exploração da fase (docs/plan.md §§3-8).
+## Câmera de exploração da fase (docs/plan.md §§3-8 + §16).
 ## Filha de `WorldArea/World` em `screens/game.tscn`: o pan/zoom afetam só o
-## mundo; HUD e controles (irmãos da raiz) ficam fixos por construção.
+## canvas padrão (mundo). HUD e painéis vivem em `UILayer` (CanvasLayer) e o
+## fundo estático em `BackgroundLayer` (CanvasLayer) — ambos imunes à câmera.
 ## Limites dinâmicos via `set_bounds()` (fonte: `LevelDefinition.world_bounds`);
 ## nunca hard-coda 1280x720 — usa `get_viewport_rect().size` (aspect = expand).
+## O zoom mínimo é dinâmico: nunca mostra além da fase inteira (sem vazio).
 ## Física, geração, validação e solver não referenciam esta câmera.
 
 const ZOOM_MIN := 0.5
@@ -67,15 +69,31 @@ func reset_view(focus_a: Vector2 = Vector2.INF, focus_b: Vector2 = Vector2.INF) 
 
 ## Zoom necessário para exibir os limites inteiros (clampado à faixa útil).
 func fit_to_bounds() -> float:
+	return clampf(fit_zoom_raw(), ZOOM_MIN, ZOOM_MAX)
+
+
+## Fit sem clamp: base do zoom mínimo dinâmico.
+func fit_zoom_raw() -> float:
 	var viewport_size := get_viewport_rect().size
 	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
 		return 1.0
-	var fit := minf(viewport_size.x / bounds.size.x, viewport_size.y / bounds.size.y)
-	return clampf(fit, ZOOM_MIN, ZOOM_MAX)
+	return minf(viewport_size.x / bounds.size.x, viewport_size.y / bounds.size.y)
 
 
-## Reaplica o clamp (chamar em resize da janela / `NOTIFICATION_WM_SIZE_CHANGED`).
+## Zoom mínimo efetivo: o maior entre o piso absoluto e o fit da fase.
+## Numa fase do tamanho da viewport resulta 1.0 (nada além para revelar);
+## numa fase 2x maior, 0.5. Impede o "vazio" que o zoom-out fixo causava.
+func zoom_min_effective() -> float:
+	return clampf(fit_zoom_raw(), ZOOM_MIN, 1.0)
+
+
+## Reaplica o clamp (chamar em resize da janela / `size_changed` do viewport).
+## Se a janela cresceu e o zoom atual ficou abaixo do novo mínimo, eleva o
+## alvo (a suavização em `_process` conduz o zoom até lá).
 func refresh() -> void:
+	_target_zoom = maxf(_target_zoom, zoom_min_effective())
+	if zoom.x < _target_zoom and not _has_anchor:
+		zoom = Vector2(_target_zoom, _target_zoom)
 	apply_bounds_clamp()
 
 
@@ -89,7 +107,7 @@ func pan_by(screen_delta: Vector2) -> void:
 ## Zoom imediato no alvo (atualiza o zoom desejado); a âncora no cursor é
 ## resolvida de forma suave em `_process()` (ordem: zoom -> âncora -> clamp).
 func zoom_by_factor_at_screen_point(factor: float, screen_point: Vector2) -> void:
-	var clamped := clampf(_target_zoom * factor, ZOOM_MIN, ZOOM_MAX)
+	var clamped := clampf(_target_zoom * factor, zoom_min_effective(), ZOOM_MAX)
 	if is_equal_approx(clamped, _target_zoom):
 		return
 	_anchor_screen = screen_point
@@ -175,4 +193,4 @@ func _zoom_to_fit_segment(from: Vector2, to: Vector2) -> float:
 	if need.x <= 0.0 or need.y <= 0.0:
 		return 1.0
 	var fit := minf(viewport_size.x / need.x, viewport_size.y / need.y)
-	return clampf(fit, ZOOM_MIN, 1.0)
+	return clampf(fit, zoom_min_effective(), 1.0)
