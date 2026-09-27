@@ -157,6 +157,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			_dragging_angle = event.pressed and _press_in_world(event.position)
 			if event.pressed and _dragging_angle:
 				_panning = false
+		elif event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+			game_camera.zoom_step_in()
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+			game_camera.zoom_step_out()
+			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_RIGHT or event.button_index == MOUSE_BUTTON_MIDDLE:
 			# Pan: botão esquerdo segue exclusivo da mira (§6). Pan e mira
 			# nunca ficam ativos ao mesmo tempo.
@@ -189,6 +195,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			_update_touch_camera()
 		elif event.index == 0 and _dragging_angle:
 			cannon.rotate_cannon(-event.relative.y)
+	elif event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_EQUAL or event.keycode == KEY_PLUS or event.keycode == KEY_KP_ADD:
+			game_camera.zoom_step_in()
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_MINUS or event.keycode == KEY_KP_SUBTRACT:
+			game_camera.zoom_step_out()
+			get_viewport().set_input_as_handled()
 
 
 func _press_in_world(viewport_pos: Vector2) -> bool:
@@ -209,6 +222,7 @@ func _begin_touch_camera() -> void:
 		return
 	_last_touch_centroid = _touch_centroid()
 	_has_touch_centroid = true
+	_last_pinch_distance = _touch_span()
 
 
 func _cancel_touch_camera() -> void:
@@ -224,6 +238,20 @@ func _update_touch_camera() -> void:
 		game_camera.pan_by(-(centroid - _last_touch_centroid))
 	_last_touch_centroid = centroid
 	_has_touch_centroid = true
+	# Pinça: zoom relativo ancorado no centroide (ordem: zoom -> âncora -> clamp,
+	# resolvida dentro de `zoom_by_factor_at_screen_point` + `_process`).
+	var span := _touch_span()
+	if _last_pinch_distance > 0.0 and span > 0.0:
+		game_camera.zoom_by_factor_at_screen_point(span / _last_pinch_distance, centroid)
+	_last_pinch_distance = span
+
+
+## Distância entre os dois primeiros toques (span da pinça).
+func _touch_span() -> float:
+	var keys := _touch_points.keys()
+	if keys.size() < 2:
+		return 0.0
+	return (_touch_points[keys[0]] as Vector2).distance_to(_touch_points[keys[1]] as Vector2)
 
 
 ## Informa à câmera os limites da fase atual e reenquadra no ponto médio
