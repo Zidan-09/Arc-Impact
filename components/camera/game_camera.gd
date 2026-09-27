@@ -1,0 +1,180 @@
+class_name GameCamera
+extends Camera2D
+## Câmera de exploração da fase (docs/plan.md §§3-8).
+## Filha de `WorldArea/World` em `screens/game.tscn`: o pan/zoom afetam só o
+## mundo; HUD e controles (irmãos da raiz) ficam fixos por construção.
+## Limites dinâmicos via `set_bounds()` (fonte: `LevelDefinition.world_bounds`);
+## nunca hard-coda 1280x720 — usa `get_viewport_rect().size` (aspect = expand).
+## Física, geração, validação e solver não referenciam esta câmera.
+
+const ZOOM_MIN := 0.5
+const ZOOM_MAX := 2.0
+const ZOOM_STEP := 1.1
+const ZOOM_SMOOTH_SPEED := 10.0
+const LIMIT_MARGIN := 100.0
+const KEYBOARD_PAN_SPEED := 600.0
+const RESET_FOCUS_MARGIN := 200.0
+const DEFAULT_BOUNDS := Rect2(0, 0, 1280, 720)
+
+var bounds: Rect2 = DEFAULT_BOUNDS
+
+var _target_zoom := 1.0
+var _has_anchor := false
+var _anchor_screen := Vector2.ZERO
+var _anchor_world := Vector2.ZERO
+
+
+func _ready() -> void:
+	enabled = true
+	make_current()
+	_target_zoom = zoom.x
+	apply_bounds_clamp()
+
+
+func _process(delta: float) -> void:
+	_update_smooth_zoom(delta)
+	_update_keyboard_pan(delta)
+
+
+## Define os limites da fase e reenquadra (chamado por `game.gd` em `load_level()`).
+func set_bounds(new_bounds: Rect2) -> void:
+	if new_bounds.size.x <= 0.0 or new_bounds.size.y <= 0.0:
+		push_warning("GameCamera.set_bounds: Rect2 inválido %s; mantendo %s." % [str(new_bounds), str(bounds)])
+		return
+	bounds = new_bounds
+	reset_view()
+
+
+## Volta ao enquadramento inicial: zoom 1 (ou fit se os focos excederem a
+## visão), posição no ponto médio dos focos ou no centro dos limites.
+func reset_view(focus_a: Vector2 = Vector2.INF, focus_b: Vector2 = Vector2.INF) -> void:
+	_has_anchor = false
+	var center := bounds.get_center()
+	var has_a := focus_a.x != INF
+	var has_b := focus_b.x != INF
+	if has_a and has_b:
+		center = (focus_a + focus_b) * 0.5
+	elif has_a:
+		center = focus_a
+	_target_zoom = 1.0
+	if has_a and has_b:
+		var fit := _zoom_to_fit_segment(focus_a, focus_b)
+		if fit < 1.0:
+			_target_zoom = fit
+	zoom = Vector2(_target_zoom, _target_zoom)
+	position = center
+	apply_bounds_clamp()
+
+
+## Zoom necessário para exibir os limites inteiros (clampado à faixa útil).
+func fit_to_bounds() -> float:
+	var viewport_size := get_viewport_rect().size
+	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
+		return 1.0
+	var fit := minf(viewport_size.x / bounds.size.x, viewport_size.y / bounds.size.y)
+	return clampf(fit, ZOOM_MIN, ZOOM_MAX)
+
+
+## Reaplica o clamp (chamar em resize da janela / `NOTIFICATION_WM_SIZE_CHANGED`).
+func refresh() -> void:
+	apply_bounds_clamp()
+
+
+## Move a câmera por um delta em pixels de tela (sensação 1:1 "agarrar o mundo").
+func pan_by(screen_delta: Vector2) -> void:
+	_has_anchor = false
+	position += screen_delta / _target_zoom
+	apply_bounds_clamp()
+
+
+## Zoom imediato no alvo (atualiza o zoom desejado); a âncora no cursor é
+## resolvida de forma suave em `_process()` (ordem: zoom -> âncora -> clamp).
+func zoom_by_factor_at_screen_point(factor: float, screen_point: Vector2) -> void:
+	var clamped := clampf(_target_zoom * factor, ZOOM_MIN, ZOOM_MAX)
+	if is_equal_approx(clamped, _target_zoom):
+		return
+	_anchor_screen = screen_point
+	_anchor_world = screen_to_world(screen_point)
+	_has_anchor = true
+	_target_zoom = clamped
+
+
+func zoom_step_in() -> void:
+	zoom_by_factor_at_screen_point(ZOOM_STEP, get_viewport().get_mouse_position())
+
+
+func zoom_step_out() -> void:
+	zoom_by_factor_at_screen_point(1.0 / ZOOM_STEP, get_viewport().get_mouse_position())
+
+
+func screen_to_world(screen_point: Vector2) -> Vector2:
+	return get_canvas_transform().affine_inverse() * screen_point
+
+
+## Clamp manual (docs/plan.md §8.2): não usa `Camera2D.limit_*`, que não
+## recentraliza quando a visão excede os limites e briga com zoom animado.
+func apply_bounds_clamp() -> void:
+	var viewport_size := get_viewport_rect().size
+	var half_view := viewport_size * 0.5 / zoom.x
+	var center := position
+	if bounds.size.x + LIMIT_MARGIN * 2.0 <= half_view.x * 2.0:
+		center.x = bounds.get_center().x
+	else:
+		center.x = clampf(center.x,
+				bounds.position.x + half_view.x - LIMIT_MARGIN,
+				bounds.end.x - half_view.x + LIMIT_MARGIN)
+	if bounds.size.y + LIMIT_MARGIN * 2.0 <= half_view.y * 2.0:
+		center.y = bounds.get_center().y
+	else:
+		center.y = clampf(center.y,
+				bounds.position.y + half_view.y - LIMIT_MARGIN,
+				bounds.end.y - half_view.y + LIMIT_MARGIN)
+	position = center
+
+
+func _update_smooth_zoom(delta: float) -> void:
+	var old_zoom := zoom.x
+	var weight := 1.0 - exp(-ZOOM_SMOOTH_SPEED * delta)
+	var new_zoom := lerpf(old_zoom, _target_zoom, weight)
+	if is_equal_approx(new_zoom, old_zoom):
+		if is_equal_approx(new_zoom, _target_zoom):
+			zoom = Vector2(_target_zoom, _target_zoom)
+			_has_anchor = false
+		return
+	if _has_anchor:
+		var before := screen_to_world(_anchor_screen)
+		zoom = Vector2(new_zoom, new_zoom)
+		var after := screen_to_world(_anchor_screen)
+		position += before - after
+		_has_anchor = not is_equal_approx(new_zoom, _target_zoom)
+		if not _has_anchor:
+			zoom = Vector2(_target_zoom, _target_zoom)
+	else:
+		zoom = Vector2(new_zoom, new_zoom)
+	apply_bounds_clamp()
+
+
+func _update_keyboard_pan(delta: float) -> void:
+	var direction := Vector2.ZERO
+	if Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A):
+		direction.x -= 1.0
+	if Input.is_key_pressed(KEY_RIGHT) or Input.is_key_pressed(KEY_D):
+		direction.x += 1.0
+	if Input.is_key_pressed(KEY_UP) or Input.is_key_pressed(KEY_W):
+		direction.y -= 1.0
+	if Input.is_key_pressed(KEY_DOWN) or Input.is_key_pressed(KEY_S):
+		direction.y += 1.0
+	if direction == Vector2.ZERO:
+		return
+	_has_anchor = false
+	position += direction.normalized() * KEYBOARD_PAN_SPEED / _target_zoom * delta
+	apply_bounds_clamp()
+
+
+func _zoom_to_fit_segment(from: Vector2, to: Vector2) -> float:
+	var viewport_size := get_viewport_rect().size
+	var need := Vector2(absf(to.x - from.x), absf(to.y - from.y)) + Vector2(RESET_FOCUS_MARGIN, RESET_FOCUS_MARGIN)
+	if need.x <= 0.0 or need.y <= 0.0:
+		return 1.0
+	var fit := minf(viewport_size.x / need.x, viewport_size.y / need.y)
+	return clampf(fit, ZOOM_MIN, 1.0)
