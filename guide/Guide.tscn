@@ -1,0 +1,113 @@
+[gd_scene format=3 uid="uid://birxtpb4up7is"]
+
+[ext_resource type="PackedScene" uid="uid://coqpu1c2lv1at" path="res://components/floor/floor.tscn" id="1_tyr48"]
+[ext_resource type="PackedScene" uid="uid://dyp35o0rt733p" path="res://components/obstacles/glass/glassObstacle.tscn" id="2_dxoku"]
+[ext_resource type="PackedScene" uid="uid://cdwyigup7yi7r" path="res://components/obstacles/metal/metalObstacle.tscn" id="3_en87d"]
+[ext_resource type="PackedScene" uid="uid://cr3negmvstljq" path="res://components/obstacles/stone/stoneObstacle.tscn" id="4_1oik2"]
+[ext_resource type="PackedScene" path="res://components/target/target.tscn" id="5_d180s"]
+[ext_resource type="PackedScene" uid="uid://bangr24luog7a" path="res://components/cannon/cannon.tscn" id="6_33hjg"]
+
+[node name="World" type="Node2D" unique_id=1129731174]
+
+[node name="Obstacles" type="Node2D" parent="." unique_id=901296741]
+
+[node name="GlassSquare" parent="Obstacles" unique_id=741610891 instance=ExtResource("2_dxoku")]
+position = Vector2(1050, 242.99998)
+scale = Vector2(0.1, 0.1)
+
+[node name="MetalSquare" parent="Obstacles" unique_id=759896926 instance=ExtResource("3_en87d")]
+position = Vector2(1050, 565)
+scale = Vector2(0.2, 0.2)
+
+[node name="MetalSquare2" parent="Obstacles" unique_id=165122033 instance=ExtResource("3_en87d")]
+position = Vector2(1050, 455)
+scale = Vector2(0.2, 0.2)
+
+[node name="MetalSquare3" parent="Obstacles" unique_id=976653703 instance=ExtResource("3_en87d")]
+position = Vector2(1050, 345)
+scale = Vector2(0.2, 0.2)
+
+[node name="MetalSquare4" parent="Obstacles" unique_id=591421955 instance=ExtResource("3_en87d")]
+position = Vector2(1051, 141)
+scale = Vector2(0.2, 0.2)
+
+[node name="MetalSquare5" parent="Obstacles" unique_id=515288289 instance=ExtResource("3_en87d")]
+position = Vector2(1051, 30.999998)
+scale = Vector2(0.2, 0.2)
+
+[node name="StoneObstacle" parent="Obstacles" unique_id=1462746437 instance=ExtResource("4_1oik2")]
+position = Vector2(1161, 465)
+scale = Vector2(0.2, 0.2)
+
+[node name="StoneObstacle2" parent="Obstacles" unique_id=1502137 instance=ExtResource("4_1oik2")]
+position = Vector2(1223, 360)
+scale = Vector2(0.2, 0.2)
+
+[node name="Ground" type="Node2D" parent="." unique_id=1248903839]
+
+[node name="Floor" parent="Ground" unique_id=1294661967 instance=ExtResource("1_tyr48")]
+position = Vector2(50, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor14" parent="Ground" unique_id=1790182019 instance=ExtResource("1_tyr48")]
+position = Vector2(150, 570)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor15" parent="Ground" unique_id=1771914063 instance=ExtResource("1_tyr48")]
+position = Vector2(250, 570)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor2" parent="Ground" unique_id=301201261 instance=ExtResource("1_tyr48")]
+position = Vector2(150, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor3" parent="Ground" unique_id=1375361021 instance=ExtResource("1_tyr48")]
+position = Vector2(250, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor4" parent="Ground" unique_id=395918761 instance=ExtResource("1_tyr48")]
+position = Vector2(350, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor5" parent="Ground" unique_id=715409183 instance=ExtResource("1_tyr48")]
+position = Vector2(450, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor6" parent="Ground" unique_id=967019150 instance=ExtResource("1_tyr48")]
+position = Vector2(550, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor7" parent="Ground" unique_id=1702428815 instance=ExtResource("1_tyr48")]
+position = Vector2(650, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor8" parent="Ground" unique_id=1051192864 instance=ExtResource("1_tyr48")]
+position = Vector2(750, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor9" parent="Ground" unique_id=163689194 instance=ExtResource("1_tyr48")]
+position = Vector2(850, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor10" parent="Ground" unique_id=1819942943 instance=ExtResource("1_tyr48")]
+position = Vector2(950, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor11" parent="Ground" unique_id=1606213723 instance=ExtResource("1_tyr48")]
+position = Vector2(1050, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor12" parent="Ground" unique_id=1135967130 instance=ExtResource("1_tyr48")]
+position = Vector2(1150, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Floor13" parent="Ground" unique_id=1270164342 instance=ExtResource("1_tyr48")]
+position = Vector2(1250, 670)
+scale = Vector2(0.2, 0.2)
+
+[node name="Target" parent="." unique_id=157819008 instance=ExtResource("5_d180s")]
+position = Vector2(1230, 572)
+
+[node name="Cannon" parent="." unique_id=1115613926 instance=ExtResource("6_33hjg")]
+position = Vector2(150, 487)
+scale = Vector2(0.3, 0.3)
