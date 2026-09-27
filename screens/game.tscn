@@ -2,10 +2,10 @@
 
 [ext_resource type="Texture2D" uid="uid://rrnqcx88qao5" path="res://assets/background/background.jpg" id="1_3ciuf"]
 [ext_resource type="PackedScene" uid="uid://djwula3u81ni3" path="res://components/hud/hud.tscn" id="1_6ydpi"]
-[ext_resource type="Script" path="res://screens/game.gd" id="1_game"]
+[ext_resource type="Script" uid="uid://c2v01nmy74ryw" path="res://screens/game.gd" id="1_game"]
 [ext_resource type="PackedScene" uid="uid://bangr24luog7a" path="res://components/cannon/cannon.tscn" id="2_cannon"]
 [ext_resource type="PackedScene" uid="uid://dlrnlvqly8g6u" path="res://components/victory-popup/LevelCompletePopup.tscn" id="3_popup"]
-[ext_resource type="Script" path="res://components/camera/game_camera.gd" id="4_camera"]
+[ext_resource type="Script" uid="uid://k41s4wr5vu17" path="res://components/camera/game_camera.gd" id="4_camera"]
 
 [node name="Game" type="Control" unique_id=1263011264]
 layout_mode = 3
@@ -27,7 +27,25 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="WorldBackground" type="TextureRect" parent="WorldArea" unique_id=1689954854]
+[node name="World" type="Node2D" parent="WorldArea" unique_id=985892701]
+
+[node name="Level" type="Node2D" parent="WorldArea/World" unique_id=348385949]
+
+[node name="Cannon" parent="WorldArea/World" unique_id=1115613927 instance=ExtResource("2_cannon")]
+position = Vector2(173, 523)
+scale = Vector2(0.2, 0.2)
+base_shot_speed = 2000.0
+
+[node name="GameCamera" type="Camera2D" parent="WorldArea/World" unique_id=771234567]
+position = Vector2(640, 360)
+enabled = true
+editor_draw_limits = true
+script = ExtResource("4_camera")
+
+[node name="BackgroundLayer" type="CanvasLayer" parent="." unique_id=771234569]
+layer = -1
+
+[node name="WorldBackground" type="TextureRect" parent="BackgroundLayer" unique_id=1689954854]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -39,28 +57,20 @@ texture = ExtResource("1_3ciuf")
 expand_mode = 2
 stretch_mode = 6
 
-[node name="World" type="Node2D" parent="WorldArea" unique_id=985892701]
+[node name="UILayer" type="CanvasLayer" parent="." unique_id=771234570]
+layer = 10
 
-[node name="WorldBackdrop" type="Sprite2D" parent="WorldArea/World" unique_id=771234568]
-z_index = -100
-texture = ExtResource("1_3ciuf")
+[node name="WorldHitArea" type="Control" parent="UILayer" unique_id=771234571]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -200.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="Level" type="Node2D" parent="WorldArea/World" unique_id=348385949]
-
-[node name="Cannon" parent="WorldArea/World" unique_id=1115613927 instance=ExtResource("2_cannon")]
-position = Vector2(173, 523)
-scale = Vector2(0.2, 0.2)
-min_angle = -20.0
-max_angle = 83.0
-base_shot_speed = 2000.0
-
-[node name="GameCamera" type="Camera2D" parent="WorldArea/World" unique_id=771234567]
-position = Vector2(640, 360)
-enabled = true
-editor_draw_limits = true
-script = ExtResource("4_camera")
-
-[node name="ControlsArea" type="Control" parent="." unique_id=393842946]
+[node name="ControlsArea" type="Control" parent="UILayer" unique_id=393842946]
 layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
@@ -71,7 +81,7 @@ grow_horizontal = 0
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="ControlsBackground" type="TextureRect" parent="ControlsArea" unique_id=1704186851]
+[node name="ControlsBackground" type="TextureRect" parent="UILayer/ControlsArea" unique_id=1704186851]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -83,7 +93,7 @@ texture = ExtResource("1_3ciuf")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="Divider" type="ColorRect" parent="." unique_id=477874718]
+[node name="Divider" type="ColorRect" parent="UILayer" unique_id=477874718]
 layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
@@ -96,9 +106,9 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
 
-[node name="Hud" parent="." unique_id=2117122883 instance=ExtResource("1_6ydpi")]
+[node name="Hud" parent="UILayer" unique_id=2117122883 instance=ExtResource("1_6ydpi")]
 layout_mode = 1
 
-[node name="LevelCompletePopup" parent="." unique_id=1250229010 instance=ExtResource("3_popup")]
+[node name="LevelCompletePopup" parent="UILayer" unique_id=1250229010 instance=ExtResource("3_popup")]
 visible = false
 layout_mode = 1
