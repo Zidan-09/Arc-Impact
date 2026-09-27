@@ -1,0 +1,77 @@
+[gd_scene format=3 uid="uid://dlrnlvqly8g6u"]
+
+[ext_resource type="Script" uid="uid://ckkd5npba5ubk" path="res://components/victory-popup/level_complete_popup.gd" id="1_2vs6c"]
+
+[node name="LevelCompletePopup" type="Control" unique_id=1250229009]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 6
+size_flags_vertical = 6
+script = ExtResource("1_2vs6c")
+
+[node name="Overlay" type="ColorRect" parent="." unique_id=790442374]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="." unique_id=1605867921]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel" unique_id=216638137]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Title" type="Label" parent="Panel/VBoxContainer" unique_id=83020903]
+layout_mode = 2
+
+[node name="LevelInfo" type="HBoxContainer" parent="Panel/VBoxContainer" unique_id=69680846]
+layout_mode = 2
+
+[node name="ScoreContainer" type="HBoxContainer" parent="Panel/VBoxContainer/LevelInfo" unique_id=1492993844]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBoxContainer/LevelInfo/ScoreContainer" unique_id=1728613154]
+layout_mode = 2
+
+[node name="Score" type="Label" parent="Panel/VBoxContainer/LevelInfo/ScoreContainer" unique_id=2037501997]
+layout_mode = 2
+
+[node name="AmmoContainer" type="HBoxContainer" parent="Panel/VBoxContainer/LevelInfo" unique_id=866646203]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBoxContainer/LevelInfo/AmmoContainer" unique_id=2087840114]
+layout_mode = 2
+
+[node name="Ammo" type="Label" parent="Panel/VBoxContainer/LevelInfo/AmmoContainer" unique_id=1502999438]
+layout_mode = 2
+
+[node name="ButtonsContainer" type="HBoxContainer" parent="Panel/VBoxContainer" unique_id=755280680]
+layout_mode = 2
+
+[node name="Home" type="TextureButton" parent="Panel/VBoxContainer/ButtonsContainer" unique_id=351575167]
+layout_mode = 2
+
+[node name="Retry" type="TextureButton" parent="Panel/VBoxContainer/ButtonsContainer" unique_id=287095301]
+layout_mode = 2
+
+[node name="Next" type="TextureButton" parent="Panel/VBoxContainer/ButtonsContainer" unique_id=1947938684]
+layout_mode = 2
