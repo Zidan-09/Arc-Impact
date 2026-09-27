@@ -7,6 +7,12 @@ class_name LevelBuilder extends Node
 ## SimulationWorld). Shards usam os fallbacks das cenas (padrão 5).
 
 const TARGET_SCENE := preload("res://components/target/target.tscn")
+const FLOOR_SCENE := preload("res://components/floor/floor.tscn")
+
+const GROUND_Y := 670.0
+const GROUND_FROM_X := 50.0
+const GROUND_TO_X := 1250.0
+const GROUND_SCALE := Vector2(0.2, 0.2)
 
 
 ## Monta a fase em `world` (contêiner em (0,0): posição local == global).
@@ -32,6 +38,7 @@ func build(world: Node2D, def: LevelDefinition) -> Dictionary:
 		target.position = def.target.position
 		target.add_to_group("level_spawned")
 		world.add_child(target)
+	build_ground(world)
 	return {"target": target, "obstacles": obstacles}
 
 
@@ -40,3 +47,14 @@ func clear(world: Node2D) -> void:
 		if child.is_in_group("level_spawned"):
 			world.remove_child(child)
 			child.queue_free()
+
+
+func build_ground(world: Node2D) -> void:
+	var x := GROUND_FROM_X
+	while x <= GROUND_TO_X:
+		var floor := FLOOR_SCENE.instantiate() as Node2D
+		floor.position = Vector2(x, GROUND_Y)
+		floor.scale = GROUND_SCALE
+		floor.add_to_group("level_spawned")
+		world.add_child(floor)
+		x += 100.0
