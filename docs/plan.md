@@ -76,8 +76,10 @@ Regra de acoplamento: gerador → dados; `Game` → coordena; `Builder` → inst
 O `Guide.tscn` é o gabarito visual/jogável. Regras extraídas (medidas literais da cena):
 
 - R1 — Canhão à esquerda: `x ≈ 38..173`, `y ≈ 487..523` (`Guide 150,487 scale 0.3`; `CannonController 38,697 scale 0.2`; `LevelDefinition 173,523`). Fixar `cannon_position` do `LevelDefinition` como fonte única (manter `173,523` na v1, documentar divergência do Guide).
+- R1.1 — O canhão pode estar posicionado em qualquer altura, mas sempre na direita. 
 - R2 — Chão contínuo na base: peças `floor.tscn 0.2` (≈100 px) em `y=670`, `x=50..1250`. Sem buracos sob alvo/canhão. Plataforma elevada opcional (`150,570 + 250,570`) como variação Fase 1–10.
-- R3 — Alvo à direita, perto do chão ou parede: `x 950..1230`, `y 326..572` (`Guide 1230,572`; `ultimate 1000,326`; `spot_target 950..1200, 80..640`). Tamanho fixo 80x80. Zona de exclusão 100 px ao redor (só o chão pode invadir).
+- R2.1 — O chão SEMPRE deve estar em contato com o canhão, logo, se uma fase for gerada com o canhão quase no topo da tela o chão deve acompanhalo (como uma colina que vai descendo e nivela).
+- R3 — Alvo à direita, perto do chão ou parede: `x 950..1230`, `y 326..572` (`Guide 1230,572`; `ultimate 1000,326`; `spot_target 950..1200, 80..640`). Tamanho fixo 80x80. Zona de exclusão 100 px ao redor (só o chão pode invadir) (Alvo também pode estar em qualquer altura).
 - R4 — Muro de bloqueio direto (fases 11+): 2–3 metais `0.2` (≈110 px) em coluna vertical `x≈1050`, espaçados 130 px (vão de 20 px entre bordas bloqueia a bala de 92 px sem violar `OVERLAP_MARGIN=8`). É o `blocked_direct` — manter geometria.
 - R5 — Espelho de ricochete: 1 metal `0.2` deslocado `~220 px` da normal da rota (posição do `blocked_direct`), ou cerco `bunker` (3 metais a 210 px: cima/baixo/direita, boca aberta para o canhão).
 - R6 — Calibres: vidro `0.1` (≈95 px, atravessável), pedra/metal `0.2` (≈100–110 px). Rotação só `0/90`. Escala `0.05..1.0`.
