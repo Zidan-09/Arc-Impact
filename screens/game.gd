@@ -108,6 +108,7 @@ func _on_target_hit(_body: Bullet) -> void:
 func _defeat() -> void:
 	game_over = true
 	_awaiting_end = false
+	victory_popup.show_defeat_popup(0, ammo_left)
 
 
 func _on_power_changed(value: float) -> void:

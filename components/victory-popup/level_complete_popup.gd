@@ -4,6 +4,8 @@ signal home_pressed
 signal retry_pressed
 signal next_pressed
 
+@onready var title_label: Label = $Panel/Margin/VBox/Title
+@onready var subtitle_label: Label = $Panel/Margin/VBox/Subtitle
 @onready var score_label: Label = $Panel/Margin/VBox/LevelInfo/ScoreContainer/Score
 @onready var ammo_label: Label = $Panel/Margin/VBox/LevelInfo/AmmoContainer/Ammo
 @onready var home_button: TextureButton = $Panel/Margin/VBox/ButtonsContainer/Home
@@ -24,7 +26,20 @@ func setup(score: int, ammo: int, has_next_level: bool = true) -> void:
 
 
 func show_popup(score: int, ammo: int, has_next_level: bool = true) -> void:
+	title_label.text = "VITÓRIA"
+	title_label.add_theme_color_override("font_color", Color(0.133, 0.827, 0.933))
+	title_label.add_theme_color_override("font_shadow_color", Color(0.851, 0.275, 0.937, 0.9))
+	subtitle_label.text = "Alvo atingido!"
 	setup(score, ammo, has_next_level)
+	visible = true
+
+
+func show_defeat_popup(score: int, ammo: int) -> void:
+	title_label.text = "DERROTA"
+	title_label.add_theme_color_override("font_color", Color(1.0, 0.23, 0.42))
+	title_label.add_theme_color_override("font_shadow_color", Color(1.0, 0.23, 0.42, 0.6))
+	subtitle_label.text = "Tente novamente"
+	setup(score, ammo, false)
 	visible = true
 
 
