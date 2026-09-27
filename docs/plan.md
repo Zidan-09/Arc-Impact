@@ -309,13 +309,13 @@ Ordem de consumo (Godot: `gui_input` → `_unhandled_input`):
    cliques neles **nunca** chegam ao pan/mira (já funciona hoje, manter).
 2. Em `game.gd._unhandled_input()`:
    - `MOUSE_BUTTON_RIGHT/MIDDLE` press/release → inicia/termina pan; `MouseMotion`
-     com pan ativo → move câmera; **chamar `get_viewport().set_input_as_handled()`**
-     para não iniciar mira;
+	 com pan ativo → move câmera; **chamar `get_viewport().set_input_as_handled()`**
+	 para não iniciar mira;
    - `MOUSE_BUTTON_LEFT` → comportamento atual **inalterado** (mira);
    - Roda (`WHEEL_UP/DOWN/BUTTON`) → zoom (§7), nunca mira;
    - `ScreenTouch index == 0` sozinho → mira (inalterado); segundo dedo
-     (`index == 1` press) → cancela `_dragging_angle` e inicia pan/pinça; soltura
-     total → encerra.
+	 (`index == 1` press) → cancela `_dragging_angle` e inicia pan/pinça; soltura
+	 total → encerra.
 3. Regra de ouro: **pan e mira nunca ativos simultaneamente** — iniciar um cancela o
    outro (`_dragging_angle = false` ao iniciar pan e vice-versa).
 
@@ -376,7 +376,7 @@ Fluxo: gerador preenche → `game.gd load_level()` passa para
 half_view = viewport_size / 2 / zoom   # viewport_size = get_viewport_rect().size
 if bounds.size.x <= half_view.x * 2: center.x = bounds.get_center().x
 else: center.x = clamp(center.x, bounds.position.x + half_view.x - MARGIN,
-                                   bounds.end.x - half_view.x + MARGIN)
+								   bounds.end.x - half_view.x + MARGIN)
 (idem Y)
 ```
 
@@ -511,10 +511,10 @@ Exploração futura habilitada (sem implementar agora): alvo fora da visão inic
 - Alteração:
   1. `@onready var game_camera: GameCamera = $WorldArea/World/GameCamera`;
   2. em `load_level()`, após `builder.build()`: `set_bounds(def.world_bounds)` +
-     `reset_view(cannon/target)`; habilitar câmera (`make_current()`/`enabled = true`);
+	 `reset_view(cannon/target)`; habilitar câmera (`make_current()`/`enabled = true`);
   3. `_unhandled_input()`: pan (botão direito/meio, 2 dedos, setas/WASD), zoom
-     (roda, pinça, `+`/`-`), `R` = reset; exclusão mútua pan↔mira; `set_input_as_handled()`
-     no que consumir;
+	 (roda, pinça, `+`/`-`), `R` = reset; exclusão mútua pan↔mira; `set_input_as_handled()`
+	 no que consumir;
   4. `_input()`: encerrar pan na soltura (espelho do `_dragging_angle` existente);
   5. (Opcional v1) `_notification(NOTIFICATION_WM_SIZE_CHANGED)` → `game_camera.refresh()`.
 - Motivo: conectar câmera ao ciclo de vida da fase e ao input sem duplicar lógica.
@@ -612,3 +612,51 @@ o `@onready`; `world_bounds` precede `_skeleton()` e `set_bounds()`; pan/zoom/re
 precedem o backdrop; a prova de fase maior precede a validação final. Nenhuma etapa
 exige redescobrir a arquitetura — todos os caminhos, valores e linhas de referência
 estão citados acima.*
+
+---
+
+## 16. Revisão pós-implementação (correção)
+
+A primeira implementação apresentou três defeitos, todos com a mesma raiz: **a
+`Camera2D` transforma o canvas padrão inteiro, incluindo `Control`s puros**. Como o
+projeto não tinha nenhum `CanvasLayer`, HUD, painel lateral e até o fundo
+(`TextureRect`) se moviam/sofriam zoom junto com o mundo; e o zoom-out fixo até 0.5
+exibia 2560×1440 de mundo com conteúdo de ~1280×720, revelando a cor de fundo
+(bordas cinzas, "tela menor dentro da tela"). Nenhum código alterava `scale` de
+raiz/viewport/HUD — o culpado era o zoom além do conteúdo num canvas único.
+
+Correções aplicadas (sem reescrita; gameplay e geração intactos):
+
+1. **`UILayer` (`CanvasLayer`, `layer = 10`)**: abriga `WorldHitArea`, `ControlsArea`,
+   `Divider`, `Hud` e `LevelCompletePopup`. Imune à câmera por construção; paths em
+   `screens/game.gd` viraram `$UILayer/...`. `hud.tscn`/`hud.gd` inalterados.
+2. **`BackgroundLayer` (`CanvasLayer`, `layer = -1`)**: abriga o `WorldBackground`
+   (`TextureRect` fullscreen, mesmos parâmetros). Sempre preenche a tela, nunca se
+   move — vazio tornou-se impossível por arquitetura, não por fundo maior.
+3. **Removido `WorldBackdrop` (`Sprite2D`)**: tentativa anterior de cobrir o vazio em
+   espaço de mundo; superada pela camada de fundo estática (padrão céu-distante).
+   Removidos `BACKDROP_MARGIN`, `world_backdrop` e `_update_world_backdrop()`.
+4. **Zoom mínimo dinâmico** (`GameCamera.zoom_min_effective() =
+   clamp(fit_da_fase, 0.5, 1.0)`): fase 1280×720 trava em 1.0 (já está toda visível —
+   zoom-out não faz nada em vez de encolher a tela); fase 2560×1440 libera até 0.5.
+   Usado no clamp de zoom, no `refresh()` (resize) e no fit de reset. `ZOOM_MAX = 2.0`
+   e o passo ×1.1 seguem valendo.
+5. **`_press_in_world()` imune à câmera**: passou a usar `WorldHitArea` (Control
+   invisível no `UILayer`, mesma geometria do `WorldArea`). O `WorldArea` não serve
+   mais para isso pois seu `get_global_transform_with_canvas()` inclui a câmera.
+
+Estrutura final (`screens/game.tscn`):
+
+```text
+Game
+├── WorldArea
+│   └── World
+│       ├── Level / Cannon / GameCamera
+├── BackgroundLayer (CanvasLayer -1) → WorldBackground
+└── UILayer (CanvasLayer 10) → WorldHitArea, ControlsArea, Divider, Hud, Popup
+```
+
+Critérios revalidados estaticamente (sem binário Godot na máquina — rodar a cena no
+editor antes de considerar pronto): HUD fixo; viewport sempre cheia; zoom-out revela
+mundo até a fase inteira e para; pan com limites; mira/dparo/física por `relative` e
+coordenadas de mundo, inalterados.
