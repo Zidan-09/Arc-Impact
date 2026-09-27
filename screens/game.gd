@@ -10,11 +10,13 @@ const DEFAULT_SEED := 1
 @onready var hud = $Hud
 @onready var power_slider = $Hud/Controls/PowerSlider
 @onready var fire_button: TextureButton = $Hud/Controls/FireButton
+@onready var victory_popup = $LevelCompletePopup
 
 var builder: LevelBuilder
 var current_def: LevelDefinition = null
 var current_target: Target = null
 var level_number := 1
+var current_seed := DEFAULT_SEED
 var ammo_total := 0
 var ammo_left := 0
 var game_over := true
@@ -32,6 +34,9 @@ func _ready() -> void:
 	cannon.bullet_container = level_node
 	cannon.current_power = power_slider.power
 	power_slider.power_changed.connect(_on_power_changed)
+	victory_popup.home_pressed.connect(_on_popup_home)
+	victory_popup.retry_pressed.connect(_on_popup_retry)
+	victory_popup.next_pressed.connect(_on_popup_next)
 	builder = LevelBuilder.new()
 	add_child(builder)
 	load_level(DEFAULT_SEED, level_number)
@@ -50,6 +55,8 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 	current_def = null
 	current_target = null
 	level_number = new_level_number
+	current_seed = seed_value
+	victory_popup.visible = false
 	var result := FastLevelGenerator.generate(seed_value, level_number)
 	var def: LevelDefinition = result["def"]
 	if bool(result["fallback_used"]):
@@ -95,6 +102,7 @@ func _on_target_hit(_body: Bullet) -> void:
 	won = true
 	game_over = true
 	_awaiting_end = false
+	victory_popup.show_popup(0, ammo_left)
 
 
 func _defeat() -> void:
@@ -104,6 +112,18 @@ func _defeat() -> void:
 
 func _on_power_changed(value: float) -> void:
 	cannon.set_power(value)
+
+
+func _on_popup_home() -> void:
+	get_tree().change_scene_to_file("res://screens/home.tscn")
+
+
+func _on_popup_retry() -> void:
+	load_level(current_seed, level_number)
+
+
+func _on_popup_next() -> void:
+	load_level(current_seed + 1, level_number + 1)
 
 
 func _input(event: InputEvent) -> void:

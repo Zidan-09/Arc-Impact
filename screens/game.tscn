@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://djwula3u81ni3" path="res://components/hud/hud.tscn" id="1_6ydpi"]
 [ext_resource type="Script" path="res://screens/game.gd" id="1_game"]
 [ext_resource type="PackedScene" uid="uid://bangr24luog7a" path="res://components/cannon/cannon.tscn" id="2_cannon"]
+[ext_resource type="PackedScene" uid="uid://dlrnlvqly8g6u" path="res://components/victory-popup/LevelCompletePopup.tscn" id="3_popup"]
 
 [node name="Game" type="Control" unique_id=1263011264]
 layout_mode = 3
@@ -85,4 +86,8 @@ mouse_filter = 2
 color = Color(0, 0, 0, 1)
 
 [node name="Hud" parent="." unique_id=2117122883 instance=ExtResource("1_6ydpi")]
+layout_mode = 1
+
+[node name="LevelCompletePopup" parent="." unique_id=1250229010 instance=ExtResource("3_popup")]
+visible = false
 layout_mode = 1

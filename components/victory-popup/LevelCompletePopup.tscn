@@ -8,6 +8,20 @@
 [ext_resource type="Texture2D" uid="uid://cqtqhbr85dg54" path="res://assets/buttons/level-complete-popup/inactive-next.png" id="6_uu8y5"]
 [ext_resource type="Texture2D" uid="uid://d2cyj0qcjsp6q" path="res://assets/buttons/level-complete-popup/active-next.png" id="7_qx2nt"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_popup"]
+bg_color = Color(0.051, 0.031, 0.078, 0.97)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.851, 0.275, 0.937, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.133, 0.827, 0.933, 0.45)
+shadow_size = 18
+
 [node name="LevelCompletePopup" type="Control" unique_id=1250229009]
 layout_mode = 3
 anchors_preset = 15
@@ -26,6 +40,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+color = Color(0.02, 0.01, 0.05, 0.72)
 
 [node name="Panel" type="Panel" parent="." unique_id=1605867921]
 layout_mode = 1
@@ -34,61 +49,103 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -250.0
-offset_top = -250.0
-offset_right = 250.0
-offset_bottom = 250.0
+offset_left = -260.0
+offset_top = -210.0
+offset_right = 260.0
+offset_bottom = 210.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_popup")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel" unique_id=216638137]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
-
-[node name="Title" type="Label" parent="Panel/VBoxContainer" unique_id=83020903]
+[node name="Margin" type="MarginContainer" parent="Panel" unique_id=902104417]
 layout_mode = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 28
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin" unique_id=216638137]
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox" unique_id=83020903]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.133, 0.827, 0.933, 1)
+theme_override_colors/font_shadow_color = Color(0.851, 0.275, 0.937, 0.9)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 0
+theme_override_font_sizes/font_size = 56
 text = "VITÓRIA"
+horizontal_alignment = 1
 
-[node name="LevelInfo" type="HBoxContainer" parent="Panel/VBoxContainer" unique_id=69680846]
+[node name="Subtitle" type="Label" parent="Panel/Margin/VBox" unique_id=640291855]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.9, 1, 0.85)
+theme_override_font_sizes/font_size = 22
+text = "Alvo atingido!"
+horizontal_alignment = 1
 
-[node name="ScoreContainer" type="HBoxContainer" parent="Panel/VBoxContainer/LevelInfo" unique_id=1492993844]
+[node name="LevelInfo" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=69680846]
 layout_mode = 2
+theme_override_constants/separation = 48
+alignment = 1
 
-[node name="Label" type="Label" parent="Panel/VBoxContainer/LevelInfo/ScoreContainer" unique_id=1728613154]
+[node name="ScoreContainer" type="HBoxContainer" parent="Panel/Margin/VBox/LevelInfo" unique_id=1492993844]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="Score" type="Label" parent="Panel/VBoxContainer/LevelInfo/ScoreContainer" unique_id=2037501997]
+[node name="ScoreCaption" type="Label" parent="Panel/Margin/VBox/LevelInfo/ScoreContainer" unique_id=1728613154]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.9, 1, 0.7)
+theme_override_font_sizes/font_size = 24
+text = "Pontos:"
 
-[node name="AmmoContainer" type="HBoxContainer" parent="Panel/VBoxContainer/LevelInfo" unique_id=866646203]
+[node name="Score" type="Label" parent="Panel/Margin/VBox/LevelInfo/ScoreContainer" unique_id=2037501997]
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "0"
 
-[node name="Label" type="Label" parent="Panel/VBoxContainer/LevelInfo/AmmoContainer" unique_id=2087840114]
+[node name="AmmoContainer" type="HBoxContainer" parent="Panel/Margin/VBox/LevelInfo/AmmoContainer" unique_id=866646203]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="Ammo" type="Label" parent="Panel/VBoxContainer/LevelInfo/AmmoContainer" unique_id=1502999438]
+[node name="AmmoCaption" type="Label" parent="Panel/Margin/VBox/LevelInfo/AmmoContainer" unique_id=2087840114]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.9, 1, 0.7)
+theme_override_font_sizes/font_size = 24
+text = "Tiros restantes:"
 
-[node name="ButtonsContainer" type="HBoxContainer" parent="Panel/VBoxContainer" unique_id=755280680]
+[node name="Ammo" type="Label" parent="Panel/Margin/VBox/LevelInfo/AmmoContainer" unique_id=1502999438]
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "0"
 
-[node name="Home" type="TextureButton" parent="Panel/VBoxContainer/ButtonsContainer" unique_id=351575167]
+[node name="ButtonsContainer" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=755280680]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="Home" type="TextureButton" parent="Panel/Margin/VBox/ButtonsContainer" unique_id=351575167]
+custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
 texture_normal = ExtResource("2_gcyas")
 texture_pressed = ExtResource("3_tqurp")
 ignore_texture_size = true
 stretch_mode = 5
 
-[node name="Retry" type="TextureButton" parent="Panel/VBoxContainer/ButtonsContainer" unique_id=287095301]
+[node name="Retry" type="TextureButton" parent="Panel/Margin/VBox/ButtonsContainer" unique_id=287095301]
+custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
 texture_normal = ExtResource("4_cbkgu")
 texture_pressed = ExtResource("5_nom0c")
 ignore_texture_size = true
 stretch_mode = 5
 
-[node name="Next" type="TextureButton" parent="Panel/VBoxContainer/ButtonsContainer" unique_id=1947938684]
+[node name="Next" type="TextureButton" parent="Panel/Margin/VBox/ButtonsContainer" unique_id=1947938684]
+custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
 texture_normal = ExtResource("6_uu8y5")
 texture_pressed = ExtResource("7_qx2nt")
