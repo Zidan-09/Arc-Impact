@@ -2,20 +2,17 @@ extends Control
 
 const END_DELAY := 8.0
 const DEFAULT_SEED := 1
-## Margem do backdrop além dos limites (maior que `GameCamera.LIMIT_MARGIN`
-## para nenhum pixel de mundo ficar sobre o vazio em qualquer zoom/pan).
-const BACKDROP_MARGIN := 150.0
 
 @onready var world_area: Control = $WorldArea
 @onready var world: Node2D = $WorldArea/World
 @onready var level_node: Node2D = $WorldArea/World/Level
 @onready var cannon: Cannon = $WorldArea/World/Cannon
 @onready var game_camera: GameCamera = $WorldArea/World/GameCamera
-@onready var world_backdrop: Sprite2D = $WorldArea/World/WorldBackdrop
-@onready var hud = $Hud
-@onready var power_slider = $Hud/Controls/PowerSlider
-@onready var fire_button: TextureButton = $Hud/Controls/FireButton
-@onready var victory_popup = $LevelCompletePopup
+@onready var world_hit_area: Control = $UILayer/WorldHitArea
+@onready var hud = $UILayer/Hud
+@onready var power_slider = $UILayer/Hud/Controls/PowerSlider
+@onready var fire_button: TextureButton = $UILayer/Hud/Controls/FireButton
+@onready var victory_popup = $UILayer/LevelCompletePopup
 
 var builder: LevelBuilder
 var current_def: LevelDefinition = null
@@ -215,9 +212,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
+## Região jogável em coordenadas de viewport. Usa `WorldHitArea`, um Control
+## invisível dentro de `UILayer` (CanvasLayer, imune à câmera) com a mesma
+## geometria do `WorldArea`. O `WorldArea` não serve para isso: por estar no
+## canvas padrão, seu `get_global_transform_with_canvas()` inclui a câmera e
+## o teste derivaria junto com o pan/zoom.
 func _press_in_world(viewport_pos: Vector2) -> bool:
-	var local: Vector2 = world_area.get_global_transform_with_canvas().affine_inverse() * viewport_pos
-	return Rect2(Vector2.ZERO, world_area.size).has_point(local)
+	var local: Vector2 = world_hit_area.get_global_transform_with_canvas().affine_inverse() * viewport_pos
+	return Rect2(Vector2.ZERO, world_hit_area.size).has_point(local)
 
 
 ## Centroide dos toques ativos (modo câmera com 2 dedos).
@@ -275,23 +277,7 @@ func _update_camera_bounds() -> void:
 	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
 		bounds = current_def.play_bounds
 	game_camera.set_bounds(bounds)
-	_update_world_backdrop(bounds)
 	_reset_camera_view()
-
-
-## Ajusta o fundo em espaço de mundo para cobrir limites + margem
-## (docs/plan.md §9, opção A). O `WorldBackground` (TextureRect de UI) segue
-## como moldura estática; este Sprite2D é o que acompanha pan/zoom.
-func _update_world_backdrop(bounds: Rect2) -> void:
-	if not is_instance_valid(world_backdrop) or world_backdrop.texture == null:
-		return
-	var tex_size := world_backdrop.texture.get_size()
-	if tex_size.x <= 0.0 or tex_size.y <= 0.0:
-		return
-	var cover := bounds.grow(BACKDROP_MARGIN).size
-	world_backdrop.position = bounds.get_center()
-	var s := maxf(cover.x / tex_size.x, cover.y / tex_size.y)
-	world_backdrop.scale = Vector2(s, s)
 
 
 ## Volta ao enquadramento inicial canhão↔alvo (tecla R, duplo-clique com
