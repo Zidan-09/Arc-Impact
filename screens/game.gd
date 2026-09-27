@@ -1,12 +1,13 @@
 extends Control
 
 const END_DELAY := 8.0
+const DEFAULT_SEED := 1
 
 @onready var world: Node2D = $WorldArea/World
 @onready var level_node: Node2D = $WorldArea/World/Level
 @onready var cannon: Cannon = $WorldArea/World/Cannon
-@onready var hud: Control = $Hud
-@onready var power_slider: Control = $Hud/Controls/PowerSlider
+@onready var hud = $Hud
+@onready var power_slider = $Hud/Controls/PowerSlider
 @onready var fire_button: TextureButton = $Hud/Controls/FireButton
 
 var builder: LevelBuilder
@@ -32,10 +33,10 @@ func _ready() -> void:
 	power_slider.power_changed.connect(_on_power_changed)
 	builder = LevelBuilder.new()
 	add_child(builder)
-	load_fixed_level()
+	load_level(DEFAULT_SEED, level_number)
 
 
-func load_fixed_level() -> void:
+func load_level(seed_value: int, new_level_number: int) -> void:
 	if _loading:
 		return
 	_loading = true
@@ -47,8 +48,11 @@ func load_fixed_level() -> void:
 	ammo_left = 0
 	current_def = null
 	current_target = null
-	var cfg := DifficultyTable.get_config(1)
-	var def := ProceduralLevelGenerator.ultimate_fallback(1, 1, cfg)
+	level_number = new_level_number
+	var result := FastLevelGenerator.generate(seed_value, level_number)
+	var def: LevelDefinition = result["def"]
+	if bool(result["fallback_used"]):
+		push_warning("Game: fallback usado (%s)." % str(result["log"]))
 	var built := await builder.build(level_node, def)
 	current_def = def
 	cannon.position = def.cannon_position
