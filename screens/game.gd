@@ -3,6 +3,7 @@ extends Control
 const END_DELAY := 8.0
 const DEFAULT_SEED := 1
 
+@onready var world_area: Control = $WorldArea
 @onready var world: Node2D = $WorldArea/World
 @onready var level_node: Node2D = $WorldArea/World/Level
 @onready var cannon: Cannon = $WorldArea/World/Cannon
@@ -117,12 +118,17 @@ func _input(event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			_dragging_angle = event.pressed
+			_dragging_angle = event.pressed and _press_in_world(event.position)
 	elif event is InputEventMouseMotion and _dragging_angle:
 		cannon.rotate_cannon(-event.relative.y)
 	elif event is InputEventScreenTouch:
 		if event.index == 0:
-			_dragging_angle = event.pressed
+			_dragging_angle = event.pressed and _press_in_world(event.position)
 	elif event is InputEventScreenDrag:
 		if event.index == 0 and _dragging_angle:
 			cannon.rotate_cannon(-event.relative.y)
+
+
+func _press_in_world(viewport_pos: Vector2) -> bool:
+	var local: Vector2 = world_area.get_global_transform_with_canvas().affine_inverse() * viewport_pos
+	return Rect2(Vector2.ZERO, world_area.size).has_point(local)
