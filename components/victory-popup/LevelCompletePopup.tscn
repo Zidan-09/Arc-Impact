@@ -107,7 +107,7 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 28
 text = "0"
 
-[node name="AmmoContainer" type="HBoxContainer" parent="Panel/Margin/VBox/LevelInfo/AmmoContainer" unique_id=866646203]
+[node name="AmmoContainer" type="HBoxContainer" parent="Panel/Margin/VBox/LevelInfo" unique_id=866646203]
 layout_mode = 2
 theme_override_constants/separation = 8
 
