@@ -6,7 +6,7 @@ signal target_hit(body: Bullet)
 @onready var activeTexture = $Active
 @onready var inactiveTexture = $Inactive
 
-const RECOIL_DISTANCE := 25.0
+const RECOIL_DISTANCE := 15.0
 const RECOIL_BACK_TIME := 0.06
 const RECOIL_RETURN_TIME := 0.12
 const RECOIL_DIRECTION := Vector2.RIGHT
