@@ -21,8 +21,8 @@ const KILL_MARGIN := 400.0
 const GROUND_TOP := 620.0
 const TARGET_MAX_Y := 575.0
 const GROUND_CLEARANCE := 5.0
-
-const DIRECT_ARCHETYPES := [&"open_shot", &"glass_barrier", &"stone_gate"]
+const BULLET_RADIUS := 10.0
+const MAX_RICOCHETS := 10
 
 
 static func generate(seed_value: int, level_number: int, cfg_override: DifficultyConfig = null) -> Dictionary:
@@ -79,8 +79,10 @@ static func generate(seed_value: int, level_number: int, cfg_override: Difficult
 
 ## Varredura analítica da trajetória (Euler 60 Hz, sem Nodes): vidro e
 ## pedra atravessam com *= 0.85 (MaterialRules); cada pedra custa +1 tiro
-## (1º tiro racha, 2º atravessa); metal bloqueia. Retorna SolutionRecord
-## com 1 tiro base ou null. Respeita o orçamento de wall-clock.
+## (1º tiro racha, 2º atravessa); metal reflete (bounce 1.0 do motor,
+## sem atenuação por código; faces do AABB como espelhos planos).
+## Retorna SolutionRecord com 1 tiro base ou null. Respeita o orçamento
+## de wall-clock. AABBs dilatados pelo raio da bala (~10px em escala 0.2).
 static func solve_direct(def: LevelDefinition, start_ms: int = -1) -> SolutionRecord:
 	var gravity := float(ProjectSettings.get_setting("physics/2d/default_gravity", 980.0))
 	var kill_rect := def.play_bounds.grow(KILL_MARGIN)
@@ -89,7 +91,7 @@ static func solve_direct(def: LevelDefinition, start_ms: int = -1) -> SolutionRe
 		return null
 	var boxes: Array[Rect2] = []
 	for obstacle in def.obstacles:
-		boxes.append(LevelValidator.obstacle_aabb(obstacle))
+		boxes.append(LevelValidator.obstacle_aabb(obstacle).grow(BULLET_RADIUS))
 	var angle := def.cannon_angle_min
 	while angle <= def.cannon_angle_max + 0.001:
 		var power := def.power_max
@@ -110,35 +112,61 @@ static func _try_shot(def: LevelDefinition, boxes: Array[Rect2], target_rect: Re
 	var vel: Vector2 = (muzzle["direction"] as Vector2) * def.base_shot_speed * clampf(power, 0.0, 1.0)
 	var touched := {}
 	var stones := 0
+	var ricochets := 0
 	var destroyed: Array[String] = []
 	for _step in SIM_MAX_STEPS:
 		vel += Vector2(0, gravity) * SIM_DT
 		var next := pos + vel * SIM_DT
 		if _segment_hits_rect(pos, next, target_rect):
 			var record := SolutionRecord.new()
-			record.shots = [{"angle": angle, "power": power, "ricochets": 0, "destroyed": destroyed}]
+			record.shots = [{"angle": angle, "power": power, "ricochets": ricochets, "destroyed": destroyed}]
 			record.total_shots = 1 + stones
-			record.total_ricochets = 0
+			record.total_ricochets = ricochets
 			record.solutions_found = 1
 			record.min_angle_margin = 0.25
 			return record
+		var bounced := false
+		var nearest := -1
+		var nearest_face := Vector2.ZERO
+		var nearest_dist := INF
 		for i in def.obstacles.size():
 			var id: String = def.obstacles[i].id
 			if touched.has(id):
 				continue
-			if _segment_hits_rect(pos, next, boxes[i]):
-				match def.obstacles[i].kind:
-					ObstacleDefinition.KIND_METAL:
+			var face := _entry_face(pos, next, boxes[i])
+			if face == Vector2.ZERO:
+				continue
+			var contact := _contact_point(pos, next, boxes[i], face)
+			var dist: float = pos.distance_to(contact)
+			if dist < nearest_dist:
+				nearest_dist = dist
+				nearest = i
+				nearest_face = face
+		if nearest >= 0:
+			var id: String = def.obstacles[nearest].id
+			match def.obstacles[nearest].kind:
+				ObstacleDefinition.KIND_METAL:
+					if ricochets >= MAX_RICOCHETS:
 						return null
-					ObstacleDefinition.KIND_STONE:
-						stones += 1
-						vel *= MaterialRules.velocity_retain(def.obstacles[i].kind)
-						touched[id] = true
-						destroyed.append(id)
-					_:
-						vel *= MaterialRules.velocity_retain(def.obstacles[i].kind)
-						touched[id] = true
-						destroyed.append(id)
+					pos = _contact_point(pos, next, boxes[nearest], nearest_face)
+					vel = _reflect(vel, nearest_face)
+					ricochets += 1
+					bounced = true
+				ObstacleDefinition.KIND_STONE:
+					stones += 1
+					vel *= MaterialRules.velocity_retain(def.obstacles[nearest].kind)
+					touched[id] = true
+					destroyed.append(id)
+				_:
+					vel *= MaterialRules.velocity_retain(def.obstacles[nearest].kind)
+					touched[id] = true
+					destroyed.append(id)
+		if bounced:
+			if pos.y > GROUND_TOP:
+				return null
+			if not kill_rect.has_point(pos):
+				return null
+			continue
 		pos = next
 		if pos.y > GROUND_TOP:
 			return null
@@ -150,8 +178,6 @@ static func _try_shot(def: LevelDefinition, boxes: Array[Rect2], target_rect: Re
 static func _pick_archetype(rng: RandomNumberGenerator, cfg: DifficultyConfig) -> LevelArchetype:
 	var options: Array[LevelArchetype] = []
 	for archetype_id in cfg.allowed_archetypes:
-		if not DIRECT_ARCHETYPES.has(archetype_id):
-			continue
 		var arch := ProceduralLevelGenerator.make_archetype(archetype_id)
 		if arch != null and arch.min_ammo() <= cfg.ammo:
 			options.append(arch)
@@ -208,3 +234,47 @@ static func _segment_hits_rect(from: Vector2, to: Vector2, rect: Rect2) -> bool:
 		if hit != null:
 			return true
 	return false
+
+
+## Face do AABB atingida pelo segmento (método do espelho por faces:
+## cada face é um espelho plano; bounce 1.0 do metal => reflexão exata).
+## Retorna a normal (LEFT/RIGHT/UP/DOWN) ou Vector2.ZERO sem interseção.
+static func _entry_face(from: Vector2, to: Vector2, rect: Rect2) -> Vector2:
+	if rect.has_point(from):
+		return Vector2.ZERO
+	var edges := [
+		[Vector2(rect.position.x, rect.position.y), Vector2(rect.end.x, rect.position.y), Vector2.UP],
+		[Vector2(rect.position.x, rect.end.y), Vector2(rect.end.x, rect.end.y), Vector2.DOWN],
+		[Vector2(rect.position.x, rect.position.y), Vector2(rect.position.x, rect.end.y), Vector2.LEFT],
+		[Vector2(rect.end.x, rect.position.y), Vector2(rect.end.x, rect.end.y), Vector2.RIGHT],
+	]
+	var best := Vector2.ZERO
+	var best_dist := INF
+	for edge in edges:
+		var hit = Geometry2D.segment_intersects_segment(from, to, edge[0], edge[1])
+		if hit != null:
+			var dist: float = from.distance_to(hit)
+			if dist < best_dist:
+				best_dist = dist
+				best = edge[2]
+	return best
+
+
+static func _contact_point(from: Vector2, to: Vector2, rect: Rect2, face: Vector2) -> Vector2:
+	var edge := [rect.position, rect.position]
+	if face == Vector2.UP:
+		edge = [Vector2(rect.position.x, rect.position.y), Vector2(rect.end.x, rect.position.y)]
+	elif face == Vector2.DOWN:
+		edge = [Vector2(rect.position.x, rect.end.y), Vector2(rect.end.x, rect.end.y)]
+	elif face == Vector2.LEFT:
+		edge = [Vector2(rect.position.x, rect.position.y), Vector2(rect.position.x, rect.end.y)]
+	else:
+		edge = [Vector2(rect.end.x, rect.position.y), Vector2(rect.end.x, rect.end.y)]
+	var hit = Geometry2D.segment_intersects_segment(from, to, edge[0], edge[1])
+	if hit != null:
+		return hit
+	return to
+
+
+static func _reflect(vel: Vector2, normal: Vector2) -> Vector2:
+	return vel - 2.0 * vel.dot(normal) * normal
