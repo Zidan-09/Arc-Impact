@@ -38,6 +38,7 @@ var _last_pinch_distance := 0.0
 func _ready() -> void:
 	fire_button.focus_mode = Control.FOCUS_NONE
 	fire_button.pressed.connect(shoot)
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	cannon.bullet_container = level_node
 	cannon.current_power = power_slider.power
 	power_slider.power_changed.connect(_on_power_changed)
@@ -167,8 +168,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			# Pan: botão esquerdo segue exclusivo da mira (§6). Pan e mira
 			# nunca ficam ativos ao mesmo tempo.
 			if event.pressed and _press_in_world(event.position):
-				_panning = true
-				_dragging_angle = false
+				if event.double_click:
+					_reset_camera_view()
+				else:
+					_panning = true
+					_dragging_angle = false
 				get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and (_panning or _dragging_angle):
 		if _panning:
@@ -201,6 +205,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		elif event.keycode == KEY_MINUS or event.keycode == KEY_KP_SUBTRACT:
 			game_camera.zoom_step_out()
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_R:
+			_reset_camera_view()
 			get_viewport().set_input_as_handled()
 
 
@@ -264,7 +271,22 @@ func _update_camera_bounds() -> void:
 	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
 		bounds = current_def.play_bounds
 	game_camera.set_bounds(bounds)
+	_reset_camera_view()
+
+
+## Volta ao enquadramento inicial canhão↔alvo (tecla R, duplo-clique com
+## botão direito, toda troca de fase).
+func _reset_camera_view() -> void:
+	if not is_instance_valid(game_camera):
+		return
 	if current_target != null:
 		game_camera.reset_view(cannon.position, current_target.position)
-	else:
+	elif current_def != null:
 		game_camera.reset_view(cannon.position)
+	else:
+		game_camera.reset_view()
+
+
+func _on_viewport_size_changed() -> void:
+	if is_instance_valid(game_camera):
+		game_camera.refresh()
