@@ -204,7 +204,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.index == 0 and _dragging_angle:
 			cannon.rotate_cannon(-event.relative.y)
 	elif event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_EQUAL or event.keycode == KEY_PLUS or event.keycode == KEY_KP_ADD:
+		if event.keycode == KEY_EQUAL or event.keycode == KEY_KP_ADD:
 			game_camera.zoom_step_in()
 			get_viewport().set_input_as_handled()
 		elif event.keycode == KEY_MINUS or event.keycode == KEY_KP_SUBTRACT:

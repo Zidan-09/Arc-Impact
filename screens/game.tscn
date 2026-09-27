@@ -39,7 +39,7 @@ texture = ExtResource("1_3ciuf")
 expand_mode = 2
 stretch_mode = 6
 
-	[node name="World" type="Node2D" parent="WorldArea" unique_id=985892701]
+[node name="World" type="Node2D" parent="WorldArea" unique_id=985892701]
 
 [node name="WorldBackdrop" type="Sprite2D" parent="WorldArea/World" unique_id=771234568]
 z_index = -100

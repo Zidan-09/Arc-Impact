@@ -21,7 +21,6 @@ var bounds: Rect2 = DEFAULT_BOUNDS
 var _target_zoom := 1.0
 var _has_anchor := false
 var _anchor_screen := Vector2.ZERO
-var _anchor_world := Vector2.ZERO
 
 
 func _ready() -> void:
@@ -94,7 +93,6 @@ func zoom_by_factor_at_screen_point(factor: float, screen_point: Vector2) -> voi
 	if is_equal_approx(clamped, _target_zoom):
 		return
 	_anchor_screen = screen_point
-	_anchor_world = screen_to_world(screen_point)
 	_has_anchor = true
 	_target_zoom = clamped
 
