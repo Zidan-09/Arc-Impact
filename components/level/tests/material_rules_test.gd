@@ -13,6 +13,7 @@ func _init() -> void:
 	failures += _check_stone()
 	failures += _check_metal()
 	failures += _check_unknown()
+	failures += _check_geometry() # Etapa 2 (geometria de referência)
 	if failures == 0:
 		print("MATERIAL_RULES_TEST: PASS")
 	else:
@@ -64,6 +65,28 @@ func _check_unknown() -> int:
 		return _fail("kind desconhecido reportado como conhecido")
 	if MaterialRules.kinds().size() != 3:
 		return _fail("kinds() deveria ter exatamente 3 materiais")
+	return 0
+
+
+## Etapa 2: geometria de referência da composição (medidas reais dos
+## assets + pé do canhão calibrado no Guide1).
+func _check_geometry() -> int:
+	# structure.png 482x448; floor 500x500 (tscn + png).
+	if MaterialRules.structure_size() != Vector2(482, 448):
+		return _fail("structure_size != (482, 448)")
+	if MaterialRules.floor_size() != Vector2(500, 500):
+		return _fail("floor_size != (500, 500)")
+	# Tile 0.2 = 100x100 (unidade da grade dos guides).
+	if MaterialRules.floor_size() * Vector2(0.2, 0.2) != Vector2(100, 100):
+		return _fail("tile 0.2 deveria ser 100x100")
+	# Guide1: canhão (150, 487) @0.3 com plataforma centrada em y=570.
+	var foot := Cannon.foot_position(Vector2(150, 487), Vector2(0.3, 0.3))
+	if absf(foot.y - 570.0) > 1.0 or absf(foot.x - 150.0) > 0.001:
+		return _fail("pé do Guide1 deveria ser ~(150, 570), veio %s" % str(foot))
+	# Escala do jogo (0.2): pé ~55px abaixo da origem.
+	var foot_game := Cannon.foot_position(Vector2(173, 523), Vector2(0.2, 0.2))
+	if absf(foot_game.y - 578.4) > 1.0:
+		return _fail("pé @0.2 deveria ser ~55px abaixo, veio %s" % str(foot_game))
 	return 0
 
 

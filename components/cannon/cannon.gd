@@ -26,6 +26,15 @@ var barrel_initial_position: Vector2
 const PIVOT_OFFSET := Vector2(-2, -44)
 const MUZZLE_OFFSET := Vector2(267, -48)
 
+## Queda vertical (px locais, antes da escala) da origem do canhão até o
+## ponto de apoio do pé — referência da refatoração composition-first
+## (docs/plan.md, Etapa 2). Medido no Guide1 (`guide/Guide1.tscn`):
+## canhão em (150, 487) scale 0.3 sobre plataforma centrada em y=570 =>
+## 570 - 487 = 83px em escala 0.3 => 83 / 0.3 ~= 277px locais.
+## `foot_position()` aplica a escala: 0.3 => 83px, 0.2 => ~55px.
+## O validador estrutural exige um tile de Floor contendo esse ponto.
+const FOOT_DROP := 277.0
+
 const RECOIL_DISTANCE := 25.0
 const RECOIL_BACK_TIME := 0.06
 const RECOIL_RETURN_TIME := 0.12
@@ -82,6 +91,13 @@ static func muzzle_state_for(cannon_position: Vector2, angle_degrees: float) -> 
 		"origin": cannon_position + PIVOT_OFFSET + MUZZLE_OFFSET.rotated(rotation),
 		"direction": Vector2.RIGHT.rotated(rotation),
 	}
+
+
+## Ponto do pé do canhão em coordenadas de mundo (para o validador
+## estrutural conferir o apoio no Floor). `cannon_scale` é a escala
+## global do nó do canhão (0.2 no jogo, 0.3 nos guides).
+static func foot_position(cannon_position: Vector2, cannon_scale: Vector2) -> Vector2:
+	return cannon_position + Vector2(0, FOOT_DROP * cannon_scale.y)
 
 func get_muzzle_state() -> Dictionary:
 	return {
