@@ -28,6 +28,26 @@ scale = Vector2(0.2, 0.2)
 position = Vector2(1050, 345)
 scale = Vector2(0.2, 0.2)
 
+[node name="MetalSquare6" parent="Obstacles" unique_id=1242940688 instance=ExtResource("3_en87d")]
+position = Vector2(1333, 342)
+scale = Vector2(0.2, 0.2)
+
+[node name="MetalSquare9" parent="Obstacles" unique_id=532213829 instance=ExtResource("3_en87d")]
+position = Vector2(1333, 231)
+scale = Vector2(0.2, 0.2)
+
+[node name="MetalSquare10" parent="Obstacles" unique_id=53372634 instance=ExtResource("3_en87d")]
+position = Vector2(1333, 122.00001)
+scale = Vector2(0.2, 0.2)
+
+[node name="MetalSquare7" parent="Obstacles" unique_id=484541577 instance=ExtResource("3_en87d")]
+position = Vector2(1332, 452)
+scale = Vector2(0.2, 0.2)
+
+[node name="MetalSquare8" parent="Obstacles" unique_id=1664612819 instance=ExtResource("3_en87d")]
+position = Vector2(1332, 562)
+scale = Vector2(0.2, 0.2)
+
 [node name="MetalSquare4" parent="Obstacles" unique_id=591421955 instance=ExtResource("3_en87d")]
 position = Vector2(1051, 141)
 scale = Vector2(0.2, 0.2)
