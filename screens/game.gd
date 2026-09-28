@@ -79,7 +79,10 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 		push_warning("Game: fallback usado (%s)." % str(result["log"]))
 	var built := await builder.build(level_node, def)
 	current_def = def
-	cannon.position = def.cannon_position
+	# Pose do canhão pela composição (Etapa 7): altura variável sobre o
+	# apoio do Floor; a bala reescala junto via apply_cannon_scale.
+	cannon.position = built["cannon_position"]
+	cannon.scale = built["cannon_scale"]
 	ammo_total = def.ammo
 	ammo_left = def.ammo
 	current_target = built["target"] as Target
