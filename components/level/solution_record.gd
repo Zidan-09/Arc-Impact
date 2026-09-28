@@ -9,6 +9,10 @@ var total_shots: int = 0
 var total_ricochets: int = 0
 var solutions_found: int = 0 # quantas combinações passaram (mede dificuldade)
 var min_angle_margin: float = 0.0 # menor perturbação que ainda passa (graus)
+## Folga mínima do caminho a peças não tocadas (px, sobre AABBs
+## dilatados). Preenchido pelo solver analítico; fora do to_dict
+## (métrica de aceitação, não dado da fase).
+var clearance: float = 999.0
 
 
 func to_dict() -> Dictionary:

@@ -66,8 +66,18 @@ static func pick_target_x(rng: RandomNumberGenerator) -> float:
 
 ## Rotação com função (pé/entremeio: deitado fecha o tiro rasteiro e
 ## pede arco por cima, como o Guide1; neutro expõe o flanco).
-static func pick_target_rotation(rng: RandomNumberGenerator) -> float:
+static func pick_target_rotation(rng: RandomNumberGenerator, role: StringName) -> float:
+	if role == Composition.TARGET_HIGH:
+		return 0.0 # alto e exposto: flanco aberto para a queda
 	return 90.0 if rng.randf() < 0.5 else 0.0
+
+
+## Função do alvo: foot (baixo, apoiado no plano) ou high (alto, sobre
+## plataforma própria, exige arco cheio — a partir da fase 4).
+static func pick_target_role(rng: RandomNumberGenerator, level_number: int) -> StringName:
+	if level_number >= 4 and rng.randf() < 0.3:
+		return Composition.TARGET_HIGH
+	return Composition.TARGET_FOOT
 
 
 static func pick_perch_top(rng: RandomNumberGenerator) -> float:

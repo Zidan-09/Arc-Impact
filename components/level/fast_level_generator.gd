@@ -8,8 +8,8 @@ class_name FastLevelGenerator extends RefCounted
 ## (seed, versão, fase) => mesma LevelDefinition. Porta de entrada da
 ## fase real (Game). Determinístico e offline (só matemática + geometria).
 ##
-## Bandas com ricochete obrigatório usam o caminho legado (arquétipos)
-## até a Etapa 8 entregar o vocabulário de ricochete ao compositor.
+## Bandas com 2+ ricochetes (16+) usam o caminho legado até o skip
+## duplo provar-se; 11–15 (1 ricochete) já são do compositor (skip).
 ##
 ## Retorna {"def": LevelDefinition, "candidates": int, "sims": int (0),
 ##          "ms": int, "score": float, "fallback_used": bool,
@@ -27,6 +27,11 @@ const TARGET_MAX_Y := 600.0 # alvo apoiado no plano (centro 580) + folga
 const REST_TOL := 2.0 # [TÉCNICO] peça APOIADA no floor encosta (end ~620)
 const BULLET_RADIUS := 10.0
 const MAX_RICOCHETS := 10
+## Folga mínima [TÉCNICO] do caminho vencedor à face real de peças NÃO
+## tocadas (toque geométrico = interação intencional, não conta).
+## Raspão + retorno longo amplifica qualquer divergência analítico→física
+## (lição das bandas 11+); só passa o caminho com corredor real.
+const CLEARANCE_MIN := 12.0
 ## Colisor real do alvo em scale 0.2: polígono de target.tscn tem
 ## 114x474px na base => ~23x95px instanciado (NÃO 80x80: o
 ## TargetDefinition.DEFAULT_SIZE é aproximação conservadora só para o
@@ -41,9 +46,9 @@ static func generate(seed_value: int, level_number: int, cfg_override: Difficult
 	rng.seed = hash("%d:%d:%d" % [seed_value, LevelDefinition.GENERATOR_VERSION, level_number])
 	var log: Array[String] = []
 	var start := Time.get_ticks_msec()
-	if cfg.required_ricochets_min > 0:
-		# Etapa 8: sem vocabulário de ricochete no compositor, bandas
-		# 11+ seguem no caminho legado (solver como filtro, como antes).
+	if cfg.required_ricochets_min >= 2:
+		# Etapa 8: skip duplo (2+ reflexões) ainda sem vocabulário — 16+
+		# segue no caminho legado até a Etapa 9 provar o desenho.
 		log.append("legacy-band")
 		return _generate_legacy(seed_value, level_number, cfg, rng, start, log)
 	var tried := 0
@@ -63,7 +68,7 @@ static func generate(seed_value: int, level_number: int, cfg_override: Difficult
 		if not bool(LevelValidator.validate_config(def, cfg)["ok"]):
 			log.append("config:composer:" + tags)
 			continue
-		var record := solve_direct(def, start)
+		var record := solve_direct(def, start, cfg.required_ricochets_min)
 		if record == null:
 			log.append("unsolved:composer:" + tags)
 			continue
@@ -73,8 +78,12 @@ static func generate(seed_value: int, level_number: int, cfg_override: Difficult
 		if not _mechanic_signature_ok(def, record):
 			log.append("mechanic:composer:" + tags)
 			continue
-		if not _robust_analytic(def, record):
+		if not _robust_analytic(def, record, cfg.required_ricochets_min):
 			log.append("margin:composer:" + tags)
+			continue
+		record.clearance = _measure_clearance(def, record)
+		if record.clearance < CLEARANCE_MIN:
+			log.append("clearance:composer:" + tags)
 			continue
 		var score := DifficultyScorer.score(def, record)
 		if not DifficultyScorer.in_band(score, cfg):
@@ -83,11 +92,10 @@ static func generate(seed_value: int, level_number: int, cfg_override: Difficult
 		def.solution = record
 		log.append("composer:" + tags)
 		return _report(def, tried, start, score, false, false, log)
-	var ultimate := _ultimate(seed_value, level_number, cfg)
-	var ultimate_score := -1.0
-	if ultimate.solution != null:
-		ultimate_score = DifficultyScorer.score(ultimate, ultimate.solution)
-	return _report(ultimate, tried, start, ultimate_score, true, true, log)
+	# Compositor esgotado: caminho legado como rede (mesmo orçamento),
+	# ultimate aberto por fim. Rejeição é segura por construção.
+	log.append("composer-exhausted")
+	return _generate_legacy(seed_value, level_number, cfg, rng, start, log)
 
 
 ## Caminho legado (arquétipos de pontos aleatórios + solver como filtro).
@@ -139,20 +147,39 @@ static func _generate_legacy(seed_value: int, level_number: int, cfg: Difficulty
 	return _report(ultimate, tried, start, ultimate_score, true, true, log)
 
 
-## Assinatura mecânica: se a composição declara quebra/desgaste, o
-## caminho vencedor precisa exibir a peça com função destruída. Sem
-## peça funcional declarada (só moldura), qualquer solução vale.
+## Assinatura mecânica: cada função declarada (não-moldura) precisa
+## aparecer no caminho vencedor — quebra/desgaste como peça destruída,
+## ricochete como reflexão contada (metal nunca destrói). Sem peça
+## funcional declarada (só moldura), qualquer solução vale.
 static func _mechanic_signature_ok(def: LevelDefinition, record: SolutionRecord) -> bool:
-	var declared := {}
+	var need_break := false
+	var need_ricochet := false
 	for obstacle in def.obstacles:
-		if obstacle.mechanic != Composition.MECH_FRAME:
-			declared[obstacle.id] = true
-	if declared.is_empty():
-		return true
-	for shot in record.shots:
-		for id in Array(shot.get("destroyed", [])):
-			if declared.has(String(id)):
-				return true
+		if obstacle.mechanic == Composition.MECH_BREAKABLE or obstacle.mechanic == Composition.MECH_WEAR:
+			need_break = true
+		elif obstacle.mechanic == Composition.MECH_RICOCHET:
+			need_ricochet = true
+	if need_break:
+		var broken := false
+		var declared := {}
+		for obstacle in def.obstacles:
+			if obstacle.mechanic != Composition.MECH_FRAME:
+				declared[obstacle.id] = true
+		for shot in record.shots:
+			for id in Array(shot.get("destroyed", [])):
+				if declared.has(String(id)) and _is_breakable_id(def, String(id)):
+					broken = true
+		if not broken:
+			return false
+	if need_ricochet and record.total_ricochets < 1:
+		return false
+	return true
+
+
+static func _is_breakable_id(def: LevelDefinition, id: String) -> bool:
+	for obstacle in def.obstacles:
+		if obstacle.id == id:
+			return obstacle.mechanic == Composition.MECH_BREAKABLE or obstacle.mechanic == Composition.MECH_WEAR
 	return false
 
 
@@ -166,15 +193,16 @@ static func _tag_string(def: LevelDefinition) -> String:
 ## Robustez analítica (espelha LevelSolver._probe_margin): a sequência
 ## vencedora precisa vencer também com o 1º tiro perturbado ±0.5°.
 ## Solução de raspão (só passa no fio) é rejeitada aqui — barata no
-## analítico, cara na física real. Só aprova o robusto.
-static func _robust_analytic(def: LevelDefinition, record: SolutionRecord) -> bool:
+## analítico, cara na física real. Só aprova o robusto (com o mínimo de
+## reflexões, quando exigido).
+static func _robust_analytic(def: LevelDefinition, record: SolutionRecord, min_ricochets: int = 0) -> bool:
 	if record.shots.is_empty():
 		return false
 	var first: Dictionary = record.shots[0]
 	var angle := float(first["angle"])
 	var power := float(first["power"])
 	for delta in [0.5, -0.5]:
-		var perturbed := _try_sequence_perturbed(def, angle, power, delta)
+		var perturbed := _try_sequence_perturbed(def, angle, power, delta, min_ricochets)
 		if perturbed == null:
 			return false
 	return true
@@ -182,7 +210,7 @@ static func _robust_analytic(def: LevelDefinition, record: SolutionRecord) -> bo
 
 ## Variante de _try_sequence com o 1º tiro perturbado em `delta` graus
 ## (limitado aos ângulos do canhão). Retorna SolutionRecord ou null.
-static func _try_sequence_perturbed(def: LevelDefinition, angle: float, power: float, delta: float) -> SolutionRecord:
+static func _try_sequence_perturbed(def: LevelDefinition, angle: float, power: float, delta: float, min_ricochets: int = 0) -> SolutionRecord:
 	var gravity := float(ProjectSettings.get_setting("physics/2d/default_gravity", 980.0))
 	var kill_rect := def.play_bounds.grow(KILL_MARGIN)
 	var target_rect := target_rect_for(def)
@@ -201,10 +229,15 @@ static func _try_sequence_perturbed(def: LevelDefinition, angle: float, power: f
 		shots.append({"angle": perturbed_angle, "power": power,
 			"ricochets": int(sim["ricochets"]), "destroyed": Array(sim["destroyed"])})
 		if bool(sim["hit_target"]):
+			var total := 0
+			for entry in shots:
+				total += int(entry["ricochets"])
+			if total < min_ricochets:
+				return null
 			var record := SolutionRecord.new()
 			record.shots = shots
 			record.total_shots = shots.size()
-			record.total_ricochets = 0
+			record.total_ricochets = total
 			record.solutions_found = 1
 			return record
 		if Array(sim["destroyed"]).is_empty() and not bool(sim["cracked"]):
@@ -233,9 +266,11 @@ static func target_rect_for(def: LevelDefinition) -> Rect2:
 ## (vidro fora, pedra HP1), até `def.ammo` tiros — como o jogador faria
 ## (quebrar a junta no 1º tiro, passar no 2º). O registro sai com a
 ## sequência real de tiros, reproduzível na física (proof test).
+## `min_ricochets`: a sequência só vale com ao menos N reflexões totais
+## (bandas 11+: o solver procura o arco com retorno, não a direta).
 ## Retorna SolutionRecord ou null. Respeita o orçamento de wall-clock.
 ## AABBs dilatados pelo raio da bala (~10px em escala 0.2).
-static func solve_direct(def: LevelDefinition, start_ms: int = -1) -> SolutionRecord:
+static func solve_direct(def: LevelDefinition, start_ms: int = -1, min_ricochets: int = 0) -> SolutionRecord:
 	var gravity := float(ProjectSettings.get_setting("physics/2d/default_gravity", 980.0))
 	var kill_rect := def.play_bounds.grow(KILL_MARGIN)
 	if def.target == null:
@@ -247,7 +282,7 @@ static func solve_direct(def: LevelDefinition, start_ms: int = -1) -> SolutionRe
 		while power >= def.power_min - 0.001:
 			if start_ms >= 0 and Time.get_ticks_msec() - start_ms > TIME_BUDGET_MS:
 				return null
-			var record := _try_sequence(def, target_rect, kill_rect, gravity, angle, power)
+			var record := _try_sequence(def, target_rect, kill_rect, gravity, angle, power, min_ricochets)
 			if record != null:
 				return record
 			power -= POWER_STEP
@@ -256,8 +291,10 @@ static func solve_direct(def: LevelDefinition, start_ms: int = -1) -> SolutionRe
 
 
 ## Tenta (ângulo, potência) em até `def.ammo` tiros sequenciais com HP
-## persistido. Retorna o registro da sequência vencedora ou null.
-static func _try_sequence(def: LevelDefinition, target_rect: Rect2, kill_rect: Rect2, gravity: float, angle: float, power: float) -> SolutionRecord:
+## persistido. Retorna o registro da sequência vencedora ou null. Com
+## `min_ricochets`, o acerto só vale com reflexões suficientes (a direta
+## sem rebote é ignorada e a varredura segue para os arcos).
+static func _try_sequence(def: LevelDefinition, target_rect: Rect2, kill_rect: Rect2, gravity: float, angle: float, power: float, min_ricochets: int = 0) -> SolutionRecord:
 	var stone_hp := {}
 	var glass_alive := {}
 	for obstacle in def.obstacles:
@@ -275,12 +312,20 @@ static func _try_sequence(def: LevelDefinition, target_rect: Rect2, kill_rect: R
 			"ricochets": int(sim["ricochets"]),
 			"destroyed": Array(sim["destroyed"])})
 		if bool(sim["hit_target"]):
+			if total_ricochets < min_ricochets:
+				return null # acerto sem reflexão suficiente: segue a varredura
 			var record := SolutionRecord.new()
 			record.shots = shots
 			record.total_shots = shots.size()
 			record.total_ricochets = total_ricochets
 			record.solutions_found = 1
 			record.min_angle_margin = 0.25
+			# Folga ainda na varredura: tiro marginal é descartado aqui e
+			# o scan segue no MESMO layout para arcos limpos (só mede no
+			# acerto — fora dele o custo é zero).
+			record.clearance = _measure_clearance(def, record)
+			if record.clearance < CLEARANCE_MIN:
+				return null
 			return record
 		if Array(sim["destroyed"]).is_empty() and not bool(sim["cracked"]):
 			return null # sem progresso: repetir não muda nada
@@ -301,10 +346,26 @@ static func _boxes_for_state(def: LevelDefinition, stone_hp: Dictionary, glass_a
 	return boxes
 
 
+## Mesmas caixas SEM dilatação: a folga (clearance) mede contra a face
+## real — peças adjacentes por construção se sobrepõem dilatadas.
+static func _real_boxes_for_state(def: LevelDefinition, stone_hp: Dictionary, glass_alive: Dictionary) -> Array[Rect2]:
+	var boxes: Array[Rect2] = []
+	for obstacle in def.obstacles:
+		if obstacle.kind == ObstacleDefinition.KIND_STONE and int(stone_hp.get(obstacle.id, 0)) <= 0:
+			boxes.append(Rect2())
+		elif obstacle.kind == ObstacleDefinition.KIND_GLASS and not bool(glass_alive.get(obstacle.id, true)):
+			boxes.append(Rect2())
+		else:
+			boxes.append(LevelValidator.obstacle_aabb(obstacle))
+	return boxes
+
+
 ## Simula UM tiro no estado dado (e o atualiza: vidro some, pedra perde
 ## HP). Retorna {"hit_target", "ricochets", "destroyed": [ids do tiro],
-## "cracked": bool (rachou pedra sem destruir)}.
-static func _simulate_shot(def: LevelDefinition, boxes: Array[Rect2], stone_hp: Dictionary, glass_alive: Dictionary, target_rect: Rect2, kill_rect: Rect2, gravity: float, angle: float, power: float) -> Dictionary:
+## "cracked": bool (rachou pedra sem destruir)}. Com `trace`, mede também
+## "clearance": menor distância do trajeto a peças não tocadas (contato
+## do passo e destruídas são excluídos — toque intencional não é raspão).
+static func _simulate_shot(def: LevelDefinition, boxes: Array[Rect2], stone_hp: Dictionary, glass_alive: Dictionary, target_rect: Rect2, kill_rect: Rect2, gravity: float, angle: float, power: float, trace: bool = false, real_boxes: Array[Rect2] = []) -> Dictionary:
 	var muzzle := Cannon.muzzle_state_for(def.cannon_position, angle)
 	var pos: Vector2 = muzzle["origin"]
 	var vel: Vector2 = (muzzle["direction"] as Vector2) * def.base_shot_speed * clampf(power, 0.0, 1.0)
@@ -312,11 +373,13 @@ static func _simulate_shot(def: LevelDefinition, boxes: Array[Rect2], stone_hp: 
 	var cracked := false
 	var destroyed: Array[String] = []
 	var gone := {} # destruídas NESTE tiro (snapshot de caixas é por tiro)
+	var clearance := INF
+	var last_bounce := -1 # caixa do rebote anterior (o passo de saída começa em cima dela)
 	for _step in SIM_MAX_STEPS:
 		vel += Vector2(0, gravity) * SIM_DT
 		var next := pos + vel * SIM_DT
 		if _segment_hits_rect(pos, next, target_rect):
-			return {"hit_target": true, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked}
+			return {"hit_target": true, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked, "clearance": clearance}
 		var nearest := -1
 		var nearest_face := Vector2.ZERO
 		var nearest_dist := INF
@@ -334,17 +397,30 @@ static func _simulate_shot(def: LevelDefinition, boxes: Array[Rect2], stone_hp: 
 				nearest_dist = dist
 				nearest = i
 				nearest_face = face
+		if trace and not real_boxes.is_empty():
+			for i in def.obstacles.size():
+				if i == nearest or i == last_bounce or boxes[i].size == Vector2.ZERO or gone.has(def.obstacles[i].id):
+					continue
+				if real_boxes[i].size == Vector2.ZERO:
+					continue
+				# Toque geométrico = interação intencional (atravessa ou
+				# rebate), não raspão: só a distância conta.
+				if _segment_hits_rect(pos, next, real_boxes[i]):
+					continue
+				clearance = minf(clearance, _seg_rect_dist(pos, next, real_boxes[i]))
+		last_bounce = -1
 		if nearest >= 0:
 			var id: String = def.obstacles[nearest].id
 			match def.obstacles[nearest].kind:
 				ObstacleDefinition.KIND_METAL:
 					if ricochets >= MAX_RICOCHETS:
-						return {"hit_target": false, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked}
+						return {"hit_target": false, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked, "clearance": clearance}
 					pos = _contact_point(pos, next, boxes[nearest], nearest_face)
 					vel = _reflect(vel, nearest_face)
 					ricochets += 1
+					last_bounce = nearest
 					if pos.y > GROUND_TOP or not kill_rect.has_point(pos):
-						return {"hit_target": false, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked}
+						return {"hit_target": false, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked, "clearance": clearance}
 					continue
 				ObstacleDefinition.KIND_STONE:
 					ricochets += 1 # a física conta o contato da pedra
@@ -353,8 +429,9 @@ static func _simulate_shot(def: LevelDefinition, boxes: Array[Rect2], stone_hp: 
 						cracked = true
 						pos = _contact_point(pos, next, boxes[nearest], nearest_face)
 						vel = _reflect(vel, nearest_face) # 1º toque rebate
+						last_bounce = nearest
 						if pos.y > GROUND_TOP or not kill_rect.has_point(pos):
-							return {"hit_target": false, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked}
+							return {"hit_target": false, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked, "clearance": clearance}
 						continue
 					stone_hp[id] = 0
 					gone[id] = true
@@ -367,10 +444,57 @@ static func _simulate_shot(def: LevelDefinition, boxes: Array[Rect2], stone_hp: 
 					destroyed.append(id)
 		pos = next
 		if pos.y > GROUND_TOP:
-			return {"hit_target": false, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked}
+			return {"hit_target": false, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked, "clearance": clearance}
 		if not kill_rect.has_point(pos):
-			return {"hit_target": false, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked}
-	return {"hit_target": false, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked}
+			return {"hit_target": false, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked, "clearance": clearance}
+	return {"hit_target": false, "ricochets": ricochets, "destroyed": destroyed, "cracked": cracked, "clearance": clearance}
+
+
+## Re-mede a folga do registro vencedor (só no caminho aceito, nunca na
+## varredura): re-simula os tiros com trace, reconstruindo o estado de
+## HP deterministicamente. Retorna a menor distância a peças não tocadas.
+static func _measure_clearance(def: LevelDefinition, record: SolutionRecord) -> float:
+	var gravity := float(ProjectSettings.get_setting("physics/2d/default_gravity", 980.0))
+	var kill_rect := def.play_bounds.grow(KILL_MARGIN)
+	var target_rect := target_rect_for(def)
+	var stone_hp := {}
+	var glass_alive := {}
+	for obstacle in def.obstacles:
+		if obstacle.kind == ObstacleDefinition.KIND_STONE:
+			stone_hp[obstacle.id] = MaterialRules.max_hp(obstacle.kind)
+		elif obstacle.kind == ObstacleDefinition.KIND_GLASS:
+			glass_alive[obstacle.id] = true
+	var clearance := INF
+	for shot in record.shots:
+		var boxes := _boxes_for_state(def, stone_hp, glass_alive)
+		var real := _real_boxes_for_state(def, stone_hp, glass_alive)
+		var sim := _simulate_shot(def, boxes, stone_hp, glass_alive, target_rect, kill_rect,
+				gravity, float(shot["angle"]), float(shot["power"]), true, real)
+		clearance = minf(clearance, float(sim["clearance"]))
+	return clearance
+
+
+## Distância segmento→retângulo (0 se tocam). Matemática pura.
+static func _seg_rect_dist(from: Vector2, to: Vector2, rect: Rect2) -> float:
+	if _segment_hits_rect(from, to, rect):
+		return 0.0
+	var best := minf(_point_rect_dist(from, rect), _point_rect_dist(to, rect))
+	var corners := [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]
+	for corner in corners:
+		best = minf(best, _point_seg_dist(corner, from, to))
+	return best
+
+
+static func _point_rect_dist(point: Vector2, rect: Rect2) -> float:
+	var clamped := Vector2(
+		clampf(point.x, rect.position.x, rect.end.x),
+		clampf(point.y, rect.position.y, rect.end.y))
+	return point.distance_to(clamped)
+
+
+static func _point_seg_dist(point: Vector2, from: Vector2, to: Vector2) -> float:
+	var closest: Vector2 = Geometry2D.get_closest_point_to_segment(point, from, to)
+	return point.distance_to(closest)
 
 
 static func _pick_archetype(rng: RandomNumberGenerator, cfg: DifficultyConfig) -> LevelArchetype:

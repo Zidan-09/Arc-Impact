@@ -110,8 +110,9 @@ func _check_builder_determinism() -> int:
 
 ## Etapa 5: 20 seeds × bandas 1–10 passam em validate + structure e
 ## respeitam o orçamento de contagens do cfg (sem solver ainda).
+## Etapa 8: inclui bandas 11–15 (skip de ricochete + alvo alto).
 func _check_builder_validity() -> int:
-	for level in [2, 5, 8]:
+	for level in [2, 5, 8, 12, 14]:
 		var cfg := DifficultyTable.get_config(level)
 		for seed_value in range(20):
 			var rng := RandomNumberGenerator.new()
@@ -128,8 +129,31 @@ func _check_builder_validity() -> int:
 				return _fail("seed %d fase %d vidro fora do cfg" % [seed_value, level])
 			if int(counts[ObstacleDefinition.KIND_STONE]) < cfg.stone_count.x or int(counts[ObstacleDefinition.KIND_STONE]) > cfg.stone_count.y:
 				return _fail("seed %d fase %d pedra fora do cfg" % [seed_value, level])
+			if int(counts[ObstacleDefinition.KIND_METAL]) < cfg.metal_count.x or int(counts[ObstacleDefinition.KIND_METAL]) > cfg.metal_count.y:
+				return _fail("seed %d fase %d metal fora do cfg" % [seed_value, level])
 			if def.composition_tags.is_empty():
 				return _fail("seed %d fase %d sem tags compositivas" % [seed_value, level])
+	# Padrões da Etapa 8 aparecem na varredura (espelho de retorno nas
+	# 11+, alvo high nas <11): variedade de verdade, não só parâmetros.
+	var seen_skip := false
+	var seen_high := false
+	for seed_value in range(40):
+		for level in [5, 12]:
+			var cfg := DifficultyTable.get_config(level)
+			var rng := RandomNumberGenerator.new()
+			rng.seed = hash("%d:%d:%d" % [seed_value, LevelDefinition.GENERATOR_VERSION, level])
+			var def := CompositionBuilder.build(rng, cfg, seed_value, level)
+			if level == 12:
+				for o in def.obstacles:
+					if o.mechanic == Composition.MECH_RICOCHET:
+						seen_skip = true
+			else:
+				if def.target.role == Composition.TARGET_HIGH:
+					seen_high = true
+	if not seen_skip:
+		return _fail("etapa 8: nenhum mirror de ricochete nas 11+")
+	if not seen_high:
+		return _fail("etapa 8: nenhum alvo high nas <11")
 	return 0
 
 
