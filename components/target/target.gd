@@ -64,7 +64,8 @@ func play_recoil() -> void:
 
 	position = initial_position
 
-	var recoil_global_position := global_position + RECOIL_DIRECTION * RECOIL_DISTANCE
+	var recoil_dir := Vector2.RIGHT.rotated(global_rotation)
+	var recoil_global_position := global_position + recoil_dir * RECOIL_DISTANCE
 
 	var recoil_position: Vector2 = (get_parent() as Node2D).to_local(recoil_global_position)
 
