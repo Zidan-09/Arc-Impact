@@ -4,8 +4,9 @@
 [ext_resource type="PackedScene" uid="uid://dyp35o0rt733p" path="res://components/obstacles/glass/glassObstacle.tscn" id="2_dxoku"]
 [ext_resource type="PackedScene" uid="uid://cdwyigup7yi7r" path="res://components/obstacles/metal/metalObstacle.tscn" id="3_en87d"]
 [ext_resource type="PackedScene" uid="uid://cr3negmvstljq" path="res://components/obstacles/stone/stoneObstacle.tscn" id="4_1oik2"]
-[ext_resource type="PackedScene" path="res://components/target/target.tscn" id="5_d180s"]
+[ext_resource type="PackedScene" uid="uid://cleehopkqkfag" path="res://components/target/target.tscn" id="5_d180s"]
 [ext_resource type="PackedScene" uid="uid://bangr24luog7a" path="res://components/cannon/cannon.tscn" id="6_33hjg"]
+[ext_resource type="PackedScene" uid="uid://yo8x47fn5125" path="res://components/structure/Structure.tscn" id="7_dxoku"]
 
 [node name="World" type="Node2D" unique_id=1129731174]
 
@@ -32,15 +33,19 @@ position = Vector2(1051, 141)
 scale = Vector2(0.2, 0.2)
 
 [node name="MetalSquare5" parent="Obstacles" unique_id=515288289 instance=ExtResource("3_en87d")]
-position = Vector2(1051, 30.999998)
+position = Vector2(673, 144)
 scale = Vector2(0.2, 0.2)
 
 [node name="StoneObstacle" parent="Obstacles" unique_id=1462746437 instance=ExtResource("4_1oik2")]
-position = Vector2(1161, 465)
+position = Vector2(1157, 455)
+scale = Vector2(0.2, 0.2)
+
+[node name="StoneObstacle3" parent="Obstacles" unique_id=850362686 instance=ExtResource("4_1oik2")]
+position = Vector2(671, 316)
 scale = Vector2(0.2, 0.2)
 
 [node name="StoneObstacle2" parent="Obstacles" unique_id=1502137 instance=ExtResource("4_1oik2")]
-position = Vector2(1223, 360)
+position = Vector2(1224, 344)
 scale = Vector2(0.2, 0.2)
 
 [node name="Ground" type="Node2D" parent="." unique_id=1248903839]
@@ -106,8 +111,43 @@ position = Vector2(1250, 670)
 scale = Vector2(0.2, 0.2)
 
 [node name="Target" parent="." unique_id=157819008 instance=ExtResource("5_d180s")]
-position = Vector2(1230, 572)
+position = Vector2(1198, 590)
+rotation = 1.5707964
 
 [node name="Cannon" parent="." unique_id=1115613926 instance=ExtResource("6_33hjg")]
 position = Vector2(150, 487)
 scale = Vector2(0.3, 0.3)
+
+[node name="Structure" parent="." unique_id=547570193 instance=ExtResource("7_dxoku")]
+position = Vector2(963, 142)
+rotation = 1.5707964
+scale = Vector2(0.15, 0.15)
+
+[node name="Structure6" parent="." unique_id=1689304185 instance=ExtResource("7_dxoku")]
+position = Vector2(1140, 344)
+rotation = 1.5707964
+scale = Vector2(0.15, 0.15)
+
+[node name="Structure7" parent="." unique_id=209205021 instance=ExtResource("7_dxoku")]
+position = Vector2(1242, 455.00003)
+rotation = 1.5707964
+scale = Vector2(0.15, 0.15)
+
+[node name="Structure2" parent="." unique_id=1925304672 instance=ExtResource("7_dxoku")]
+position = Vector2(896, 142.00002)
+rotation = 1.5707964
+scale = Vector2(0.15, 0.15)
+
+[node name="Structure3" parent="." unique_id=1956216889 instance=ExtResource("7_dxoku")]
+position = Vector2(829, 142)
+rotation = 1.5707964
+scale = Vector2(0.15, 0.15)
+
+[node name="Structure4" parent="." unique_id=1560711707 instance=ExtResource("7_dxoku")]
+position = Vector2(762, 142)
+rotation = 1.5707964
+scale = Vector2(0.15, 0.15)
+
+[node name="Structure5" parent="." unique_id=1311952037 instance=ExtResource("7_dxoku")]
+position = Vector2(674, 232)
+scale = Vector2(0.15, 0.15)
