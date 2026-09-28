@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d2cyj0qcjsp6q"
-path="res://.godot/imported/active-next.png-d40639e2afdcb6b7006d075bd2689e13.ctex"
+uid="uid://du6g32oa56xkt"
+path="res://.godot/imported/active_home.png-62cbc3a09ff034957df5f63ba69bdb53.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/buttons/level-complete-popup/active-next.png"
-dest_files=["res://.godot/imported/active-next.png-d40639e2afdcb6b7006d075bd2689e13.ctex"]
+source_file="res://assets/buttons/game-popup/active_home.png"
+dest_files=["res://.godot/imported/active_home.png-62cbc3a09ff034957df5f63ba69bdb53.ctex"]
 
 [params]
 

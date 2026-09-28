@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwc6xl7wswm5i"
-path="res://.godot/imported/inactive_home.png-1f5864d687e93fb5333de360e2016558.ctex"
+uid="uid://ct0or5xq7wnl8"
+path="res://.godot/imported/inactive_pause.png-4359a76d7c8aac033946e7066f918b13.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/buttons/level-complete-popup/inactive_home.png"
-dest_files=["res://.godot/imported/inactive_home.png-1f5864d687e93fb5333de360e2016558.ctex"]
+source_file="res://assets/buttons/pause/inactive_pause.png"
+dest_files=["res://.godot/imported/inactive_pause.png-4359a76d7c8aac033946e7066f918b13.ctex"]
 
 [params]
 

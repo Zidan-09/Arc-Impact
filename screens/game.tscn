@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://djwula3u81ni3" path="res://components/hud/hud.tscn" id="1_6ydpi"]
 [ext_resource type="Script" uid="uid://c2v01nmy74ryw" path="res://screens/game.gd" id="1_game"]
 [ext_resource type="PackedScene" uid="uid://bangr24luog7a" path="res://components/cannon/cannon.tscn" id="2_cannon"]
-[ext_resource type="PackedScene" uid="uid://dlrnlvqly8g6u" path="res://components/victory-popup/LevelCompletePopup.tscn" id="3_popup"]
+[ext_resource type="PackedScene" uid="uid://dlrnlvqly8g6u" path="res://components/game-popup/GamePopup.tscn" id="3_popup"]
 [ext_resource type="Script" uid="uid://k41s4wr5vu17" path="res://components/camera/game_camera.gd" id="4_camera"]
 
 [node name="Game" type="Control" unique_id=1263011264]

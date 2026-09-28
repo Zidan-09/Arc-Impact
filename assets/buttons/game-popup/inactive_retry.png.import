@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://drlmj1gi0uy02"
-path="res://.godot/imported/active_retry.png-4a855ab0d94b70d4ca4960613478d9ee.ctex"
+uid="uid://t73f518lr65x"
+path="res://.godot/imported/inactive_retry.png-06b59746359e00765bf85f2001a90cbc.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/buttons/level-complete-popup/active_retry.png"
-dest_files=["res://.godot/imported/active_retry.png-4a855ab0d94b70d4ca4960613478d9ee.ctex"]
+source_file="res://assets/buttons/game-popup/inactive_retry.png"
+dest_files=["res://.godot/imported/inactive_retry.png-06b59746359e00765bf85f2001a90cbc.ctex"]
 
 [params]
 

@@ -92,13 +92,13 @@ func update_handle_position() -> void:
 		t
 	)
 	
-	power_gradient.position.y = handle.position.y + 50
-	power_gradient.size.y = limits.y - handle.position.y + 50
+	power_gradient.position.y = handle.position.y
+	power_gradient.size.y = limits.y - handle.position.y + 100
 
 func get_handle_limits() -> Vector2:
 	var half_handle_height := handle.size.y / 2.0
 
-	var top := track.position.y + half_handle_height
+	var top := track.position.y + half_handle_height + 50
 	var bottom := track.position.y + track.size.y - half_handle_height - 120
 
 	return Vector2(top, bottom)

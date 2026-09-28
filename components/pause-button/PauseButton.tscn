@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://byv27thwp3iq4"]
+
+[ext_resource type="Texture2D" uid="uid://ct0or5xq7wnl8" path="res://assets/buttons/pause/inactive_pause.png" id="1_rhrin"]
+[ext_resource type="Texture2D" uid="uid://bimj53kl7uf71" path="res://assets/buttons/pause/active_pause.png" id="2_2gdmi"]
+
+[node name="Pause" type="TextureButton" unique_id=977585504]
+texture_normal = ExtResource("1_rhrin")
+texture_pressed = ExtResource("2_2gdmi")

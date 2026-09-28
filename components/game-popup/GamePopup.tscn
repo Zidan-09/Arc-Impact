@@ -1,12 +1,12 @@
 [gd_scene format=3 uid="uid://dlrnlvqly8g6u"]
 
-[ext_resource type="Script" uid="uid://ckkd5npba5ubk" path="res://components/victory-popup/level_complete_popup.gd" id="1_2vs6c"]
-[ext_resource type="Texture2D" uid="uid://bwc6xl7wswm5i" path="res://assets/buttons/level-complete-popup/inactive_home.png" id="2_gcyas"]
-[ext_resource type="Texture2D" uid="uid://du6g32oa56xkt" path="res://assets/buttons/level-complete-popup/active_home.png" id="3_tqurp"]
-[ext_resource type="Texture2D" uid="uid://t73f518lr65x" path="res://assets/buttons/level-complete-popup/inactive_retry.png" id="4_cbkgu"]
-[ext_resource type="Texture2D" uid="uid://drlmj1gi0uy02" path="res://assets/buttons/level-complete-popup/active_retry.png" id="5_nom0c"]
-[ext_resource type="Texture2D" uid="uid://cqtqhbr85dg54" path="res://assets/buttons/level-complete-popup/inactive-next.png" id="6_uu8y5"]
-[ext_resource type="Texture2D" uid="uid://d2cyj0qcjsp6q" path="res://assets/buttons/level-complete-popup/active-next.png" id="7_qx2nt"]
+[ext_resource type="Script" uid="uid://ckkd5npba5ubk" path="res://components/game-popup/game_popup.gd" id="1_24bv1"]
+[ext_resource type="Texture2D" uid="uid://bwc6xl7wswm5i" path="res://assets/buttons/level-complete-popup/inactive_home.png" id="2_5g5n6"]
+[ext_resource type="Texture2D" uid="uid://du6g32oa56xkt" path="res://assets/buttons/level-complete-popup/active_home.png" id="3_gq6li"]
+[ext_resource type="Texture2D" uid="uid://t73f518lr65x" path="res://assets/buttons/level-complete-popup/inactive_retry.png" id="4_xotoe"]
+[ext_resource type="Texture2D" uid="uid://drlmj1gi0uy02" path="res://assets/buttons/level-complete-popup/active_retry.png" id="5_3y8dd"]
+[ext_resource type="Texture2D" uid="uid://cqtqhbr85dg54" path="res://assets/buttons/level-complete-popup/inactive-next.png" id="6_s7n8a"]
+[ext_resource type="Texture2D" uid="uid://d2cyj0qcjsp6q" path="res://assets/buttons/level-complete-popup/active-next.png" id="7_litbe"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_popup"]
 bg_color = Color(0.051, 0.031, 0.078, 0.97)
@@ -31,7 +31,7 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 6
 size_flags_vertical = 6
-script = ExtResource("1_2vs6c")
+script = ExtResource("1_24bv1")
 
 [node name="Overlay" type="ColorRect" parent="." unique_id=790442374]
 layout_mode = 1
@@ -58,7 +58,12 @@ grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_popup")
 
 [node name="Margin" type="MarginContainer" parent="Panel" unique_id=902104417]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/margin_left = 36
 theme_override_constants/margin_top = 28
 theme_override_constants/margin_right = 36
@@ -71,6 +76,7 @@ alignment = 1
 
 [node name="Title" type="Label" parent="Panel/Margin/VBox" unique_id=83020903]
 layout_mode = 2
+size_flags_horizontal = 4
 theme_override_colors/font_color = Color(0.133, 0.827, 0.933, 1)
 theme_override_colors/font_shadow_color = Color(0.851, 0.275, 0.937, 0.9)
 theme_override_constants/shadow_offset_x = 0
@@ -88,6 +94,7 @@ horizontal_alignment = 1
 
 [node name="LevelInfo" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=69680846]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 48
 alignment = 1
 
@@ -131,23 +138,23 @@ alignment = 1
 [node name="Home" type="TextureButton" parent="Panel/Margin/VBox/ButtonsContainer" unique_id=351575167]
 custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
-texture_normal = ExtResource("2_gcyas")
-texture_pressed = ExtResource("3_tqurp")
+texture_normal = ExtResource("2_5g5n6")
+texture_pressed = ExtResource("3_gq6li")
 ignore_texture_size = true
 stretch_mode = 5
 
 [node name="Retry" type="TextureButton" parent="Panel/Margin/VBox/ButtonsContainer" unique_id=287095301]
 custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
-texture_normal = ExtResource("4_cbkgu")
-texture_pressed = ExtResource("5_nom0c")
+texture_normal = ExtResource("4_xotoe")
+texture_pressed = ExtResource("5_3y8dd")
 ignore_texture_size = true
 stretch_mode = 5
 
 [node name="Next" type="TextureButton" parent="Panel/Margin/VBox/ButtonsContainer" unique_id=1947938684]
 custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
-texture_normal = ExtResource("6_uu8y5")
-texture_pressed = ExtResource("7_qx2nt")
+texture_normal = ExtResource("6_s7n8a")
+texture_pressed = ExtResource("7_litbe")
 ignore_texture_size = true
 stretch_mode = 5
