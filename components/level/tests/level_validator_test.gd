@@ -21,6 +21,10 @@ func _init() -> void:
 	failures += _check_missing_target()
 	failures += _check_config()
 	failures += _check_bulk_valid()
+	failures += _check_structure_valid()
+	failures += _check_structure_errors()
+	failures += _check_contact_allowed()
+	failures += _check_guide1_support()
 	if failures == 0:
 		print("LEVEL_VALIDATOR_TEST: PASS")
 	else:
@@ -238,3 +242,184 @@ func _check_bulk_valid() -> int:
 func _fail(message: String) -> int:
 	printerr("  [validator] " + message)
 	return 1
+
+
+## Composição válida (Etapa 3): canhão no plano + base contínua + gate
+## de 2 vidros encostados no floor + alvo à direita com função.
+## Passa em validate() E validate_structure().
+func _struct_def() -> LevelDefinition:
+	var def := LevelDefinition.new()
+	def.seed = 7
+	def.level_number = 5
+	def.ammo = 3
+	def.cannon_position = Vector2(200, 565)
+	def.target = TargetDefinition.new()
+	def.target.position = Vector2(1150, 300)
+	def.target.role = Composition.TARGET_FOOT
+	var x := 50.0
+	while x <= 1250.0:
+		var floor := FloorDefinition.new()
+		floor.position = Vector2(x, 670)
+		def.floors.append(floor)
+		x += 100.0
+	for i in 2:
+		var glass := ObstacleDefinition.new()
+		glass.id = "obs_%02d" % (i + 1)
+		glass.kind = ObstacleDefinition.KIND_GLASS
+		glass.position = Vector2(950 + i * 100, 573)
+		glass.scale = Vector2(0.1, 0.1)
+		glass.group = Composition.GROUP_GATE
+		glass.role = "joint" if i == 0 else "leaf"
+		glass.anchor = "floor" if i == 0 else "obs_01"
+		glass.mechanic = Composition.MECH_BREAKABLE
+		def.obstacles.append(glass)
+	return def
+
+
+func _check_structure_valid() -> int:
+	var def := _struct_def()
+	var legacy := LevelValidator.validate(def)
+	if not legacy["ok"]:
+		return _fail("composição válida reprovada no validate(): %s" % str(legacy["errors"]))
+	var result := LevelValidator.validate_structure(def)
+	if not result["ok"]:
+		return _fail("composição válida reprovada: %s" % str(result["errors"]))
+	return 0
+
+
+## Cada código estrutural com fixture mínima (a validação reprova sem
+## consertar: cada caso deve conter EXATAMENTE o código esperado além
+## dos inevitáveis — o teste exige a presença, não a exclusividade,
+## exceto onde anotado).
+func _check_structure_errors() -> int:
+	var failures := 0
+	# FLOOR_GAP: base sem o tile x=650.
+	var def := _struct_def()
+	for i in def.floors.size():
+		if def.floors[i].position.x == 650.0:
+			def.floors.remove_at(i)
+			break
+	if not _has_code(LevelValidator.validate_structure(def), LevelValidator.ERR_FLOOR_GAP):
+		failures += _fail("base com vão não gerou FLOOR_GAP")
+	# CANNON_FLOATING: canhão alto sem apoio.
+	def = _struct_def()
+	def.cannon_position = Vector2(200, 300)
+	if not _has_code(LevelValidator.validate_structure(def), LevelValidator.ERR_CANNON_FLOATING):
+		failures += _fail("canhão sem apoio não gerou CANNON_FLOATING")
+	# CANNON_SIDE: canhão fora da esquerda.
+	def = _struct_def()
+	def.cannon_position = Vector2(640, 565)
+	if not _has_code(LevelValidator.validate_structure(def), LevelValidator.ERR_CANNON_SIDE):
+		failures += _fail("canhão à direita não gerou CANNON_SIDE")
+	# FLOOR_NO_ASCENT: plataforma isolada (apoio fora do componente).
+	# Plataforma em y=470: contém o pé mas não encosta na base (vão
+	# de 100px até o topo 620) nem em nada — apoio desancorado.
+	def = _struct_def()
+	def.cannon_position = Vector2(200, 465)
+	var platform := FloorDefinition.new()
+	platform.position = Vector2(200, 470)
+	def.floors.append(platform)
+	var result := LevelValidator.validate_structure(def)
+	if not _has_code(result, LevelValidator.ERR_FLOOR_NO_ASCENT):
+		failures += _fail("plataforma isolada não gerou FLOOR_NO_ASCENT: %s" % str(result["errors"]))
+	# FLOOR_NO_RETURN: relevo isolado sem relação com o canhão.
+	# Em y=470 há vão de 100px até a base — fora do componente.
+	def = _struct_def()
+	var stray := FloorDefinition.new()
+	stray.position = Vector2(600, 470)
+	def.floors.append(stray)
+	if not _has_code(LevelValidator.validate_structure(def), LevelValidator.ERR_FLOOR_NO_RETURN):
+		failures += _fail("relevo isolado não gerou FLOOR_NO_RETURN")
+	# OBSTACLE_FLOATING: dupla encostada entre si mas fora do floor.
+	def = _struct_def()
+	def.obstacles[0].position = Vector2(700, 300)
+	def.obstacles[1].position = Vector2(800, 300)
+	result = LevelValidator.validate_structure(def)
+	if not _has_code(result, LevelValidator.ERR_OBSTACLE_FLOATING):
+		failures += _fail("dupla flutuante não gerou OBSTACLE_FLOATING: %s" % str(result["errors"]))
+	if _has_code(result, LevelValidator.ERR_OBSTACLE_ISOLATED):
+		failures += _fail("dupla com aresta não deveria gerar OBSTACLE_ISOLATED")
+	# OBSTACLE_ISOLATED: uma peça no floor + uma solitária flutuando.
+	def = _struct_def()
+	def.obstacles[1].position = Vector2(700, 300)
+	if not _has_code(LevelValidator.validate_structure(def), LevelValidator.ERR_OBSTACLE_ISOLATED):
+		failures += _fail("peça solitária não gerou OBSTACLE_ISOLATED")
+	# STRUCTURE_UNGROUNDED: viga declarada com link inexistente.
+	def = _struct_def()
+	var beam := StructureDefinition.new()
+	beam.id = "struct_01"
+	beam.position = Vector2(1000, 400)
+	beam.rotation_degrees = 90.0
+	beam.role = StructureDefinition.ROLE_BEAM
+	beam.link_a = "obs_01"
+	beam.link_b = "obs_99"
+	def.structures.append(beam)
+	if not _has_code(LevelValidator.validate_structure(def), LevelValidator.ERR_STRUCTURE_UNGROUNDED):
+		failures += _fail("viga com link quebrado não gerou STRUCTURE_UNGROUNDED")
+	# TARGET_OUT_OF_ROLE: alvo fora da direita sem exceção.
+	def = _struct_def()
+	def.target.position = Vector2(700, 200)
+	if not _has_code(LevelValidator.validate_structure(def), LevelValidator.ERR_TARGET_OUT_OF_ROLE):
+		failures += _fail("alvo fora da direita não gerou TARGET_OUT_OF_ROLE")
+	# TRIVIAL_COMPOSITION: base + canhão, zero obstáculos.
+	def = _struct_def()
+	def.obstacles.clear()
+	if not _has_code(LevelValidator.validate_structure(def), LevelValidator.ERR_TRIVIAL_COMPOSITION):
+		failures += _fail("fase vazia não gerou TRIVIAL_COMPOSITION")
+	return failures
+
+
+## Peças empilhadas com contato exato NÃO são sobreposição (a composição
+## encosta; só penetração além da tolerância erra).
+func _check_contact_allowed() -> int:
+	var def := _struct_def()
+	def.obstacles.clear()
+	for i in 2:
+		var stone := ObstacleDefinition.new()
+		stone.id = "obs_%02d" % (i + 1)
+		stone.kind = ObstacleDefinition.KIND_STONE
+		stone.position = Vector2(700, 570 - i * 100) # encosto exato
+		stone.group = Composition.GROUP_TOWER
+		stone.anchor = "floor" if i == 0 else "obs_01"
+		def.obstacles.append(stone)
+	var legacy := LevelValidator.validate(def)
+	if not legacy["ok"]:
+		return _fail("torre encostada reprovada no validate(): %s" % str(legacy["errors"]))
+	var result := LevelValidator.validate_structure(def)
+	if not result["ok"]:
+		return _fail("torre encostada reprovada: %s" % str(result["errors"]))
+	return 0
+
+
+## Números do Guide1: canhão (150,487)@0.3 sobre plataforma (150/250,570)
+## + base contínua => apoio encontrado, subida conectada, sem erros de
+## floor/canhão (o resto da fase não é montado aqui).
+func _check_guide1_support() -> int:
+	var def := LevelDefinition.new()
+	def.cannon_position = Vector2(150, 487)
+	def.cannon_scale = Vector2(0.3, 0.3)
+	def.target = TargetDefinition.new()
+	def.target.position = Vector2(1150, 300)
+	var x := 50.0
+	while x <= 1250.0:
+		var floor := FloorDefinition.new()
+		floor.position = Vector2(x, 670)
+		def.floors.append(floor)
+		x += 100.0
+	for px in [150.0, 250.0]:
+		var platform := FloorDefinition.new()
+		platform.position = Vector2(px, 570)
+		def.floors.append(platform)
+	for i in 2:
+		var glass := ObstacleDefinition.new()
+		glass.id = "obs_%02d" % (i + 1)
+		glass.kind = ObstacleDefinition.KIND_GLASS
+		glass.position = Vector2(950 + i * 100, 573)
+		glass.scale = Vector2(0.1, 0.1)
+		def.obstacles.append(glass)
+	var result := LevelValidator.validate_structure(def)
+	for code in [LevelValidator.ERR_FLOOR_GAP, LevelValidator.ERR_CANNON_FLOATING,
+			LevelValidator.ERR_FLOOR_NO_ASCENT, LevelValidator.ERR_FLOOR_NO_RETURN]:
+		if _has_code(result, code):
+			return _fail("apoio do Guide1 gerou %s: %s" % [code, str(result["errors"])])
+	return 0
