@@ -14,6 +14,7 @@ signal next_pressed
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	home_button.pressed.connect(_on_home_button_pressed)
 	retry_button.pressed.connect(_on_retry_button_pressed)
 	next_button.pressed.connect(_on_next_button_pressed)
@@ -40,6 +41,15 @@ func show_defeat_popup(score: int, ammo: int) -> void:
 	title_label.add_theme_color_override("font_shadow_color", Color(1.0, 0.23, 0.42, 0.6))
 	subtitle_label.text = "Tente novamente"
 	setup(score, ammo, false)
+	visible = true
+
+
+func show_pause_popup(score: int, ammo: int) -> void:
+	title_label.text = "PAUSE"
+	title_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	title_label.add_theme_color_override("font_shadow_color", Color(0.851, 0.275, 0.937, 0.9))
+	subtitle_label.text = "Jogo pausado"
+	setup(score, ammo, true)
 	visible = true
 
 

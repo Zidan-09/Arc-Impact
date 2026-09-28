@@ -27,6 +27,7 @@ var won := false
 var _loading := false
 var _awaiting_end := false
 var _end_timer := 0.0
+var _is_paused := false
 var _dragging_angle := false
 var _panning := false
 # Toques ativos (index -> posição) para pan/pinça com 2 dedos.
@@ -46,6 +47,8 @@ func _ready() -> void:
 	victory_popup.home_pressed.connect(_on_popup_home)
 	victory_popup.retry_pressed.connect(_on_popup_retry)
 	victory_popup.next_pressed.connect(_on_popup_next)
+	victory_popup.process_mode = Node.PROCESS_MODE_ALWAYS
+	hud.pause_pressed.connect(_on_pause_pressed)
 	builder = LevelBuilder.new()
 	add_child(builder)
 	load_level(DEFAULT_SEED, level_number)
@@ -55,6 +58,8 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 	if _loading:
 		return
 	_loading = true
+	_is_paused = false
+	get_tree().paused = false
 	game_over = true
 	won = false
 	_awaiting_end = false
@@ -66,6 +71,8 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 	level_number = new_level_number
 	current_seed = seed_value
 	victory_popup.visible = false
+	for bullet in get_tree().get_nodes_in_group("bullets"):
+		bullet.queue_free()
 	var result := FastLevelGenerator.generate(seed_value, level_number)
 	var def: LevelDefinition = result["def"]
 	if bool(result["fallback_used"]):
@@ -86,7 +93,7 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 
 
 func shoot() -> void:
-	if game_over or _loading:
+	if game_over or _loading or _is_paused:
 		return
 	if ammo_left <= 0:
 		return
@@ -126,18 +133,47 @@ func _on_power_changed(value: float) -> void:
 
 
 func _on_popup_home() -> void:
+	_is_paused = false
+	get_tree().paused = false
 	get_tree().change_scene_to_file("res://screens/home.tscn")
 
 
 func _on_popup_retry() -> void:
+	_is_paused = false
+	get_tree().paused = false
 	load_level(current_seed, level_number)
 
 
 func _on_popup_next() -> void:
+	if _is_paused:
+		resume_game()
+		return
 	load_level(current_seed + 1, level_number + 1)
 
 
+func _on_pause_pressed() -> void:
+	if _loading or _is_paused:
+		return
+	if game_over or won:
+		return
+	if victory_popup.visible:
+		return
+	_is_paused = true
+	get_tree().paused = true
+	victory_popup.show_pause_popup(0, ammo_left)
+
+
+func resume_game() -> void:
+	if not _is_paused:
+		return
+	_is_paused = false
+	victory_popup.visible = false
+	get_tree().paused = false
+
+
 func _input(event: InputEvent) -> void:
+	if _is_paused:
+		return
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 			_dragging_angle = false
@@ -154,6 +190,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _is_paused:
+		return
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_dragging_angle = event.pressed and _press_in_world(event.position)
