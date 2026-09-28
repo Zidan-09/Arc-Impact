@@ -14,8 +14,6 @@ class_name CompositionBuilder extends RefCounted
 
 const GATE_Y_GLASS := 573.0 # vidro 0.1 apoiado no plano (620 - 46.7)
 const GATE_Y_BLOCK := 570.0 # bloco 0.2 apoiado no plano (620 - 50)
-const TOWER_DX := 220.0 # torre recuada do alvo (zona de exclusão + folga)
-const GATE_GAP := 130.0 # gate–torre: vão que a viga declarada cobre
 
 
 static func build(rng: RandomNumberGenerator, cfg: DifficultyConfig, seed_value: int, level_number: int) -> LevelDefinition:
@@ -82,34 +80,46 @@ static func _build_target(def: LevelDefinition, comp: Composition, rng: RandomNu
 	comp.target_role = Composition.TARGET_FOOT
 
 
-## Grupos sobre o palco à direita (torre recuada do alvo, gate à
-## esquerda da torre). Materiais cabem no orçamento da banda (validate
-##_config continua valendo: nada além dos intervalos do cfg).
+## Grupos sobre o palco à direita. REGRA DE OURO (lição da fase 5):
+## na linha do disparo só vidro (atravessa ao destruir); pedra e metal
+## REBATEM — sobre a linha viram veneno, fora dela são moldura/espelho.
+## Por isso: gate (vidro, na linha) + torre baixa de pedra SÓ com canhão
+## alto (linha passa por cima) — nunca muralhando alvo baixo.
+## Materiais cabem no orçamento da banda (validate_config continua).
 static func _build_groups(def: LevelDefinition, comp: Composition, rng: RandomNumberGenerator, cfg: DifficultyConfig) -> void:
-	var tower_x := def.target.position.x - TOWER_DX
-	var glass_budget := cfg.glass_count.y - _count_kind(def, ObstacleDefinition.KIND_GLASS)
-	var stone_budget := cfg.stone_count.y - _count_kind(def, ObstacleDefinition.KIND_STONE)
-
-	# Gate: barreira sobre a linha do disparo. Vidro nas juntas
-	# (quebrar abre caminho); miolo de pedra quando a banda permite
-	# desgaste (cobra o 2º impacto).
-	var gate_kinds: Array[StringName] = []
-	if glass_budget >= 2:
-		gate_kinds = [ObstacleDefinition.KIND_GLASS, ObstacleDefinition.KIND_GLASS]
-		if stone_budget >= 1 and rng.randf() < 0.7:
-			gate_kinds = [ObstacleDefinition.KIND_GLASS, ObstacleDefinition.KIND_STONE,
-					ObstacleDefinition.KIND_GLASS]
-	elif glass_budget == 1:
-		gate_kinds = [ObstacleDefinition.KIND_GLASS]
+	var tx := def.target.position.x
+	if comp.cannon_intent == Composition.CANNON_GROUND:
+		_build_ground_gate(def, comp, rng, cfg, tx)
 	else:
-		gate_kinds = [ObstacleDefinition.KIND_STONE] if stone_budget >= 1 else []
-	var gate_cx := tower_x - GATE_GAP - 100.0 * float(maxi(gate_kinds.size() - 1, 0)) * 0.5 - 50.0
+		_build_stack_gate(def, comp, rng, cfg, tx)
+	if comp.cannon_intent == Composition.CANNON_PERCH:
+		_build_low_tower(def, comp, rng, cfg, tx)
+
+
+## Canhão baixo: fileira de 2 vidros sobre a linha (+ miolo de pedra
+## quando a banda permite desgaste: 1º tiro racha/rebate, 2º atravessa).
+static func _build_ground_gate(def: LevelDefinition, comp: Composition, rng: RandomNumberGenerator, cfg: DifficultyConfig, tx: float) -> void:
+	var glass_budget := cfg.glass_count.y
+	var stone_budget := cfg.stone_count.y
+	var kinds: Array[StringName] = [ObstacleDefinition.KIND_GLASS, ObstacleDefinition.KIND_GLASS]
+	# Miolo de pedra quando a banda permite desgaste — vira fileira de 3
+	# para não quebrar o mínimo de vidro. OBRIGATÓRIO se o mínimo do cfg
+	# exigir pedra (só o gate a coloca no canhão baixo).
+	if stone_budget >= 1 and glass_budget >= 2:
+		if cfg.stone_count.x >= 1 or rng.randf() < 0.5:
+			kinds = [ObstacleDefinition.KIND_GLASS, ObstacleDefinition.KIND_STONE,
+					ObstacleDefinition.KIND_GLASS]
+	if kinds.is_empty():
+		return
+	var slots := [600.0, 700.0, 800.0]
+	var gx: float = slots[rng.randi_range(0, slots.size() - 1)]
+	# Fileira cabe antes da zona do alvo em qualquer slot (tx >= 1050),
+	# com 4px de folga (encosto exato já conta como OVERLAP_TARGET).
+	if gx + 100.0 * float(kinds.size() - 1) + 47.6 > tx - 140.0 - 4.0:
+		gx = tx - 140.0 - 4.0 - 47.6 - 100.0 * float(kinds.size() - 1)
 	var gate_group: Dictionary = {"type": Composition.GROUP_GATE, "mechanic": Composition.MECH_BREAKABLE, "pieces": []}
-	# Ancorado pelo FIM: a última peça fica a GATE_GAP da torre, onde a
-	# viga declarada alcança (vão curto com folga dos dois lados).
-	var gx := tower_x - GATE_GAP - 100.0 * float(maxi(gate_kinds.size() - 1, 0))
 	var first := true
-	for kind in gate_kinds:
+	for kind in kinds:
 		var y := GATE_Y_GLASS if kind == ObstacleDefinition.KIND_GLASS else GATE_Y_BLOCK
 		var mechanic := Composition.MECH_BREAKABLE if kind == ObstacleDefinition.KIND_GLASS else Composition.MECH_WEAR
 		if kind == ObstacleDefinition.KIND_STONE:
@@ -120,48 +130,85 @@ static func _build_groups(def: LevelDefinition, comp: Composition, rng: RandomNu
 		(gate_group["pieces"] as Array).append(_last_id(def))
 		first = false
 		gx += 100.0
-	if not gate_kinds.is_empty():
-		comp.groups.append(gate_group)
-
-	# Tower: moldura de pedra com contato direto (passo = lado da peça).
-	# Ganho de vidro no topo quando a banda tem folga (ponto fraco).
-	stone_budget = cfg.stone_count.y - _count_kind(def, ObstacleDefinition.KIND_STONE)
-	glass_budget = cfg.glass_count.y - _count_kind(def, ObstacleDefinition.KIND_GLASS)
-	var height := 0
-	if stone_budget >= 2:
-		height = 2
-	elif stone_budget == 1:
-		height = 1
-	if height > 0:
-		var tower_group: Dictionary = {"type": Composition.GROUP_TOWER, "mechanic": Composition.MECH_FRAME, "pieces": []}
-		for i in height:
-			_add_ob(def, ObstacleDefinition.KIND_STONE, Vector2(tower_x, GATE_Y_BLOCK - i * 100.0),
-					Composition.GROUP_TOWER, "base" if i == 0 else "shaft",
-					"floor" if i == 0 else _last_id(def), Composition.MECH_FRAME)
-			(tower_group["pieces"] as Array).append(_last_id(def))
-		if glass_budget >= 1 and rng.randf() < 0.6:
-			_add_ob(def, ObstacleDefinition.KIND_GLASS,
-					Vector2(tower_x, GATE_Y_BLOCK - height * 100.0 + 3.0),
-					Composition.GROUP_TOWER, "cap", _last_id(def), Composition.MECH_BREAKABLE)
-			(tower_group["pieces"] as Array).append(_last_id(def))
-			tower_group["mechanic"] = Composition.MECH_BREAKABLE
-		comp.groups.append(tower_group)
+	comp.groups.append(gate_group)
 
 
-## Structures com papel: viga entre o fim do gate e a base da torre
-## (só existe quando os dois grupos existem — nada de tapa-vão).
-static func _build_structures(def: LevelDefinition, comp: Composition) -> void:
-	var gate_end := _find_last_role(def, Composition.GROUP_GATE, "leaf")
-	if gate_end == null:
-		gate_end = _find_last_role(def, Composition.GROUP_GATE, "joint")
-	var tower_base := _find_last_role(def, Composition.GROUP_TOWER, "base")
-	if gate_end == null or tower_base == null:
+## Canhão elevado (platform/perch): pilha vertical de vidros sobre a
+## linha descendente (+ miolo de pedra com desgaste). A pilha nasce do
+## floor (base conectada) e a linha a atravessa no meio — sólido, não
+## raspão. Platform: 2 peças; perch: 3 (linha mais íngreme).
+static func _build_stack_gate(def: LevelDefinition, comp: Composition, rng: RandomNumberGenerator, cfg: DifficultyConfig, tx: float) -> void:
+	var glass_budget := cfg.glass_count.y
+	var stone_budget := cfg.stone_count.y
+	# Altura 3 com folga no vidro (cabe o miolo sem quebrar o mínimo).
+	var height := 3 if glass_budget >= 3 else 2
+	var kinds: Array[StringName] = []
+	for i in height:
+		kinds.append(ObstacleDefinition.KIND_GLASS)
+	# Pedra NA LINHA: base (platform, linha ~538) ou meio (perch, linha
+	# ~463). Sem torre para suprir o mínimo (platform), força quando o
+	# mínimo exigir; com torre (perch), só se nem ela bastar (mínimo 2+).
+	# Nunca abaixo do mínimo de vidro.
+	var need_min := 1 if comp.cannon_intent != Composition.CANNON_PERCH else 2
+	var stone_idx := 0 if comp.cannon_intent != Composition.CANNON_PERCH else 1
+	if stone_idx >= height:
+		stone_idx = height - 1
+	if stone_budget >= 1 and height >= 2 and height - 1 >= cfg.glass_count.x:
+		if cfg.stone_count.x >= need_min or rng.randf() < 0.5:
+			kinds[stone_idx] = ObstacleDefinition.KIND_STONE
+	var stack_x := tx - 350.0
+	var gate_group: Dictionary = {"type": Composition.GROUP_GATE, "mechanic": Composition.MECH_BREAKABLE, "pieces": []}
+	# Empilhamento com cursor exato: cada peça nasce 2px encostada na de
+	# baixo (contato garantido para qualquer sequência de materiais).
+	var cursor := 620.0 # topo do floor
+	for i in kinds.size():
+		var kind: StringName = kinds[i]
+		var half := 46.7 if kind == ObstacleDefinition.KIND_GLASS else 50.0
+		var y := cursor - half
+		if kind == ObstacleDefinition.KIND_STONE:
+			gate_group["mechanic"] = Composition.MECH_WEAR
+		var mechanic := Composition.MECH_BREAKABLE if kind == ObstacleDefinition.KIND_GLASS else Composition.MECH_WEAR
+		_add_ob(def, kind, Vector2(stack_x, y), Composition.GROUP_GATE,
+				"joint" if i == 0 else ("top" if i == kinds.size() - 1 else "shaft"),
+				"floor" if i == 0 else _last_id(def), mechanic)
+		(gate_group["pieces"] as Array).append(_last_id(def))
+		cursor = y - half + 2.0
+	comp.groups.append(gate_group)
+
+
+## Canhão alto: torre baixa de pedra SOB a linha (moldura, frame) com
+## tampa de vidro (ponto fraco opcional, como o miolo do Guide1). A
+## linha passa acima da pedra e clipa a tampa — nunca muralha o alvo.
+static func _build_low_tower(def: LevelDefinition, comp: Composition, rng: RandomNumberGenerator, cfg: DifficultyConfig, tx: float) -> void:
+	var stone_budget := cfg.stone_count.y - _count_kind(def, ObstacleDefinition.KIND_STONE)
+	var glass_budget := cfg.glass_count.y - _count_kind(def, ObstacleDefinition.KIND_GLASS)
+	if stone_budget < 1:
 		return
-	var mid := (gate_end.position + tower_base.position) * 0.5
+	var tower_x := tx - 220.0
+	var tower_group: Dictionary = {"type": Composition.GROUP_TOWER, "mechanic": Composition.MECH_FRAME, "pieces": []}
+	_add_ob(def, ObstacleDefinition.KIND_STONE, Vector2(tower_x, GATE_Y_BLOCK),
+			Composition.GROUP_TOWER, "base", "floor", Composition.MECH_FRAME)
+	(tower_group["pieces"] as Array).append(_last_id(def))
+	if glass_budget >= 1 and rng.randf() < 0.6:
+		_add_ob(def, ObstacleDefinition.KIND_GLASS, Vector2(tower_x, GATE_Y_BLOCK - 97.0),
+				Composition.GROUP_TOWER, "cap", _last_id(def), Composition.MECH_BREAKABLE)
+		(tower_group["pieces"] as Array).append(_last_id(def))
+		tower_group["mechanic"] = Composition.MECH_BREAKABLE
+	comp.groups.append(tower_group)
+
+
+## Structures com papel: viga entre a tampa da torre e o topo da pilha
+## (coroamento, como o telhado do Guide1). Só existe quando os dois
+## grupos existem — nada de tapa-vão.
+static func _build_structures(def: LevelDefinition, comp: Composition) -> void:
+	var cap := _find_last_role(def, Composition.GROUP_TOWER, "cap")
+	var top := _find_last_role(def, Composition.GROUP_GATE, "top")
+	if cap == null or top == null:
+		return
 	var struct := StructureShapes.beam("struct_%02d" % (def.structures.size() + 1),
-			gate_end.position, tower_base.position, gate_end.id, tower_base.id)
+			top.position, cap.position, top.id, cap.id)
 	def.structures.append(struct)
-	comp.structures = [{"role": "beam", "link_a": gate_end.id, "link_b": tower_base.id}]
+	comp.structures = [{"role": "beam", "link_a": top.id, "link_b": cap.id}]
 
 
 static func _add_ob(def: LevelDefinition, kind: StringName, pos: Vector2, group: StringName, role: String, anchor: String, mechanic: StringName) -> ObstacleDefinition:

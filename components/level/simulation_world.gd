@@ -40,7 +40,10 @@ func run_shot(def: LevelDefinition, state: Dictionary, angle: float, power: floa
 	bullet.max_contacts_reported = 16
 	bullet.body_entered.connect(_on_bullet_body_entered)
 	add_child(bullet)
-	# Escala 1 (padrão da LevelDefinition v1): sem apply_cannon_scale.
+	# Fidelidade (Etapa 6): bala na escala real do canhão da fase
+	# (def.cannon_scale, 0.2 no jogo/compositor) — igual ao Game faz via
+	# apply_cannon_scale e ao BULLET_RADIUS do solver analítico (~10px).
+	bullet.apply_cannon_scale(def.cannon_scale)
 	var muzzle_state := Cannon.muzzle_state_for(def.cannon_position, angle)
 	bullet.global_position = muzzle_state["origin"] as Vector2
 	var direction: Vector2 = muzzle_state["direction"]
@@ -138,6 +141,9 @@ func _build(def: LevelDefinition, state: Dictionary) -> void:
 		var target := TARGET_SCENE.instantiate() as Target
 		add_child(target)
 		target.global_position = def.target.position
+		# Rotação funcional da composição (Etapa 6): o colisor real é
+		# fino (23x95) — sem isso o replay diverge do solver analítico.
+		target.global_rotation_degrees = def.target.rotation_degrees
 		target.target_hit.connect(_on_target_hit)
 
 
