@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://bangr24luog7a" path="res://components/cannon/cannon.tscn" id="2_cannon"]
 [ext_resource type="PackedScene" uid="uid://dlrnlvqly8g6u" path="res://components/game-popup/GamePopup.tscn" id="3_popup"]
 [ext_resource type="Script" uid="uid://k41s4wr5vu17" path="res://components/camera/game_camera.gd" id="4_camera"]
+[ext_resource type="Texture2D" uid="uid://cswwmgv3r1fvb" path="res://assets/floor/floor.png" id="5_gfkhe"]
 
 [node name="Game" type="Control" unique_id=1263011264]
 layout_mode = 3
@@ -38,7 +39,6 @@ base_shot_speed = 2000.0
 
 [node name="GameCamera" type="Camera2D" parent="WorldArea/World" unique_id=771234567]
 position = Vector2(640, 360)
-enabled = true
 editor_draw_limits = true
 script = ExtResource("4_camera")
 
@@ -46,7 +46,6 @@ script = ExtResource("4_camera")
 layer = -1
 
 [node name="WorldBackground" type="TextureRect" parent="BackgroundLayer" unique_id=1689954854]
-layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -61,7 +60,7 @@ stretch_mode = 6
 layer = 10
 
 [node name="WorldHitArea" type="Control" parent="UILayer" unique_id=771234571]
-layout_mode = 1
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -71,7 +70,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="ControlsArea" type="Control" parent="UILayer" unique_id=393842946]
-layout_mode = 1
+layout_mode = 3
 anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
@@ -89,12 +88,11 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-texture = ExtResource("1_3ciuf")
+texture = ExtResource("5_gfkhe")
 expand_mode = 1
 stretch_mode = 6
 
 [node name="Divider" type="ColorRect" parent="UILayer" unique_id=477874718]
-layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
@@ -107,8 +105,6 @@ mouse_filter = 2
 color = Color(0, 0, 0, 1)
 
 [node name="Hud" parent="UILayer" unique_id=2117122883 instance=ExtResource("1_6ydpi")]
-layout_mode = 1
 
 [node name="LevelCompletePopup" parent="UILayer" unique_id=1250229010 instance=ExtResource("3_popup")]
 visible = false
-layout_mode = 1
