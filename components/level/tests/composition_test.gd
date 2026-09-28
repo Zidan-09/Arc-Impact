@@ -14,6 +14,8 @@ func _init() -> void:
 	failures += _check_builder_determinism()
 	failures += _check_builder_validity()
 	failures += _check_builder_variety()
+	failures += _check_generator_determinism()
+	failures += _check_no_guide_copy()
 	if failures == 0:
 		print("COMPOSITION_TEST: PASS")
 	else:
@@ -112,6 +114,8 @@ func _check_builder_determinism() -> int:
 ## respeitam o orçamento de contagens do cfg (sem solver ainda).
 ## Etapa 8: inclui bandas 11–15 (skip de ricochete + alvo alto).
 func _check_builder_validity() -> int:
+	# Compositor serve bandas 1–15; 16+ ficam no legado (skip duplo é
+	# trabalho futuro — ver Etapa 9).
 	for level in [2, 5, 8, 12, 14]:
 		var cfg := DifficultyTable.get_config(level)
 		for seed_value in range(20):
@@ -178,3 +182,45 @@ func _count_kinds(def: LevelDefinition) -> Dictionary:
 		if counts.has(obstacle.kind):
 			counts[obstacle.kind] += 1
 	return counts
+
+
+## Etapa 9: FastLevelGenerator é determinístico (mesma seed => mesmo
+## dicionário, incluindo solução). Rápido (só analítico, sem física).
+func _check_generator_determinism() -> int:
+	var a := JSON.stringify((FastLevelGenerator.generate(99, 5)["def"] as LevelDefinition).to_dict())
+	var b := JSON.stringify((FastLevelGenerator.generate(99, 5)["def"] as LevelDefinition).to_dict())
+	if a != b:
+		return _fail("generator determinism (fases divergiram)")
+	return 0
+
+
+## Etapa 9: nenhuma fase gera os AABBs exatos dos guides (referência,
+## nunca cópia — docs/Levels.md §9). Conjuntos de posições dos
+## obstáculos transcritos de guide/Guide1.tscn e Guide2.tscn.
+func _check_no_guide_copy() -> int:
+	var guide1 := ["1050,243", "1050,565", "1050,455", "1050,345", "1333,342",
+		"1333,231", "1333,122", "1332,452", "1332,562", "1051,141",
+		"673,144", "1157,455", "671,316", "1224,344"]
+	var guide2 := ["794,75", "972,74", "618,70", "438,65", "795,287",
+		"435,168", "255,167", "1245,563", "1135,564", "1025,563", "1223,55",
+		"1223,166", "1223,275", "914,563", "972,177", "972,288", "796,398",
+		"797,510", "795,177", "616,172", "692,466", "591,569", "692,569"]
+	guide1.sort()
+	guide2.sort()
+	for level in [2, 5, 8, 12, 15]:
+		var cfg := DifficultyTable.get_config(level)
+		for seed_value in range(8):
+			var rng := RandomNumberGenerator.new()
+			rng.seed = hash("%d:%d:%d" % [seed_value, LevelDefinition.GENERATOR_VERSION, level])
+			var def := CompositionBuilder.build(rng, cfg, seed_value, level)
+			var positions: Array = []
+			for o in def.obstacles:
+				positions.append("%d,%d" % [int(round(o.position.x)), int(round(o.position.y))])
+			positions.sort()
+			if positions == guide1 or positions == guide2:
+				return _fail("seed %d fase %d reproduziu um guide" % [seed_value, level])
+			# Pares canhão/alvo dos guides nunca exatos.
+			if (def.cannon_position == Vector2(150, 487) and def.target.position == Vector2(1198, 590)) or \
+					(def.cannon_position == Vector2(153, 80) and def.target.position == Vector2(908, 436)):
+				return _fail("seed %d fase %d copiou pose de guide" % [seed_value, level])
+	return 0
