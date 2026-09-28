@@ -5,11 +5,17 @@ signal target_hit(body: Bullet)
 
 @onready var activeTexture = $Active
 @onready var inactiveTexture = $Inactive
+@onready var arrow = $Arrow
 
 const RECOIL_DISTANCE := 15.0
 const RECOIL_BACK_TIME := 0.06
 const RECOIL_RETURN_TIME := 0.12
 const RECOIL_DIRECTION := Vector2.RIGHT
+const ARROW_APPROACH_DISTANCE := 50.0
+const ARROW_APPROACH_TIME := 0.5
+
+var arrow_tween: Tween
+var arrow_initial_position: Vector2
 
 var recoil_tween: Tween
 var initial_position: Vector2
@@ -28,6 +34,8 @@ func _ready() -> void:
 	mat.friction = 0.0
 	mat.bounce = 1.0
 	physics_material_override = mat
+
+	_arrow_animation()
 
 func hit(bullet: Bullet, _impact_position: Vector2 = Vector2.INF) -> void:
 	if not is_instance_valid(bullet):
@@ -82,3 +90,14 @@ func play_recoil() -> void:
 func _restore_texture() -> void:
 	activeTexture.visible = false
 	inactiveTexture.visible = true
+
+func _arrow_animation():
+	if arrow == null:
+		return
+	arrow_initial_position = arrow.position
+	if arrow_tween and arrow_tween.is_valid():
+		arrow_tween.kill()
+	arrow_tween = create_tween().set_loops()
+	arrow_tween.tween_property(arrow, "position", arrow_initial_position + Vector2.RIGHT * ARROW_APPROACH_DISTANCE, ARROW_APPROACH_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	arrow_tween.tween_property(arrow, "position", arrow_initial_position, ARROW_APPROACH_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	

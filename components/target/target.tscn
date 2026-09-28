@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://d1b3vlr8d5dsk" path="res://components/target/target.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://bb7bq58xupa0c" path="res://assets/target/active_target.png" id="2_1esyr"]
 [ext_resource type="Texture2D" uid="uid://c8wh6dom1hj4j" path="res://assets/target/inactive_target.png" id="3_k1821"]
+[ext_resource type="Texture2D" uid="uid://bao3vvfl5bhfk" path="res://assets/target/arrow.png" id="4_k1821"]
 
 [node name="Target" type="StaticBody2D" unique_id=192068329]
 scale = Vector2(0.2, 0.2)
@@ -13,13 +14,19 @@ position = Vector2(4.9999995, 0)
 build_mode = 1
 polygon = PackedVector2Array(69.99999, -39.999996, 69.99999, -79.99999, 64.99999, -134.99998, 54.999992, -194.99998, 44.999996, -224.99998, 39.999996, -234.99998, 35, -237, -5, -237, -14.999998, -229.99998, -19.999996, -214.99998, -24.999996, -194.99998, -32, -160, -39, -119, -42, -76, -43, -37, -44, 10, -43, 59, -41, 108, -38, 149, -29.999996, 189.99998, -19.999996, 219.99998, -14.999998, 229.99998, -10, 236, 30, 237, 39.999996, 234.99998, 49.999996, 219.99998, 54.999992, 194.99998, 59.999992, 149.99998, 64.99999, 99.99999, 69.99999, 59.999992, 69.99999, 14.999998, 69.99999, -4.9999995)
 
-[node name="Active" type="Sprite2D" parent="." unique_id=1779213626]
+[node name="Active" type="Sprite2D" parent="." unique_id=2052029463]
+position = Vector2(15.840351, 1.3848074e-06)
+rotation = -3.1415925
+scale = Vector2(1.3432661, 0.99999994)
+texture = ExtResource("3_k1821")
+
+[node name="Inactive" type="Sprite2D" parent="." unique_id=1779213626]
 position = Vector2(17.5, 0)
 scale = Vector2(1.3181819, 1)
 texture = ExtResource("2_1esyr")
 
-[node name="Inactive" type="Sprite2D" parent="." unique_id=2052029463]
-position = Vector2(15.840352, 1.3848075e-06)
-rotation = 3.1415927
-scale = Vector2(1.3432662, 1)
-texture = ExtResource("3_k1821")
+[node name="Arrow" type="Sprite2D" parent="." unique_id=356321024]
+position = Vector2(-174.99997, 0)
+rotation = -1.5707964
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("4_k1821")

@@ -26,13 +26,13 @@ Fluxo correto (o solver é o último portão, nunca o desenhista):
 
 ```text
 Gerar composição
-        ↓
+		↓
 Validar estrutura
-        ↓
+		↓
 Validar regras
-        ↓
+		↓
 Testar jogabilidade (solver)
-        ↓
+		↓
 Aceitar ou rejeitar
 ```
 
@@ -226,13 +226,13 @@ O `Floor` tem requisitos fixos (base coberta, apoio do canhão, subida + retorno
 ```text
 Perfil A — patamar em L (Guide1):      Perfil B — coluna (Guide2):
 ___________                             ____
-          |                              |
-          |____                           |____
+		  |                              |
+		  |____                           |____
 
 Perfil C — degraus suaves:              Perfil D — plataforma ligada:
 ____                                     ___________
    \___                               ___|         |___
-       \___                          |_________________|
+	   \___                          |_________________|
 ```
 
 Primitivas à disposição do compositor (executadas por um ajudante `FloorShapes`, que **executa** o que a composição decidiu — não decide sozinho): `base`, `platform`, `steps(início, fim, ritmo)`, `column`, `notch`. Ritmo, largura, lado da subida e lado do retorno variam por desenho. O validador verifica requisitos (R2/R3/R5), nunca impõe o perfil.
@@ -243,12 +243,12 @@ Cada structure nasce com papel declarado:
 
 ```text
 Obstacle ─ Beam ─ Obstacle        Obstacle
-                               |
-                            Support
-                               |
-                            Support
-                               |
-                             Floor
+							   |
+							Support
+							   |
+							Support
+							   |
+							 Floor
 ```
 
 Um ajudante `StructureShapes` posiciona a peça que a composição pediu (viga entre A–B, coluna até o floor). Se a composição declara uma ligação, a peça existe desde o nascimento — **nenhum corretor posterior insere structures**. A validação confere: cada `beam` toca as duas extremidades; cada `support` chega ao destino; nada flutua.
@@ -329,18 +329,18 @@ Separação explícita **Composição × Validação × Instanciação**. Nada q
 1. rng = RNG(hash(seed : v2 : level_number)); cfg = situações permitidas na banda
 2. repetir até MAX_ATTEMPTS [TÉCNICO] ou estourar 250 ms [TÉCNICO]:
    a. Composer monta Composition combinando padrões:
-      a1. intenção do canhão (ground | platform | perch) + apoio declarado
-      a2. perfil do floor (base + relevo do desenho) via FloorShapes
-      a3. função do alvo (posição + rotação justificada)
-      a4. 1–4 grupos (wall | tower | bridge | roof | fortress | corridor | gate)
-          com materiais da situação (breakable | wear | ricochet | frame)
-      a5. structures com papel (beam A–B | support → floor) via StructureShapes
-      a6. shot_intent registrado (ex.: "quebrar junta e entrar pela boca")
+	  a1. intenção do canhão (ground | platform | perch) + apoio declarado
+	  a2. perfil do floor (base + relevo do desenho) via FloorShapes
+	  a3. função do alvo (posição + rotação justificada)
+	  a4. 1–4 grupos (wall | tower | bridge | roof | fortress | corridor | gate)
+		  com materiais da situação (breakable | wear | ricochet | frame)
+	  a5. structures com papel (beam A–B | support → floor) via StructureShapes
+	  a6. shot_intent registrado (ex.: "quebrar junta e entrar pela boca")
    b. LevelValidator.validate(def) — limites, muzzle, sobreposição indevida (regras atuais)
    c. LevelValidator.validate_structure(def) — NOVO: requisitos Levels (ver § Validação)
    d. validate_config mínima — só situações/munição da banda, sem cotas cegas
    e. solver (solve_direct; amostragem física offline) — confirma jogabilidade
-      COM a assinatura declarada (quebra/desgaste/ricochete aparecem; tiros ≤ munição)
+	  COM a assinatura declarada (quebra/desgaste/ricochete aparecem; tiros ≤ munição)
    f. score em banda (faixa larga [TÉCNICO]; corta extremos, não desenha) → RETORNA
 3. fallback: seeds curadas (mesmo pipeline) → ultimate aberto legado (rede final)
 ```
