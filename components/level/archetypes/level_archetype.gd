@@ -1,5 +1,8 @@
 class_name LevelArchetype extends RefCounted
-## Base dos arquétipos de fase (Etapa 6, docs/plan.md §9).
+## Base dos arquétipos LEGADOS de fase (pré-composition-first).
+## Mantidos para o caminho legado das bandas 16+ (FastLevelGenerator) e
+## como ferramenta offline (ProceduralLevelGenerator + testes). Fases
+## 1–15 usam o CompositionBuilder; nenhum código novo deve nascer aqui.
 ## Cada arquétipo posiciona alvo + obstáculos num LevelDefinition vazio,
 ## usando SÓ o rng com seed (nunca RNG global). `place()` retorna false
 ## se o motivo não couber na config — o gerador tenta outro candidato.

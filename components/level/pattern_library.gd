@@ -19,28 +19,6 @@ const TARGET_REST_Y := 580.0 # centro do alvo apoiado no plano (620 - 40)
 const PERCH_TOPS := [270.0, 370.0]
 
 
-## Situações mecânicas que a banda permite (docs/Levels.md §7).
-static func mechanics_for_level(level_number: int) -> Array[StringName]:
-	var out: Array[StringName] = [Composition.MECH_BREAKABLE]
-	if level_number >= 4:
-		out.append(Composition.MECH_WEAR)
-	if level_number >= 11:
-		out.append(Composition.MECH_RICOCHET)
-	return out
-
-
-## Material da situação: vidro QUEBRA, pedra DESGASTA, metal RICOCHETEIA.
-static func material_for(mechanic: StringName) -> StringName:
-	match mechanic:
-		Composition.MECH_BREAKABLE:
-			return ObstacleDefinition.KIND_GLASS
-		Composition.MECH_WEAR:
-			return ObstacleDefinition.KIND_STONE
-		Composition.MECH_RICOCHET:
-			return ObstacleDefinition.KIND_METAL
-	return ObstacleDefinition.KIND_STONE
-
-
 static func scale_for(kind: StringName) -> Vector2:
 	if kind == ObstacleDefinition.KIND_GLASS:
 		return GLASS_SCALE

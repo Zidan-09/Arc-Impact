@@ -8,8 +8,8 @@ class_name FastLevelGenerator extends RefCounted
 ## (seed, versão, fase) => mesma LevelDefinition. Porta de entrada da
 ## fase real (Game). Determinístico e offline (só matemática + geometria).
 ##
-## Bandas com 2+ ricochetes (16+) usam o caminho legado até o skip
-## duplo provar-se; 11–15 (1 ricochete) já são do compositor (skip).
+## Bandas com 2+ ricochetes (16+) usam o caminho legado (skip duplo é
+## trabalho futuro); 11–15 (1 ricochete) já são do compositor (return).
 ##
 ## Retorna {"def": LevelDefinition, "candidates": int, "sims": int (0),
 ##          "ms": int, "score": float, "fallback_used": bool,
@@ -47,8 +47,9 @@ static func generate(seed_value: int, level_number: int, cfg_override: Difficult
 	var log: Array[String] = []
 	var start := Time.get_ticks_msec()
 	if cfg.required_ricochets_min >= 2:
-		# Etapa 8: skip duplo (2+ reflexões) ainda sem vocabulário — 16+
-		# segue no caminho legado até a Etapa 9 provar o desenho.
+		# Bandas 16+ (2+ reflexões): sem vocabulário de skip duplo no
+		# compositor (experimento da Etapa 9: 0/24 passaram) — seguem no
+		# caminho legado + ultimate. Skip duplo é trabalho futuro.
 		log.append("legacy-band")
 		return _generate_legacy(seed_value, level_number, cfg, rng, start, log)
 	var tried := 0

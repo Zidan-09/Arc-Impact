@@ -461,6 +461,25 @@ Verificação principal (qualitativa e estrutural; sem métricas que o gerador p
 ## Apêndice — Medidas de referência (não reinventar)
 
 - Viewport `1280×720` (`project.godot`); `play_bounds (0,0,1280,720)`; chão dos guides `y=670`, faixa `x=50..1250` passo 100, tile `100×100` @0.2.
-- Metal 0.2 ≈ 110×110; pedra 0.2 = 100×100; vidro 0.1 ≈ 95×93; structure 0.15 (medir `structure.png` na implementação); alvo base ~94 px altura @0.2.
-- Canhão guides: `(150,487)@0.3` (Guide1, plataforma) e `(153,80)@0.3` (Guide2, coluna); jogo atual `(173,523)@0.2`, `base_shot_speed 2000`.
-- Solver analítico: Euler 60 Hz, `BULLET_RADIUS 10`, vidro/pedra `*=0.85`, pedra +1 tiro, metal reflexão exata, `MAX_RICOCHETS 10`, kill `play_bounds+400`. Na integração, `GROUND_TOP` fixo deve ceder à geometria real do floor da composição (sub-tarefa da etapa 6).
+- Metal 0.2 ≈ 110×110; pedra 0.2 = 100×100; vidro 0.1 ≈ 95×93; structure 0.15 = 72×67 (medido: `structure.png` 482×448); alvo colisor real ~23×95 @0.2 (polígono 114×474 — NÃO 80×80, que é aproximação só do validador).
+- Canhão guides: `(150,487)@0.3` (Guide1, plataforma) e `(153,80)@0.3` (Guide2, coluna); pé do canhão = origem + 277px locais × escala (`Cannon.FOOT_DROP`, calibrado no Guide1).
+- Solver analítico: Euler 60 Hz, `BULLET_RADIUS 10` (≈ bala 9.2px @0.2 no jogo), vidro destrói+atravessa `*=0.85`, pedra HP2 rebate / HP1 destrói+atravessa (multi-tiro com estado), metal reflexão exata por faces, `MAX_RICOCHETS 10`, kill `play_bounds+400`, alvo = AABB real + rotação + dilatação.
+
+## Apêndice — Resoluções da implementação (etapas 1–10, branch `feature/level-generation-structure`)
+
+Decisões abertas resolvidas: D1 grade como auxílio (snap 50, posições livres se o contato for exato); D2 `FOOT_DROP 277` medido; D3 structure segue sem colisão (AABB validado); D4 múltiplas construções admitidas se cada uma ancorada no floor; D5 `composition_tags` em vez de `layout_id` (sem templates rígidos).
+
+Lições que mudaram o desenho no caminho (ler antes de estender o vocabulário):
+
+- Pedra/metal NA LINHA do tiro baixo são veneno (rebatem): só vidro atravessa. Torres de pedra sobre a linha muralham o alvo — a fase 5 provou. Torre baixa só com canhão alto (linha passa por cima) ou fora da linha.
+- Skip de tampa (quicar e cair no alvo) é fio-de-navalha sistemático: quina de 110px para alvo de 43px. Rejeitado; padrão "return" no lugar (parede à direita devolve no alvo, faces de 100px, alvo de 115px, retorno curto de 220px).
+- Lean-to (muro + alvo baixo) não tem payoff: ou muralha ou exige queda-agulha. Rejeitado com a justificativa no histórico.
+- Solver precisa ser ciente do mínimo de ricochetes (senão a direta sem rebote vence sempre) e medir folga (clearance ≥ 12px de faces reais) ainda na varredura; margem ±0.5° como portão final. Raspão + retorno longo = rejeitado.
+- Clearance mede contra faces REAIS (dilatadas se sobrepõem em peças adjacentes) e exclui contato do passo + caixa do rebote anterior (o passo de saída começa em cima dela).
+
+Limitações conhecidas (não mascaradas):
+
+- Destroy da pedra tem race na física (`stone_obstacle.gd` relê `linear_velocity` após o rebote do motor; o re-apply de 2 frames nem sempre vence): o registro analítico correspondente pode falhar no replay (~7% amostrado nas 11–15). A fase continua vencível (o jogador mira livremente); corrigir é refatorar física — fora do escopo.
+- Bandas 16+ (2+ ricochetes): compositor 0/24 no experimento de skip duplo; seguem legado + ultimate. Skip duplo é o próximo trabalho de vocabulário.
+- `generator_test`/`generation_benchmark` (caminho legado, física real-time) são lentos por design (~1s/sim); CI deve tratá-los à parte.
+- Seeds 1207 (fase 12) e 1508 (fase 15) do proof são curadas (1507 cai no race acima); `FALLBACK_SEEDS` segue a mesma filosofia.
