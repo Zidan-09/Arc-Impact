@@ -12,6 +12,8 @@ func _init() -> void:
 	failures += _check_full_roundtrip()
 	failures += _check_empty_roundtrip()
 	failures += _check_table_coverage() # inclui curva crescente (Etapa 8)
+	failures += _check_intent_roundtrip() # Etapa 1 (composition-first)
+	failures += _check_v1_compat() # Etapa 1 (dicts legados sem as chaves)
 	if failures == 0:
 		print("LEVEL_DATA_TEST: PASS")
 	else:
@@ -137,3 +139,87 @@ func _check_table_coverage() -> int:
 
 func _valid_range(count: Vector2i) -> bool:
 	return count.x <= count.y and count.x >= 0
+
+
+## Etapa 1: intenção (rotação/função do alvo, papéis dos obstáculos,
+## floors, structures, pose do canhão, tags) sobrevive ao round-trip.
+func _check_intent_roundtrip() -> int:
+	var def := LevelDefinition.new()
+	def.seed = 11
+	def.level_number = 5
+	def.ammo = 3
+	def.cannon_position = Vector2(200, 465)
+	def.cannon_scale = Vector2(0.3, 0.3)
+	def.target = TargetDefinition.new()
+	def.target.position = Vector2(1150, 590)
+	def.target.rotation_degrees = 90.0
+	def.target.role = Composition.TARGET_FOOT
+	var floor := FloorDefinition.new()
+	floor.position = Vector2(150, 570)
+	def.floors.append(floor)
+	var beam := StructureDefinition.new()
+	beam.id = "struct_01"
+	beam.position = Vector2(1010, 344)
+	beam.rotation_degrees = 90.0
+	beam.role = StructureDefinition.ROLE_BEAM
+	beam.link_a = "obs_01"
+	beam.link_b = "obs_02"
+	def.structures.append(beam)
+	var gate := ObstacleDefinition.new()
+	gate.id = "obs_01"
+	gate.kind = ObstacleDefinition.KIND_GLASS
+	gate.position = Vector2(950, 455)
+	gate.scale = Vector2(0.1, 0.1)
+	gate.group = Composition.GROUP_GATE
+	gate.role = "joint"
+	gate.anchor = "floor"
+	gate.mechanic = Composition.MECH_BREAKABLE
+	def.obstacles.append(gate)
+	def.composition_tags = [Composition.CANNON_PLATFORM, Composition.GROUP_GATE]
+	var first := def.to_dict()
+	var rebuilt := LevelDefinition.from_dict(first)
+	if JSON.stringify(first) != JSON.stringify(rebuilt.to_dict()):
+		printerr("  [intent_roundtrip] dicionários divergem.")
+		return 1
+	if rebuilt.target.rotation_degrees != 90.0 or rebuilt.target.role != Composition.TARGET_FOOT:
+		printerr("  [intent_roundtrip] alvo perdeu rotação/função.")
+		return 1
+	if rebuilt.cannon_scale != Vector2(0.3, 0.3) or rebuilt.floors.size() != 1:
+		printerr("  [intent_roundtrip] canhão/floor perderam dados.")
+		return 1
+	if rebuilt.structures.size() != 1 or rebuilt.structures[0].link_b != "obs_02":
+		printerr("  [intent_roundtrip] structure perdeu papel/ligação.")
+		return 1
+	if rebuilt.obstacles[0].mechanic != Composition.MECH_BREAKABLE:
+		printerr("  [intent_roundtrip] obstáculo perdeu função mecânica.")
+		return 1
+	return 0
+
+
+## Etapa 1: dicts serializados na v1 (sem floors/structures/tags/escala
+## do canhão/rotação do alvo) desserializam com os padrões legados.
+func _check_v1_compat() -> int:
+	var legacy := {
+		"seed": 7, "generator_version": 1, "level_number": 2, "ammo": 2,
+		"cannon_position": {"x": 173.0, "y": 523.0},
+		"target": {"position": {"x": 1000.0, "y": 200.0}, "size": {"x": 80.0, "y": 80.0}},
+		"obstacles": [
+			{"id": "obs_01", "kind": "glass",
+				"position": {"x": 600.0, "y": 400.0}, "rotation_degrees": 0.0,
+				"scale": {"x": 0.1, "y": 0.1}},
+		],
+	}
+	var def := LevelDefinition.from_dict(legacy)
+	if def.generator_version != 1 or def.cannon_scale != Vector2(0.2, 0.2):
+		printerr("  [v1_compat] versão/escala do canhão divergem.")
+		return 1
+	if not def.floors.is_empty() or not def.structures.is_empty():
+		printerr("  [v1_compat] fase legada deveria vir sem floors/structures.")
+		return 1
+	if def.target.rotation_degrees != 0.0 or def.obstacles[0].mechanic != &"frame":
+		printerr("  [v1_compat] padrões de intenção divergem.")
+		return 1
+	if JSON.stringify(def.to_dict()["obstacles"]) == "":
+		printerr("  [v1_compat] obstáculos legados se perderam.")
+		return 1
+	return 0
