@@ -11,6 +11,9 @@ func _init() -> void:
 	failures += _check_floor_shapes()
 	failures += _check_structure_shapes()
 	failures += _check_composition_tags()
+	failures += _check_builder_determinism()
+	failures += _check_builder_validity()
+	failures += _check_builder_variety()
 	if failures == 0:
 		print("COMPOSITION_TEST: PASS")
 	else:
@@ -89,3 +92,65 @@ func _check_composition_tags() -> int:
 func _fail(message: String) -> int:
 	printerr("  [composition] " + message)
 	return 1
+
+
+## Etapa 5: mesma seed => mesma composição (dicionários idênticos).
+func _check_builder_determinism() -> int:
+	var cfg := DifficultyTable.get_config(5)
+	var rng_a := RandomNumberGenerator.new()
+	rng_a.seed = hash("%d:%d:%d" % [7, LevelDefinition.GENERATOR_VERSION, 5])
+	var rng_b := RandomNumberGenerator.new()
+	rng_b.seed = hash("%d:%d:%d" % [7, LevelDefinition.GENERATOR_VERSION, 5])
+	var a := JSON.stringify(CompositionBuilder.build(rng_a, cfg, 7, 5).to_dict())
+	var b := JSON.stringify(CompositionBuilder.build(rng_b, cfg, 7, 5).to_dict())
+	if a != b:
+		return _fail("determinism (composições divergiram)")
+	return 0
+
+
+## Etapa 5: 20 seeds × bandas 1–10 passam em validate + structure e
+## respeitam o orçamento de contagens do cfg (sem solver ainda).
+func _check_builder_validity() -> int:
+	for level in [2, 5, 8]:
+		var cfg := DifficultyTable.get_config(level)
+		for seed_value in range(20):
+			var rng := RandomNumberGenerator.new()
+			rng.seed = hash("%d:%d:%d" % [seed_value, LevelDefinition.GENERATOR_VERSION, level])
+			var def := CompositionBuilder.build(rng, cfg, seed_value, level)
+			var legacy := LevelValidator.validate(def)
+			if not bool(legacy["ok"]):
+				return _fail("seed %d fase %d reprovada no validate(): %s" % [seed_value, level, str(legacy["errors"])])
+			var structural := LevelValidator.validate_structure(def)
+			if not bool(structural["ok"]):
+				return _fail("seed %d fase %d reprovada na estrutura: %s" % [seed_value, level, str(structural["errors"])])
+			var counts := _count_kinds(def)
+			if int(counts[ObstacleDefinition.KIND_GLASS]) < cfg.glass_count.x or int(counts[ObstacleDefinition.KIND_GLASS]) > cfg.glass_count.y:
+				return _fail("seed %d fase %d vidro fora do cfg" % [seed_value, level])
+			if int(counts[ObstacleDefinition.KIND_STONE]) < cfg.stone_count.x or int(counts[ObstacleDefinition.KIND_STONE]) > cfg.stone_count.y:
+				return _fail("seed %d fase %d pedra fora do cfg" % [seed_value, level])
+			if def.composition_tags.is_empty():
+				return _fail("seed %d fase %d sem tags compositivas" % [seed_value, level])
+	return 0
+
+
+## Etapa 5: sementes vizinhas geram combinações distintas (tags).
+func _check_builder_variety() -> int:
+	var cfg := DifficultyTable.get_config(5)
+	var seen := {}
+	for seed_value in range(10):
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("%d:%d:%d" % [seed_value, LevelDefinition.GENERATOR_VERSION, 5])
+		var def := CompositionBuilder.build(rng, cfg, seed_value, 5)
+		seen[JSON.stringify(def.composition_tags)] = true
+	if seen.size() < 2:
+		return _fail("variety (10 seeds com as mesmas tags)")
+	print("  [builder] %d assinaturas distintas em 10 seeds" % seen.size())
+	return 0
+
+
+func _count_kinds(def: LevelDefinition) -> Dictionary:
+	var counts := {ObstacleDefinition.KIND_GLASS: 0, ObstacleDefinition.KIND_STONE: 0, ObstacleDefinition.KIND_METAL: 0}
+	for obstacle in def.obstacles:
+		if counts.has(obstacle.kind):
+			counts[obstacle.kind] += 1
+	return counts
