@@ -128,21 +128,22 @@ func _spawn_shards_deferred(
 	var bullet_speed := shatter_velocity.length()
 	var spawn_extents := sprite_size * 0.5 * origin_scale * 0.5
 	for i in shard_count:
-		var shard := scene.instantiate() as RigidBody2D
-		parent.add_child(shard)
 		var spawn_offset := Vector2(
 			randf_range(-spawn_extents.x, spawn_extents.x),
 			randf_range(-spawn_extents.y, spawn_extents.y)
 		)
-		shard.global_position = impact_position + spawn_offset
-		shard.global_rotation = randf() * TAU
 		var direction := explosion_direction.rotated(
 			randf_range(-shard_spread, shard_spread)
 		)
 		var shard_speed := bullet_speed * randf_range(0.3, 0.7)
 		shard_speed = clampf(shard_speed, shard_min_speed, shard_max_speed)
-		shard.linear_velocity = direction * shard_speed
-		shard.angular_velocity = randf_range(
-			shard_min_angular_velocity,
-			shard_max_angular_velocity
+		Shard.spawn(
+			parent, scene,
+			impact_position + spawn_offset,
+			randf() * TAU,
+			direction * shard_speed,
+			randf_range(
+				shard_min_angular_velocity,
+				shard_max_angular_velocity
+			)
 		)

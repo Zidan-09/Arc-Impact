@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://l4mxvol03thbk" path="res://components/obstacles/glass/glass_shard.gd" id="1_shard"]
+[ext_resource type="Texture2D" uid="uid://dnorksd3qqmwu" path="res://assets/obstacles/glass_shard_1.png" id="1_tex"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_shard"]
+friction = 0.4
+bounce = 0.3
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_shard"]
+size = Vector2(34.32, 24.84)
+
+[node name="GlassShard1" type="RigidBody2D"]
+mass = 0.2
+physics_material_override = SubResource("PhysicsMaterial_shard")
+script = ExtResource("1_shard")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(1, 1, 1, 0.85)
+scale = Vector2(0.06, 0.06)
+texture = ExtResource("1_tex")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-11.43, -15.66)
+shape = SubResource("RectangleShape2D_shard")
