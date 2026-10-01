@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://d0mom6cj7sqik"]
+
+[ext_resource type="Texture2D" uid="uid://rrnqcx88qao5" path="res://assets/background/background.jpg" id="1_tex"]
+[ext_resource type="Script" uid="uid://bd885nedrbnbb" path="res://components/background/background_shapes.gd" id="2_shapes"]
+
+[node name="Background" type="Control" unique_id=2085038530]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=572168505]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("1_tex")
+expand_mode = 2
+stretch_mode = 6
+
+[node name="Shapes" type="Node2D" parent="." unique_id=594238307]
+script = ExtResource("2_shapes")
