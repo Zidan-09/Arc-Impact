@@ -20,8 +20,14 @@ var _base_sprite_scale: Vector2 = Vector2.ZERO
 
 @onready var hit_detector: Area2D = $HitDetector
 
+var trail: BulletTrail
+
 func _ready() -> void:
 	hit_detector.body_entered.connect(_on_hit_detector_body_entered)
+	trail = BulletTrail.new()
+	trail.follow_target = self
+	trail.add_to_group("bullet_trails")
+	get_parent().add_child(trail)
 
 
 ## Ajusta o tamanho do bullet na mesma proporção do canhão.

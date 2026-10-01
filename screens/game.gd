@@ -73,6 +73,8 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 	victory_popup.visible = false
 	for bullet in get_tree().get_nodes_in_group("bullets"):
 		bullet.queue_free()
+	for trail in get_tree().get_nodes_in_group("bullet_trails"):
+		trail.queue_free()
 	var result := FastLevelGenerator.generate(seed_value, level_number)
 	var def: LevelDefinition = result["def"]
 	if bool(result["fallback_used"]):
