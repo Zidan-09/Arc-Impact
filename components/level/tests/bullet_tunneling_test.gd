@@ -8,6 +8,14 @@ extends SceneTree
 ## deve ser 0. Roda headless, sem framework:
 ##   godot --headless --path . -s res://components/level/tests/bullet_tunneling_test.gd
 ## Saída: "BULLET_TUNNELING_TEST: PASS" (exit 0) ou FAIL (exit 1).
+##
+## Extensão (Fase 13, docs/images/error.png): juntas de peças EMPILHADAS
+## (torre de retorno) — encosto exato/fresta + lábio do metal criavam
+## quinas internas com normal degenerada e a bala atravessava a torre em
+## incidência rasante em vez de rebotar. Cobertura: tiro calibrado
+## (10°/1.0 passa em ~(600,361)) contra a junta pedra/pedra e a junta
+## pedra/metal com a geometria pós-correção (overlap 2px + faces
+## esquerdas coplanares).
 
 
 func _initialize() -> void:
@@ -23,6 +31,8 @@ func _run_all() -> void:
 	failures += await _case_glass_post_onpath()
 	failures += await _case_glass_post_rasante()
 	failures += await _case_stone_thin_rasante()
+	failures += await _case_tower_stone_seam()
+	failures += await _case_tower_metal_seam()
 	if failures == 0:
 		print("BULLET_TUNNELING_TEST: PASS")
 	else:
@@ -106,6 +116,36 @@ func _case_stone_thin_rasante() -> int:
 	# o proibido é rebotar (rico ≥ 1) sem registrar (hp segue 2).
 	if rico >= 1 and hp == 2:
 		return _fail("stone_rasante (rebote sem hit: hp segue 2)", result)
+	return 0
+
+
+# Junta pedra/pedra empilhada com overlap 2px (geometria da torre de
+# retorno pós-Fase 13): o tiro calibrado encontra a junta e tem que
+# rebotar E rachar — nunca atravessar em silêncio (rico 0 + HP intacto).
+func _case_tower_stone_seam() -> int:
+	var def := _make_def(Vector2(1000, 326))
+	def.obstacles.append(_make_ob("s1", ObstacleDefinition.KIND_STONE, Vector2(600, 411), Vector2(0.2, 0.2)))
+	def.obstacles.append(_make_ob("s2", ObstacleDefinition.KIND_STONE, Vector2(600, 313), Vector2(0.2, 0.2)))
+	var result := await _shoot(def, 10.0, 1.0)
+	var hp1 := int(result["end_state"]["stone_hp"].get("s1", -1))
+	var hp2 := int(result["end_state"]["stone_hp"].get("s2", -1))
+	var rico := int(result["ricochets"])
+	if rico < 1 or (hp1 == 2 and hp2 == 2):
+		return _fail("tower_stone_seam (junta atravessada sem rebote/registro)", result)
+	return 0
+
+
+# Junta pedra/metal com faces esquerdas coplanares (espelho deslocado
+# +4.8px, overlap 2px — mesma geometria do _build_return_groups): o tiro
+# na junta tem que rebotar no metal/pedra, nunca atravessar em silêncio.
+func _case_tower_metal_seam() -> int:
+	var def := _make_def(Vector2(1000, 326))
+	def.obstacles.append(_make_ob("s1", ObstacleDefinition.KIND_STONE, Vector2(600, 412), Vector2(0.2, 0.2)))
+	def.obstacles.append(_make_ob("m1", ObstacleDefinition.KIND_METAL, Vector2(604.8, 305.2), Vector2(0.2, 0.2)))
+	var result := await _shoot(def, 10.0, 1.0)
+	var rico := int(result["ricochets"])
+	if rico < 1:
+		return _fail("tower_metal_seam (junta atravessada sem rebote)", result)
 	return 0
 
 

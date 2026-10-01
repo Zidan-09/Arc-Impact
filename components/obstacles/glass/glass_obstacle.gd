@@ -68,19 +68,54 @@ func on_hit_completed(_bullet: RigidBody2D, _impact_position: Vector2) -> void:
 
 
 func _spawn_shards(shatter_velocity: Vector2, impact_position: Vector2) -> void:
-	var to_center := global_position - impact_position
-	var explosion_direction: Vector2
-	if to_center.length() > 1.0:
-		explosion_direction = to_center.normalized()
-	else:
-		explosion_direction = shatter_velocity.normalized()
-	var bullet_speed := shatter_velocity.length()
+	if shard_count <= 0:
+		return
+	# hit() roda dentro de callback de física (body_entered do HitBox ou
+	# body_entered/sweep do Bullet). Adicionar RigidBody2D (shard) com
+	# CollisionShape aqui causa "Can't change this state while flushing
+	# queries" (body_set_shape_disabled). Por isso capturamos um snapshot
+	# e adiamos o add_child para fora do flush via call_deferred — o self
+	# sofre queue_free() logo abaixo, então nada de `self` pode ser lido
+	# no método adiado.
 	var parent := get_parent()
 	if parent == null:
 		parent = get_tree().current_scene
-	var sprite_rect := sprite.get_rect()
-	var spawn_extents := sprite_rect.size * 0.5 * global_scale * 0.5
+	if parent == null:
+		return
+	var origin := global_position
+	var origin_scale := global_scale
+	var sprite_size := sprite.get_rect().size
 	var scene := shard_scene if shard_scene != null else SHARD_SCENE_FALLBACK
+	call_deferred(
+		"_spawn_shards_deferred",
+		parent, origin, origin_scale, sprite_size, scene,
+		shatter_velocity, impact_position
+	)
+
+
+func _spawn_shards_deferred(
+	parent: Node,
+	origin: Vector2,
+	origin_scale: Vector2,
+	sprite_size: Vector2,
+	scene: PackedScene,
+	shatter_velocity: Vector2,
+	impact_position: Vector2
+) -> void:
+	if not is_instance_valid(parent):
+		return
+	if scene == null:
+		return
+	var to_center := origin - impact_position
+	var explosion_direction: Vector2
+	if to_center.length() > 1.0:
+		explosion_direction = to_center.normalized()
+	elif shatter_velocity.length() > 1.0:
+		explosion_direction = shatter_velocity.normalized()
+	else:
+		explosion_direction = Vector2.UP
+	var bullet_speed := shatter_velocity.length()
+	var spawn_extents := sprite_size * 0.5 * origin_scale * 0.5
 	for i in shard_count:
 		var shard := scene.instantiate() as RigidBody2D
 		parent.add_child(shard)

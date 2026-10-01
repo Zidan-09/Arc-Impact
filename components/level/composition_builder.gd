@@ -199,15 +199,32 @@ static func _build_return_groups(def: LevelDefinition, comp: Composition, rng: R
 	# Torre a 220px do alvo: perto o bastante para o retorno não
 	# amplificar divergências analítico→física, longe da zona (25px+).
 	var wall_x := tx + 220.0
+	# Assentos com sobreposição (anti-tunneling de junta — Fase 13,
+	# docs/images/error.png): peças empilhadas em encosto exato (junta
+	# pedra/pedra em y=520) ou com fresta (0.2px sob o espelho) criam
+	# quinas internas e normais de contato degeneradas; em incidência
+	# rasante a bala atravessa a torre em vez de rebotar. OVERLAP de 2px
+	# (< OVERLAP_TOL 6 do validador) fecha as juntas por dentro. As faces
+	# esquerdas (lado do impacto) ficam coplanares: o metal é mais largo
+	# (548 base) que a pedra (500 base), então o espelho é deslocado para
+	# a direita até alinhar a face esquerda (o ressalto direito nunca
+	# recebe impacto). Metades derivadas de MaterialRules + scale_for
+	# (fonte única com o validador/solver, que lêem a mesma def).
+	var stone_half := MaterialRules.base_size(ObstacleDefinition.KIND_STONE).x * PatternLibrary.scale_for(ObstacleDefinition.KIND_STONE).x * 0.5
+	var metal_half := MaterialRules.base_size(ObstacleDefinition.KIND_METAL).x * PatternLibrary.scale_for(ObstacleDefinition.KIND_METAL).x * 0.5
+	var overlap := 2.0
+	var shaft_y := GATE_Y_BLOCK - stone_half * 2.0 + overlap
+	var mirror_y := shaft_y - stone_half - metal_half + overlap
+	var mirror_x := wall_x + (metal_half - stone_half)
 	var tower_group: Dictionary = {"type": Composition.GROUP_TOWER,
 		"mechanic": Composition.MECH_RICOCHET, "pieces": []}
 	var base := _add_ob(def, ObstacleDefinition.KIND_STONE, Vector2(wall_x, GATE_Y_BLOCK),
 			Composition.GROUP_TOWER, "base", "floor", Composition.MECH_FRAME)
 	(tower_group["pieces"] as Array).append(base.id)
-	var shaft := _add_ob(def, ObstacleDefinition.KIND_STONE, Vector2(wall_x, GATE_Y_BLOCK - 100.0),
+	var shaft := _add_ob(def, ObstacleDefinition.KIND_STONE, Vector2(wall_x, shaft_y),
 			Composition.GROUP_TOWER, "shaft", base.id, Composition.MECH_FRAME)
 	(tower_group["pieces"] as Array).append(shaft.id)
-	var mirror := _add_ob(def, ObstacleDefinition.KIND_METAL, Vector2(wall_x, GATE_Y_BLOCK - 205.0),
+	var mirror := _add_ob(def, ObstacleDefinition.KIND_METAL, Vector2(mirror_x, mirror_y),
 			Composition.GROUP_TOWER, "mirror", shaft.id, Composition.MECH_RICOCHET)
 	(tower_group["pieces"] as Array).append(mirror.id)
 	comp.groups.append(tower_group)
