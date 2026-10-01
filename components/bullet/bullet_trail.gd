@@ -57,19 +57,106 @@ func _process(delta: float) -> void:
 
 
 func _track() -> void:
-	var pos := to_local(follow_target.global_position)
+	if not is_instance_valid(follow_target):
+		return
+	var gpos: Vector2 = (follow_target as Node2D).global_position
 	var count := _core.points.size()
 	if count == 0:
-		global_position = follow_target.global_position
-		pos = Vector2.ZERO
-		count = 0
-	if count == 0 or _core.points[count - 1].distance_to(pos) >= point_spacing:
-		_core.add_point(pos)
-		_glow.add_point(pos)
-		while _core.points.size() > max_points:
-			_core.remove_point(0)
-			_glow.remove_point(0)
-	_light.position = pos
+		global_position = gpos
+		_add_point(gpos)
+		_light.position = Vector2.ZERO
+		return
+	var last_global := to_global(_core.points[count - 1])
+	if last_global.distance_to(gpos) < point_spacing:
+		_light.position = to_local(gpos)
+		return
+	# Clipe anti-travessia (só visual; gameplay intacto): o centro da bala
+	# pode penetrar ~1 tick no sólido antes do rebote, e sem clipe a linha
+	# entra no colisor (docs/images/trail*.png). Areas NÃO clipam: o vidro
+	# atravessa por mecânica (*= 0.85) e o rastro deve cruzá-lo.
+	var clip := _clip_segment(last_global, gpos)
+	if bool(clip["has_surface"]):
+		var surface: Vector2 = clip["surface"]
+		if to_local(surface).distance_to(_core.points[_core.points.size() - 1]) > 0.5:
+			_add_point(surface)
+	if not bool(clip["end_inside"]):
+		_add_point(gpos)
+	_light.position = to_local(gpos)
+
+
+func _add_point(g: Vector2) -> void:
+	var pos := to_local(g)
+	_core.add_point(pos)
+	_glow.add_point(pos)
+	while _core.points.size() > max_points:
+		_core.remove_point(0)
+		_glow.remove_point(0)
+
+
+## Primeira face de BODY no segmento + se o centro final está dentro de
+## um sólido. Retorna {"has_surface": bool, "surface": Vector2,
+## "end_inside": bool}. Exclui a própria bala e shards (visuais, a bala
+## os atravessa sem interagir).
+func _clip_segment(from: Vector2, to: Vector2) -> Dictionary:
+	var out := {"has_surface": false, "surface": Vector2.ZERO, "end_inside": false}
+	var world := get_world_2d()
+	if world == null:
+		return out
+	var space := world.direct_space_state
+	if space == null:
+		return out
+	var mask := 0xFFFFFFFF
+	if follow_target is CollisionObject2D:
+		mask = (follow_target as CollisionObject2D).collision_mask
+	var exclude := _query_exclude()
+	var ray := PhysicsRayQueryParameters2D.create(from, to, mask, exclude)
+	ray.collide_with_areas = false
+	ray.collide_with_bodies = true
+	for _i in 6:
+		var hit := space.intersect_ray(ray)
+		if hit.is_empty():
+			break
+		var collider: Object = hit["collider"]
+		if collider is Shard:
+			exclude.append((collider as CollisionObject2D).get_rid())
+			ray.exclude = exclude
+			continue
+		if collider is CollisionObject2D:
+			out["has_surface"] = true
+			out["surface"] = hit["position"]
+		break
+	var point := PhysicsPointQueryParameters2D.new()
+	point.position = to
+	point.collide_with_areas = false
+	point.collide_with_bodies = true
+	point.collision_mask = mask
+	point.exclude = exclude
+	for _i in 6:
+		var found := space.intersect_point(point, 1)
+		if found.is_empty():
+			break
+		var inner: Object = found[0]["collider"]
+		if inner is Shard:
+			exclude.append((inner as CollisionObject2D).get_rid())
+			point.exclude = exclude
+			continue
+		out["end_inside"] = true
+		break
+	return out
+
+
+func _query_exclude() -> Array[RID]:
+	var exclude: Array[RID] = []
+	if is_instance_valid(follow_target) and follow_target is CollisionObject2D:
+		exclude.append((follow_target as CollisionObject2D).get_rid())
+	# Outras balas em voo: o rastro nunca clipa nelas (são transitórias;
+	# colisão bala↔bala, se ocorrer, é resolvida pela física).
+	for node in get_tree().get_nodes_in_group("bullets"):
+		if node != follow_target and node is CollisionObject2D and is_instance_valid(node):
+			var rid := (node as CollisionObject2D).get_rid()
+			if not exclude.has(rid):
+				exclude.append(rid)
+	return exclude
 
 
 func _begin_gone() -> void:
