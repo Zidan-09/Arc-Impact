@@ -1,3 +1,107 @@
+# Plano — Correção estrutural da física/colisão (visual × físico + tunneling)
+
+> Status: SOMENTE DIAGNÓSTICO E PLANO. Nenhum código foi alterado.
+> Escopo: `Floor`, `Obstacle` (vidro/pedra/metal), `Target`, `Cannon`, projétil/bullet e pipeline de geração.
+> Fora do escopo: HUD, câmera, controles, regras de gameplay, geração de fases (além do estritamente necessário).
+> O capítulo anterior deste arquivo (refatoração composition-first) foi preservado abaixo, intacto.
+
+---
+
+## 1. Causa raiz (resumo)
+
+Duas causas independentes, que se somam de forma intermitente:
+
+**Causa A — Tunneling por ausência de CCD (principal).** O projétil voa a até 2000 px/s = **33,3 px por physics tick** (60 Hz padrão; `project.godot` não altera ticks nem gravidade — vale o default 980/60). Nenhum `RigidBody2D` do projeto configura `continuous_cd` (grep: zero ocorrências) e a bala no jogo roda com `contact_monitor = false` (só `SimulationWorld` liga, e só para contar ricochetes). Com deslocamento/tick maior que a menor dimensão do collider no eixo do movimento, o corpo discreto "pula" o collider: sem colisão física E sem callback. É intermitente por construção (depende do alinhamento tick × trajetória × fase), exatamente o sintoma relatado.
+
+**Causa B — Dupla fonte de verdade na detecção (arquitetural).** A resposta física vem do contato corpo-a-corpo no servidor de física, mas a lógica de gameplay (`hit()`, destruição, `target_hit`) vem de **dois sistemas `Area2D` discretos e independentes**: o `HitDetector` da bala (para pedra/metal/target) e o `HitBox` do vidro — e o `StaticBody2D` do vidro **não tem `CollisionShape2D` próprio** (corpo vazio, só o `Area2D` filho detecta). Dois sistemas discretos podem discordar no mesmo tick: rebateu sem registrar (pedra não racha, vitória do alvo não conta) ou registrou sem rebater. O vidro depende 100% de `Area2D`, que também sofre tunneling.
+
+**Não é causa:** `scale` em múltiplos níveis (verificado: aplicação única na raiz de cada instância; §3), `collision_layer/mask` (tudo default 1/1, coerente), gravidade/ticks (defaults consistentes entre jogo, `SimulationWorld` e solver analítico).
+
+---
+
+## 2. Cadeia visual → física por elemento (medido no código)
+
+Medidas de arte via decodificação dos PNGs; colliders lidos dos `.tscn`.
+
+| Elemento | Visual real (base, escala 1) | Collider base | Relação | Transformação aplicada | Veredito |
+|---|---|---|---|---|---|
+| `Floor` (`floor.tscn`: `StaticBody2D` + `CollisionShape2D` 500×500) | `floor.png` 500×500 full-bleed | `RectangleShape2D` 500×500 | 1:1 exato | `scale 0.2` na raiz (`LevelBuilder.build_floor`/`build_ground`, `FloorShapes.SCALE`) → tile 100×100, grade passo 100 | ✅ coerente |
+| Pedra (`stoneObstacle.tscn`: `StaticBody2D` + `HitBox` 500×500) | `stone_square.jpg` 500×500 | `RectangleShape2D` 500×500 | 1:1 | `scale` da `ObstacleDefinition` na raiz (`LevelBuilder.build` linha 38; `PatternLibrary.BLOCK_SCALE` 0.2 → 100×100) | ✅ coerente |
+| Metal (`metalObstacle.tscn`, idem 548×548) | `metal_square.jpg` 547×547 | `RectangleShape2D` 548×548 | 1 px dif. | idem (0.2 → ~110×110) | ✅ coerente |
+| Vidro (`glassObstacle.tscn`: `StaticBody2D` **sem shape** + `HitBox: Area2D` 952×934) | `glass_square.jpg` 952×935 | `RectangleShape2D` 952×934 (só no `Area2D`) | 1:1, mas **sem corpo físico** | idem (`GLASS_SCALE` 0.1 → ~95×93; poste 0.05 → ~48×47) | ⚠️ coerente em tamanho, mas detecção 100% `Area2D` discreta (Causa B) |
+| `Target` (`target.tscn`: `StaticBody2D` com `scale 0.2` **no próprio tscn** + `CollisionPolygon2D` 114×474) | sprites ~144×485 (×1.32) → instanciado **~29×97 px** | polígono → instanciado **22,8×94,8 px** | visual ~6 px mais largo (3 px/lado) | nenhuma no builder (`LevelBuilder.build` só define `position`/`rotation_degrees`); guides também não sobrescrevem → sempre 0.2 | ⚠️ divergência real de ~26% na largura (Causa C2); `TargetDefinition.DEFAULT_SIZE` 80×80 ≠ corpo 23×95 (só afeta validador — conservador, não causa atravessamento; solver usa `TARGET_BODY` correto) |
+| Bala (`bullet.tscn`: `RigidBody2D`, corpo r=46,17, detector r=56, sprite 0.3) | arte real: círculo Ø302 px dentro do canvas 500 → Ø45,3 px @sprite 0.3 | corpo Ø92,3 px base | física ~2% maior que a arte | `apply_cannon_scale(global_scale)` reescala raios + sprite (0.2 no jogo → corpo Ø18,5 px, detector Ø22,4 px, arte Ø18,1 px) | ✅ coerente; ⚠️ **pequena demais para a velocidade** (Causa A) |
+| `Cannon` | — (sem corpo físico próprio além das paredes do cano) | `SegmentShape2D` paredes filhas de `BarrelPivot` | herda `cannon.scale` (0.2 jogo, 0.3 guides) | `game.gd:87` aplica `cannon_scale` da composição | ✅ coerente; fora da cadeia do bug |
+
+Tabela de vulnerabilidade a tunneling (deslocamento/tick vs menor dimensão, potência máxima 2000 px/s → 33,3 px/tick; mínima 600 px/s → 10 px/tick):
+
+| Collider no mundo (@escalas reais) | Menor dimensão | 33 px/tick (pot. máx) | 10 px/tick (pot. mín) |
+|---|---|---|---|
+| Target 23×95 | 23 px | 🔴 pula | 🟢 detecta |
+| Vidro poste 0.05 (~48×47) | ~47 px | 🟡 rasante pula | 🟢 detecta |
+| Vidro gate 0.1 (~95×93) | ~93 px | 🟢 detecta (3 ticks) | 🟢 detecta |
+| Pedra/metal/floor 100–110 px | 100 px | 🟢 corpo não pula; 🟡 penetra fundo | 🟢 detecta |
+
+Isso explica cada sintoma: atravessa `Target` (sempre fino); atravessa `Obstacle` (só os finos: poste de vidro); "depende da escala/fase" (só fases com peças finas no caminho falham); "potência máxima" (Cenário 4 é o crítico); "posições diferentes da aparente" (detector Ø22 px vs corpo Ø18 px vs arte Ø18 px + 3 px/lado do alvo).
+
+---
+
+## 3. Onde a inconsistência é introduzida (arquivos e linhas)
+
+1. `components/bullet/bullet.tscn` — `RigidBody2D` sem `continuous_cd`, sem `contact_monitor`. É o único corpo rápido do jogo e nasceu sem proteção contra tunneling.
+2. `components/bullet/bullet.gd` — lógica de hit da bala contra pedra/metal/target chega via `$HitDetector.body_entered` (`Area2D` Ø22 px no mundo, discreto). O contato físico real (que produz o rebote) é outro sistema. Discordância = rebote sem `hit()` (pedra HP2 não racha; `target_hit` não emite mesmo com rebote visível) ou `hit()` sem contato.
+3. `components/obstacles/glass/glassObstacle.tscn` — `StaticBody2D` raiz sem `CollisionShape2D`; detecção exclusiva via `HitBox: Area2D` → `glass_obstacle.gd:28` (`_on_hit_box_body_entered`). Em corda curta (< 33 px, poste 0.05 em rasante) o `body_entered` nunca dispara: atravessa sem `*= 0.85`, sem shards, sem registro.
+4. `components/obstacles/obstacle.gd:50-74` — `play_hit_animation()` faz tween de `scale` na **raiz do `StaticBody2D`** (×1,08 por 0,3 s). A pedra sobrevive ao 1º hit com o collider pulsando: divergência visual×física transitória real (pequena, mas existe e é evitável).
+5. `components/target/target.tscn:8-9,20,25` — `scale 0.2` fixo na raiz + sprites com escala própria (~1,32) → arte 29 px vs polígono 22,8 px de largura. Raspão na borda visual passa sem colidir.
+6. `components/cannon/cannon.gd:124-136` (`shoot()`) — ordem `add_child → apply_cannon_scale → set position/velocity` está correta; `game.gd:87` aplica a escala da composição ao canhão. Sem dupla aplicação de escala em nenhum caminho (`LevelBuilder`, `SimulationWorld._spawn`, guides: todos definem `scale` uma única vez na raiz).
+7. `components/level/level_validator.gd:189-190` (`_target_rect` 80×80) vs `fast_level_generator.gd:40` (`TARGET_BODY` 23×95) — duas fontes para "tamanho do alvo". Hoje o erro é conservador (não causa o bug), mas viola o princípio da fonte única.
+
+---
+
+## 4. Tunneling × collider incorreto (separação exigida)
+
+- **Collider incorreto em relação ao visual:** SIM, mas pequeno e localizado — só o `Target` (Causa 5 acima, ~3 px/lado) e o pulse transitório do `Obstacle` (Causa 4). Todo o resto é 1:1.
+- **Projétil atravessando collider correto:** SIM, e é o dominante — Causa A (física discreta sem CCD) + Causa B (`Area2D` como única detecção do vidro e como detecção lógica da bala). Os dois problemas existem simultaneamente e precisam de correções distintas (§5, itens 1–3 vs item 4).
+
+---
+
+## 5. Arquitetura da correção (fonte única de verdade)
+
+```text
+posição varrida da bala por tick (raycast prev→atual, bodies + areas)
+        ↓
+contato físico do corpo (CCD cast-shape + contact_monitor)
+        ↓
+UM roteador em bullet.gd chama hit() / emite sinais
+```
+
+Sem `Area2D` como decisor, sem `scale` animado em corpo físico, sem dois tamanhos de alvo.
+
+| # | Arquivo | Ação | Motivo |
+|---|---|---|---|
+| 1 | `components/bullet/bullet.tscn` | `continuous_cd = 2` (cast-shape), `contact_monitor = true`, `max_contacts_reported = 8` | Elimina o tunneling físico (floor, pedra, metal, corpo do alvo). Custo mobile irrelevante (1 corpo rápido por vez). |
+| 2 | `components/bullet/bullet.gd` | Conectar `body_entered` do **corpo**; a cada physics tick, `intersect_ray` (ou `cast_motion`) do segmento `prev→current` com `collide_with_areas = true`; rotear o primeiro hit de gameplay por corpo (deduplicar por instância); **remover o nó `HitDetector`** | Uma fonte de verdade que enxerga bodies E o `HitBox` do vidro mesmo quando o tick pula o collider. Mantém a mecânica do vidro (atravessa `*= 0,85`, sem rebote — o `StaticBody` dele continua sem shape) sem depender de `body_entered` discreto. Idempotência já existe (`is_broken`/`is_processing_hit`). |
+| 3 | `components/obstacles/glass/glassObstacle.tscn` + `glass_obstacle.gd` | NADA (nenhuma mudança) | Com o item 2, o `HitBox` vira alvo passivo do raycast; o corpo vazio deixa de ser problema. Zero refatoração nos obstáculos. |
+| 4 | `components/obstacles/obstacle.gd:50-74` | Animar a escala dos **sprites filhos** em vez de `self.scale` | Collider estável durante o feedback visual; preserva o efeito atual pixel a pixel. |
+| 5 | `components/target/target.tscn` (polígono) | Alargar o `CollisionPolygon2D` ~3 px por lado na largura (ou estreitar os sprites para a arte casar com 22,8 px) | Elimina a única divergência permanente visual×física. Medir contra a bbox da arte (86×476 base). |
+| 6 | `components/level/material_rules.gd` | +`target_size() -> Vector2(114, 474)` (base, escala 1); `level_validator._target_rect` e `TARGET_BODY` do solver passam a derivar dele | Uma fonte para o tamanho do alvo (validador, solver analítico e cena). Sem mudar nenhum limiar de gameplay. |
+| 7 | `components/level/tests/` | Novo teste headless: N tiros a potência máxima contra alvo fino + poste 0.05 via `SimulationWorld`, contando atravessamentos sem registro (deve ser 0 após a correção) | Regressão automática do bug intermitente; `SimulationWorld` já instancia as cenas reais. |
+
+Não alterar: `Floor`, pedra, metal, `Cannon`, `Game.tscn`, câmera, HUD, controles, geração (composição/validador/solver intactos — o solver analítico já modela `BULLET_RADIUS`/dilatação e continua válido), regras de materiais, ricochete do alvo (segue emergente do `bounce 1.0`; com detecção unificada o `target_hit` passa a acompanhar deterministicamente o contato real).
+
+---
+
+## 6. Validação (cenários obrigatórios → como verificar)
+
+- Cenário 1 (Floor): tiro direto ao chão em vários ângulos, pot. máx. Critério: nenhum atravessamento; sem "afundamento" profundo (CCD impede penetração > fração do tile). Debug: `Debug → Visible Collision Shapes` ligado, comparar sprite×shape quadro a quadro.
+- Cenário 2 (Target): tiro direto no alvo de frente e de raspão. Critério: todo contato visual emite `target_hit` + ricochete com `bounce 1.0`; borda da arte (3 px/lado, item 5) agora colide.
+- Cenário 3 (Obstáculos): vidro gate 0.1, poste 0.05, pedra HP1/HP2, metal. Critério: vidro sempre atenua `*= 0,85` + shards; pedra racha no 1º e destrói no 2º; metal rebate sem dano; zero atravessamento silencioso.
+- Cenário 4 (Alta velocidade): pot. máx contra alvo fino e poste em ângulo rasante (pior caso: corda < 33 px). Critério: 100% dos contatos registrados (era o caso que mais falhava antes).
+- Cenário 5 (Escalas): peças 0.05–1.0. Critério: física acompanha o visual em todas (escala continua aplicada uma vez na raiz; nada muda aqui — só confirmar).
+- Cenário 6 (Procedurais): rodar N fases (ex. 20 seeds × fases 1/5/12/18) + teste headless do item 7. Critério: zero atravessamentos sem registro; vitória/derrota via `target_hit` inalteradas; suíte existente verde.
+
+---
+
 # Plano de Refatoração — Geração de Fases Reais em `Game.tscn`
 
 > Escopo exclusivo: fazer `screens/Game.tscn` (+ seu pipeline de geração) produzir fases procedurais válidas segundo `docs/Levels.md`. Não alterar HUD, câmera, controles ou outras telas, salvo o estritamente necessário para instanciar/posicionar a fase. Nenhum código é alterado neste plano.
