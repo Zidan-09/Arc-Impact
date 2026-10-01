@@ -5,6 +5,18 @@
 [ext_resource type="Script" uid="uid://bbxpspw35j74a" path="res://components/hud/hud.gd" id="3_hud"]
 [ext_resource type="PackedScene" uid="uid://byv27thwp3iq4" path="res://components/pause-button/PauseButton.tscn" id="4_sv0wr"]
 
+[sub_resource type="LabelSettings" id="LabelSettings_sv0wr"]
+font_size = 25
+font_color = Color(0.22745098, 0.21176471, 0.34117648, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_guyy7"]
+font_size = 25
+font_color = Color(0.44705883, 0.6431373, 0.84705883, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_eyox7"]
+font_size = 25
+font_color = Color(0.22352941, 0.20784314, 0.34509805, 1)
+
 [node name="Hud" type="Control" unique_id=2117122883]
 layout_mode = 3
 anchors_preset = 15
@@ -30,14 +42,20 @@ mouse_filter = 2
 [node name="Level" type="Label" parent="Info/Column" unique_id=827370571]
 layout_mode = 2
 text = "Fase: 0"
+label_settings = SubResource("LabelSettings_sv0wr")
+uppercase = true
 
 [node name="Score" type="Label" parent="Info/Column" unique_id=417934894]
 layout_mode = 2
 text = "Pontos: 0"
+label_settings = SubResource("LabelSettings_guyy7")
+uppercase = true
 
 [node name="Ammo" type="Label" parent="Info/Column" unique_id=916773507]
 layout_mode = 2
 text = "Munição: 0"
+label_settings = SubResource("LabelSettings_eyox7")
+uppercase = true
 
 [node name="Controls" type="Control" parent="." unique_id=199311977]
 layout_mode = 1
