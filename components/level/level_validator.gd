@@ -186,8 +186,16 @@ static func _result(errors: Array[String], warnings: Array[String]) -> Dictionar
 	return {"ok": errors.is_empty(), "errors": errors, "warnings": warnings}
 
 
+## Retângulo do corpo real do alvo (docs/plan.md §5 item 6): deriva de
+## MaterialRules.target_body_size() (fonte única com a cena e o solver),
+## sob a rotação da composição. TargetDefinition.size (80x80) fica só
+## como compat de dicts v1 — não decide mais geometria.
 static func _target_rect(target: TargetDefinition) -> Rect2:
-	return Rect2(target.position - target.size * 0.5, target.size)
+	var body := MaterialRules.target_body_size()
+	var rot := deg_to_rad(target.rotation_degrees)
+	var w := body.x * absf(cos(rot)) + body.y * absf(sin(rot))
+	var h := body.x * absf(sin(rot)) + body.y * absf(cos(rot))
+	return Rect2(target.position - Vector2(w, h) * 0.5, Vector2(w, h))
 
 
 static func _rect_inside(inner: Rect2, outer: Rect2) -> bool:

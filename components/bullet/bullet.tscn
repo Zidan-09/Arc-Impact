@@ -6,14 +6,11 @@
 [sub_resource type="CircleShape2D" id="CircleShape2D_dlv83"]
 radius = 46.173584
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_iel4s"]
-radius = 56.0
-
 [node name="Bullet" type="RigidBody2D" unique_id=1821898189]
 z_index = 2
 script = ExtResource("1_j7bu3")
-# Continuous collision detection to prevent tunneling of fast projectiles
-continuous_cd = 2  # Discontinuous (pixel) for mobile performance
+# CCD cast-shape: impede o tunneling do projétil rápido (docs/plan.md §5 item 1).
+continuous_cd = 2
 contact_monitor = true
 max_contacts_reported = 8
 
@@ -24,8 +21,3 @@ texture = ExtResource("1_142lv")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=530604187]
 z_index = 2
 shape = SubResource("CircleShape2D_dlv83")
-
-[node name="HitDetector" type="Area2D" parent="." unique_id=1464932487]
-# This node is kept for backward compatibility but no longer used for hit detection.
-# Physical collisions are handled by the RigidBody2D.
-visible = false

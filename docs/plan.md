@@ -69,9 +69,9 @@ Isso explica cada sintoma: atravessa `Target` (sempre fino); atravessa `Obstacle
 
 ```text
 posição varrida da bala por tick (raycast prev→atual, bodies + areas)
-        ↓
+		↓
 contato físico do corpo (CCD cast-shape + contact_monitor)
-        ↓
+		↓
 UM roteador em bullet.gd chama hit() / emite sinais
 ```
 

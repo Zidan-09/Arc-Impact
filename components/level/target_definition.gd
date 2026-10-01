@@ -5,7 +5,11 @@ class_name TargetDefinition extends Resource
 ## orientar entrada, pedir arco/ricochete) — nunca sorteada às cegas.
 ## O tamanho é FIXO na v1.
 
-const DEFAULT_SIZE := Vector2(80, 80) # espelha components/target/target.tscn
+## Legado v1 (80x80): zona de exclusão conservadora dos dicts antigos.
+## A geometria real vem de MaterialRules.target_body_size() (fonte única
+## com cena/validador/solver, docs/plan.md §5 item 6). Mantido para
+## compat de desserialização — não usar para física.
+const DEFAULT_SIZE := Vector2(80, 80)
 
 @export var position: Vector2 = Vector2(1000, 360)
 @export var size: Vector2 = DEFAULT_SIZE

@@ -32,12 +32,18 @@ const MAX_RICOCHETS := 10
 ## Raspão + retorno longo amplifica qualquer divergência analítico→física
 ## (lição das bandas 11+); só passa o caminho com corredor real.
 const CLEARANCE_MIN := 12.0
-## Colisor real do alvo em scale 0.2: polígono de target.tscn tem
-## 114x474px na base => ~23x95px instanciado (NÃO 80x80: o
-## TargetDefinition.DEFAULT_SIZE é aproximação conservadora só para o
-## validador). O solver usa estas medidas + rotação, dilatadas pelo raio
-## da bala — acerto analítico precisa implicar acerto real.
-const TARGET_BODY := Vector2(23.0, 95.0)
+## Colisor real do alvo instanciado (docs/plan.md §5 item 6): deriva de
+## MaterialRules.target_body_size() — fonte única com a cena (polígono
+## ~144x474 base → ~28.8x94.8 @0.2 pós-item 5) e o validador. O solver usa
+## estas medidas + rotação, dilatadas pelo raio da bala — acerto
+## analítico precisa implicar acerto real.
+## Const mantida por compat (valor pós-correção); o caminho quente usa
+## target_body() (sempre igual a MaterialRules).
+const TARGET_BODY := Vector2(28.8, 94.8)
+
+
+static func target_body() -> Vector2:
+	return MaterialRules.target_body_size()
 
 
 static func generate(seed_value: int, level_number: int, cfg_override: DifficultyConfig = null) -> Dictionary:
@@ -250,9 +256,10 @@ static func _try_sequence_perturbed(def: LevelDefinition, angle: float, power: f
 ## composição, dilatado pelo raio da bala (mesmo tratamento dos
 ## obstáculos). Ver TARGET_BODY.
 static func target_rect_for(def: LevelDefinition) -> Rect2:
+	var body := target_body()
 	var rot := deg_to_rad(def.target.rotation_degrees)
-	var w := TARGET_BODY.x * absf(cos(rot)) + TARGET_BODY.y * absf(sin(rot))
-	var h := TARGET_BODY.x * absf(sin(rot)) + TARGET_BODY.y * absf(cos(rot))
+	var w := body.x * absf(cos(rot)) + body.y * absf(sin(rot))
+	var h := body.x * absf(sin(rot)) + body.y * absf(cos(rot))
 	return Rect2(def.target.position - Vector2(w, h) * 0.5, Vector2(w, h)).grow(BULLET_RADIUS)
 
 

@@ -10,9 +10,18 @@ var hit_duration: float = 0.15
 var original_scale: Vector2
 var is_processing_hit: bool = false
 
+# Escalas-base dos sprites filhos (docs/plan.md §5 item 4): o feedback
+# visual pulsa SÓ aqui — a raiz (StaticBody2D) fica fixa para o
+# collider não pulsar junto com o visual durante o tween.
+var _visual_base_scales := {}
+
 
 func _ready() -> void:
 	original_scale = scale
+	_visual_base_scales.clear()
+	for child in get_children():
+		if child is Sprite2D:
+			_visual_base_scales[child] = (child as Sprite2D).scale
 
 
 func hit(bullet: RigidBody2D, impact_position: Vector2 = Vector2.INF) -> void:
@@ -48,29 +57,42 @@ func on_hit_started(_bullet: RigidBody2D) -> void:
 	pass
 
 func play_hit_animation() -> void:
+	# Collider estável: a raiz nunca escala durante o feedback.
 	scale = original_scale
+	if _visual_base_scales.is_empty():
+		await get_tree().create_timer(hit_duration * 2.0).timeout
+		return
 
-	var tween := create_tween()
+	var tweens: Array[Tween] = []
+	for node in _visual_base_scales.keys():
+		if not is_instance_valid(node):
+			continue
+		var base: Vector2 = _visual_base_scales[node]
+		(node as Node2D).scale = base
+		var tween := create_tween()
+		tween.set_trans(Tween.TRANS_BACK)
+		tween.set_ease(Tween.EASE_OUT)
+		tween.tween_property(
+			node,
+			"scale",
+			base * hit_scale,
+			hit_duration
+		)
+		tween.tween_property(
+			node,
+			"scale",
+			base,
+			hit_duration
+		)
+		tweens.append(tween)
 
-	tween.set_trans(Tween.TRANS_BACK)
-	tween.set_ease(Tween.EASE_OUT)
+	if tweens.is_empty():
+		return
+	await tweens[0].finished
 
-	tween.tween_property(
-		self,
-		"scale",
-		original_scale * hit_scale,
-		hit_duration
-	)
-
-	tween.tween_property(
-		self,
-		"scale",
-		original_scale,
-		hit_duration
-	)
-
-	await tween.finished
-
+	for node in _visual_base_scales.keys():
+		if is_instance_valid(node):
+			(node as Node2D).scale = _visual_base_scales[node]
 	scale = original_scale
 
 

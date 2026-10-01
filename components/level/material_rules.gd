@@ -107,6 +107,27 @@ static func floor_size() -> Vector2:
 	return Vector2(500, 500)
 
 
+## Tamanho base do alvo em px, escala 1.0 (docs/plan.md §5 item 6:
+## fonte única do tamanho do alvo). Pós-correção do item 5: polígono
+## alargado para casar com o visual (~144x474 base → ~28.8x94.8 @0.2;
+## era 114x474 antes do alargamento de 3px/lado instanciados).
+## `LevelValidator._target_rect` e `FastLevelGenerator.target_body()`
+## derivam daqui; a cena é a materialização do mesmo número.
+static func target_size() -> Vector2:
+	return Vector2(144, 474)
+
+
+## Escala fixa do Target na cena (raiz de target.tscn, sempre 0.2 —
+## o builder nunca sobrescreve; ver docs/plan.md §2).
+static func target_scale() -> Vector2:
+	return Vector2(0.2, 0.2)
+
+
+## Corpo instanciado do alvo em px (para validador e solver analítico).
+static func target_body_size() -> Vector2:
+	return target_size() * target_scale()
+
+
 static func _rules() -> Dictionary:
 	return {
 		ObstacleDefinition.KIND_GLASS: {
