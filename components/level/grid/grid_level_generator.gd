@@ -394,7 +394,7 @@ static func to_def(grid: GridState, seed_value: int, level_number: int, ammo: in
 	def.level_number = level_number
 	def.ammo = ammo
 	def.world_bounds = grid.phase_bounds()
-	def.cannon_position = GridLevelValidator.cannon_world_pos(grid)
+	def.cannon_position = GridLevelValidator.cannon_world_pos(grid) + Vector2(0, 30)
 	def.cannon_scale = Cannon.CANNON_SCALE
 	# Floors: tile de exatamente CELL_SIZE (500px de arte+colisor).
 	for row in grid.rows:
