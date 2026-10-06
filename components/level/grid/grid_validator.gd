@@ -22,8 +22,6 @@ const ERR_UNREACHABLE := "UNREACHABLE"
 const ERR_MUZZLE_BLOCKED := "MUZZLE_BLOCKED"
 const ERR_WRONG_MATERIAL := "WRONG_MATERIAL"
 
-const CANNON_FOOT_DROP := 55.4 # 277 * 0.2 (ver cannon.gd FOOT_DROP)
-const FLOOR_HALF := 50.0 # tile 100x100 @0.2
 const BULLET_RADIUS := 10.0
 const MIN_CANNON_TARGET_CELLS := 5
 
@@ -40,7 +38,8 @@ static func validate(grid: GridState) -> Dictionary:
 	return {"ok": errors.is_empty(), "errors": errors}
 
 
-## Posição física do canhão: centralizado no apoio, pé no topo do Floor.
+## Posição física do canhão: centro da célula, exatamente uma célula
+## acima do centro do apoio (pé no topo do Floor, sem offsets mágicos).
 static func cannon_world_pos(grid: GridState) -> Vector2:
 	var c := grid.find_first(GridState.Cell.CANNON)
 	if c.x < 0:
@@ -51,7 +50,7 @@ static func cannon_world_pos(grid: GridState) -> Vector2:
 	if support_row >= grid.rows:
 		return grid.world_pos(c.x, c.y)
 	var support := grid.world_pos(c.x, support_row)
-	return Vector2(support.x, support.y - FLOOR_HALF - CANNON_FOOT_DROP)
+	return Vector2(support.x, support.y - GridState.CELL_SIZE)
 
 
 static func target_world_pos(grid: GridState) -> Vector2:
@@ -260,9 +259,17 @@ static func _target_reachable_open(grid: GridState) -> bool:
 	var gravity := float(ProjectSettings.get_setting("physics/2d/default_gravity", 980.0))
 	var body := MaterialRules.target_body_size()
 	var rect := Rect2(target_pos - body * 0.5, body).grow(BULLET_RADIUS)
+	# Extermínio derivado da FASE (nunca da viewport): fora da área de
+	# jogo + margem, ou abaixo do piso (arco que afunda não volta).
+	var phase := grid.phase_bounds()
+	var kill := phase.grow(300.0)
 	var dt := 1.0 / 60.0
-	var angles := [10.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
-	var powers := [0.5, 0.7, 0.85, 1.0]
+	# Amostragem cobre o envelope REAL do canhão (angle_min/max e
+	# power_min/max da LevelDefinition): um arco existente aqui é
+	# condição necessária p/ solubilidade; a suficiência (desafio com
+	# bloqueio) é verificada nas regras de arquétipo, não aqui.
+	var angles := [-20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
+	var powers := [0.3, 0.4, 0.5, 0.7, 0.85, 1.0]
 	for angle in angles:
 		for power in powers:
 			var muzzle := Cannon.muzzle_state_for(cannon_pos, angle)
@@ -274,7 +281,7 @@ static func _target_reachable_open(grid: GridState) -> bool:
 				if _segment_hits_rect(pos, nxt, rect):
 					return true
 				pos = nxt
-				if pos.y > 760.0 or pos.x < -100.0 or pos.x > 1400.0:
+				if pos.y > phase.end.y or not kill.has_point(pos):
 					break
 	return false
 

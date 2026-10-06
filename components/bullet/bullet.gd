@@ -1,7 +1,8 @@
 class_name Bullet
 extends RigidBody2D
 ## Projétil do canhão — fonte única de verdade (docs/plan.md §5 item 2):
-## - Corpo: CircleShape2D raio 46.173584 (valor-base em `bullet.tscn`;
+## - Corpo: CircleShape2D raio 57.717 (valor-base em `bullet.tscn`;
+##   x escala canônica 0.16 do canhão = ~9.2px, o calibre calibrado;
 ##   `apply_cannon_scale()` o reescala por instância sem mutar o recurso).
 ## - collision_layer/mask: defaults (1/1). Colide fisicamente com
 ##   StaticBody2D (metal/pedra, paredes do cano, floor, corpo do alvo).

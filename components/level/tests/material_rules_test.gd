@@ -68,25 +68,31 @@ func _check_unknown() -> int:
 	return 0
 
 
-## Etapa 2: geometria de referência da composição (medidas reais dos
-## assets + pé do canhão calibrado no Guide1).
+## Geometria de referência: cenas casam com a arte e a escala de
+## instanciação preenche exatamente CELL_SIZE (fonte única: GridState).
 func _check_geometry() -> int:
 	# structure.png 482x448; floor 500x500 (tscn + png).
 	if MaterialRules.structure_size() != Vector2(482, 448):
 		return _fail("structure_size != (482, 448)")
 	if MaterialRules.floor_size() != Vector2(500, 500):
 		return _fail("floor_size != (500, 500)")
-	# Tile 0.2 = 100x100 (unidade da grade dos guides).
-	if MaterialRules.floor_size() * Vector2(0.2, 0.2) != Vector2(100, 100):
-		return _fail("tile 0.2 deveria ser 100x100")
-	# Guide1: canhão (150, 487) @0.3 com plataforma centrada em y=570.
-	var foot := Cannon.foot_position(Vector2(150, 487), Vector2(0.3, 0.3))
-	if absf(foot.y - 570.0) > 1.0 or absf(foot.x - 150.0) > 0.001:
-		return _fail("pé do Guide1 deveria ser ~(150, 570), veio %s" % str(foot))
-	# Escala do jogo (0.2): pé ~55px abaixo da origem.
-	var foot_game := Cannon.foot_position(Vector2(173, 523), Vector2(0.2, 0.2))
-	if absf(foot_game.y - 578.4) > 1.0:
-		return _fail("pé @0.2 deveria ser ~55px abaixo, veio %s" % str(foot_game))
+	# Colisores casam com a arte: metal 547x547, vidro 952x935.
+	if MaterialRules.base_size(ObstacleDefinition.KIND_METAL) != Vector2(547, 547):
+		return _fail("metal base != (547, 547)")
+	if MaterialRules.base_size(ObstacleDefinition.KIND_GLASS) != Vector2(952, 935):
+		return _fail("glass base != (952, 935)")
+	# Cada material preenche exatamente uma célula na escala instanciada.
+	for kind in MaterialRules.kinds():
+		var filled := MaterialRules.base_size(kind) * GridState.cell_scale_for(MaterialRules.base_size(kind))
+		if not filled.is_equal_approx(Vector2(GridState.CELL_SIZE, GridState.CELL_SIZE)):
+			return _fail("kind %s não preenche a célula: %s" % [String(kind), str(filled)])
+	var floor_filled := MaterialRules.floor_size() * GridState.cell_scale_for(MaterialRules.floor_size())
+	if not floor_filled.is_equal_approx(Vector2(GridState.CELL_SIZE, GridState.CELL_SIZE)):
+		return _fail("floor não preenche a célula: %s" % str(floor_filled))
+	# Pé do canhão = fundo da célula na escala canônica.
+	var foot := Cannon.foot_position(Vector2.ZERO, Cannon.CANNON_SCALE)
+	if absf(foot.y - GridState.CELL_SIZE * 0.5) > 0.01 or absf(foot.x) > 0.001:
+		return _fail("pé deveria ser meia célula abaixo da origem, veio %s" % str(foot))
 	return 0
 
 

@@ -74,19 +74,19 @@ static func scene_for(kind: StringName) -> PackedScene:
 	return null
 
 
-## Tamanho base do colisor em px, escala 1.0 (Etapa 3: usado pelo
-## LevelValidator para aproximar o AABB como `base_size * scale`).
-## Valores lidos dos .tscn: metal 548x548, pedra 500x500, vidro 952x934
-## (hitbox Area2D). Com scale 0.2 (padrão da cena de teste),
-## metal ~= 110x110.
+## Tamanho base do colisor em px, escala 1.0. Deve casar EXATAMENTE com
+## a arte e o shape da cena (quadrado perfeito após `cell_scale_for`):
+## metal 547x547 (= metal_square.jpg), pedra 500x500, vidro 952x935
+## (= glass_square.jpg, hitbox Area2D). A escala de instanciação é
+## `GridState.cell_scale_for(base)` => colisão exata de CELL_SIZE.
 static func base_size(kind: StringName) -> Vector2:
 	match kind:
 		ObstacleDefinition.KIND_GLASS:
-			return Vector2(952, 934)
+			return Vector2(952, 935)
 		ObstacleDefinition.KIND_STONE:
 			return Vector2(500, 500)
 		ObstacleDefinition.KIND_METAL:
-			return Vector2(548, 548)
+			return Vector2(547, 547)
 	push_error("MaterialRules.base_size: kind desconhecido '%s'." % String(kind))
 	return Vector2.ZERO
 

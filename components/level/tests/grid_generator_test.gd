@@ -31,80 +31,128 @@ func _case_structure() -> int:
 			var result := FastLevelGenerator.generate(seed_value, level)
 			var def: LevelDefinition = result["def"]
 			var tag := "seed=%d level=%d" % [seed_value, level]
-			failures += _check_def(def, tag)
+			failures += _check_def(def, String(result["grid_ascii"]), tag)
 			if def.floors.is_empty():
 				printerr("  [structure:%s] sem floors" % tag)
 				failures += 1
 			if def.target == null:
 				printerr("  [structure:%s] sem target" % tag)
 				failures += 1
-			if def.cannon_position.x > 360.0:
-				printerr("  [structure:%s] canhão fora da esquerda: %s" % [tag, str(def.cannon_position)])
-				failures += 1
 	return failures
 
 
-## Checagens físicas sobre a def instanciável (espelham o validador).
-func _check_def(def: LevelDefinition, tag: String) -> int:
+## Reconstrói a grade a partir do ascii de debug (C/T/#/g/s/m/+/.).
+func _grid_from_ascii(ascii: String) -> GridState:
+	var lines := ascii.split("\n")
+	var grid := GridState.new(lines[0].length(), lines.size())
+	for row in lines.size():
+		var line: String = lines[row]
+		for col in line.length():
+			match line.substr(col, 1):
+				"#":
+					grid.set_cell(col, row, GridState.Cell.FLOOR)
+				"C":
+					grid.set_cell(col, row, GridState.Cell.CANNON)
+				"T":
+					grid.set_cell(col, row, GridState.Cell.TARGET)
+				"g":
+					grid.set_cell(col, row, GridState.Cell.GLASS)
+				"s":
+					grid.set_cell(col, row, GridState.Cell.STONE)
+				"m":
+					grid.set_cell(col, row, GridState.Cell.METAL)
+				"+":
+					grid.set_cell(col, row, GridState.Cell.STRUCTURE)
+	return grid
+
+
+## Checagens sobre a def instanciável + grade lógica: célula quadrada
+## uniforme, posições = centros das células, AABBs exatos, sem
+## sobreposição, bounds = área da fase (contrato da câmera).
+func _check_def(def: LevelDefinition, ascii: String, tag: String) -> int:
 	var failures := 0
-	# Floor cobre a base: existe tile perto de cada ponto da faixa.
-	for x in [50.0, 350.0, 650.0, 950.0, 1250.0]:
-		var covered := false
-		for floor in def.floors:
-			if abs(floor.position.x - x) < 60.0 and abs(floor.position.y - 670.0) < 60.0:
-				covered = true
-				break
-		if not covered:
-			printerr("  [floor:%s] base descoberta perto de x=%d" % [tag, int(x)])
+	var grid := _grid_from_ascii(ascii)
+	var cell := GridState.CELL_SIZE
+	if grid.cols < 12 or grid.cols > 14 or grid.rows < 7 or grid.rows > 10:
+		printerr("  [dims:%s] grade %dx%d fora da faixa" % [tag, grid.cols, grid.rows])
+		failures += 1
+	# Grade: base contínua, relevo, canhão à esquerda apoiado, alvo válido.
+	for col in grid.cols:
+		if grid.get_cell(col, grid.rows - 1) != GridState.Cell.FLOOR:
+			printerr("  [floor:%s] base com vão na col %d" % [tag, col])
 			failures += 1
-	# Relevo: ao menos um tile acima da base.
-	var relief := false
-	for floor in def.floors:
-		if floor.position.y < 620.0:
-			relief = true
-			break
-	if not relief:
-		printerr("  [floor:%s] sem relevo" % tag)
+	var cannons := grid.find_all(GridState.Cell.CANNON)
+	var targets := grid.find_all(GridState.Cell.TARGET)
+	if cannons.size() != 1 or cannons[0].x > 3:
+		printerr("  [cannon:%s] fora das 4 primeiras colunas" % tag)
 		failures += 1
-	# Cannon conectado: pé dentro de um tile de Floor.
-	var foot := Cannon.foot_position(def.cannon_position, def.cannon_scale)
-	var supported := false
-	for floor in def.floors:
-		var size := MaterialRules.floor_size() * floor.scale
-		if Rect2(floor.position - size * 0.5, size).grow(8.0).has_point(foot):
-			supported = true
-			break
-	if not supported:
-		printerr("  [cannon:%s] flutuando (pé %s)" % [tag, str(foot)])
+	elif grid.get_cell(cannons[0].x, cannons[0].y + 1) != GridState.Cell.FLOOR:
+		printerr("  [cannon:%s] sem Floor abaixo" % tag)
 		failures += 1
-	# Obstacles conectados ao Floor (direta ou via peças), sem flutuar.
+	if targets.size() != 1:
+		printerr("  [target:%s] ausente" % tag)
+		failures += 1
+	# Contagens def == grade.
+	if def.floors.size() != grid.count(GridState.Cell.FLOOR):
+		printerr("  [count:%s] floors %d != grade %d" % [tag, def.floors.size(), grid.count(GridState.Cell.FLOOR)])
+		failures += 1
+	if def.obstacles.size() != grid.count_obstacles():
+		printerr("  [count:%s] obstacles %d != grade %d" % [tag, def.obstacles.size(), grid.count_obstacles()])
+		failures += 1
+	if def.structures.size() != grid.count(GridState.Cell.STRUCTURE):
+		printerr("  [count:%s] structures %d != grade %d" % [tag, def.structures.size(), grid.count(GridState.Cell.STRUCTURE)])
+		failures += 1
+	# AABBs: todos exatamente CELL_SIZE x CELL_SIZE (quadrados uniformes).
 	var boxes: Array[Rect2] = []
+	for floor in def.floors:
+		boxes.append(_aabb_of(floor.position, MaterialRules.floor_size() * floor.scale))
 	for obstacle in def.obstacles:
 		boxes.append(_obstacle_aabb(obstacle))
-	for i in def.obstacles.size():
-		var touching := false
-		for floor in def.floors:
-			var fsize := MaterialRules.floor_size() * floor.scale
-			var fbox := Rect2(floor.position - fsize * 0.5, fsize)
-			if boxes[i].grow(8.0).intersects(fbox.grow(8.0)):
-				touching = true
-				break
-		if not touching:
-			for j in def.obstacles.size():
-				if i != j and boxes[i].grow(8.0).intersects(boxes[j].grow(8.0)):
-					touching = true
-					break
-		if not touching:
-			for structure in def.structures:
-				var ssize := MaterialRules.structure_size() * structure.scale
-				var sbox := Rect2(structure.position - ssize * 0.5, ssize)
-				if boxes[i].grow(8.0).intersects(sbox.grow(8.0)):
-					touching = true
-					break
-		if not touching:
-			printerr("  [obstacle:%s] %s flutuando" % [tag, def.obstacles[i].id])
+	for structure in def.structures:
+		boxes.append(_aabb_of(structure.position, _struct_size(structure)))
+	for i in boxes.size():
+		if not boxes[i].size.is_equal_approx(Vector2(cell, cell)):
+			printerr("  [cell:%s] bloco %d com %s (esperado %dx%d)" % [tag, i, str(boxes[i].size), int(cell), int(cell)])
 			failures += 1
+	# Sem sobreposição: vizinhos encostam, nunca invadem (tol. 2px).
+	for i in boxes.size():
+		for j in range(i + 1, boxes.size()):
+			if boxes[i].grow(-2.0).intersects(boxes[j].grow(-2.0)):
+				printerr("  [overlap:%s] blocos %d/%d se sobrepõem" % [tag, i, j])
+				failures += 1
+	# Cannon/target nas posições lógicas, escala canônica, pé no apoio.
+	if cannons.size() == 1 and targets.size() == 1:
+		var expect_c := grid.world_pos(cannons[0].x, cannons[0].y)
+		if not def.cannon_position.is_equal_approx(expect_c):
+			printerr("  [cannon:%s] fora do centro da célula" % tag)
+			failures += 1
+		if def.cannon_scale != Cannon.CANNON_SCALE:
+			printerr("  [cannon:%s] escala fora da canônica" % tag)
+			failures += 1
+		var foot := Cannon.foot_position(def.cannon_position, def.cannon_scale)
+		var support := grid.world_pos(cannons[0].x, cannons[0].y + 1)
+		if absf(foot.y - (support.y - cell * 0.5)) > 1.0 or absf(foot.x - support.x) > 1.0:
+			printerr("  [cannon:%s] pé fora do topo do apoio (%s)" % [tag, str(foot)])
+			failures += 1
+		if not def.target.position.is_equal_approx(grid.world_pos(targets[0].x, targets[0].y)):
+			printerr("  [target:%s] fora do centro da célula" % tag)
+			failures += 1
+	# Contrato da câmera: bounds == área exata da grade.
+	if not def.world_bounds.is_equal_approx(grid.phase_bounds()):
+		printerr("  [bounds:%s] %s != área da grade %s" % [tag, str(def.world_bounds), str(grid.phase_bounds())])
+		failures += 1
 	return failures
+
+
+func _aabb_of(center: Vector2, size: Vector2) -> Rect2:
+	return Rect2(center - size * 0.5, size)
+
+
+func _struct_size(structure: StructureDefinition) -> Vector2:
+	var size := MaterialRules.structure_size() * structure.scale
+	if absf(wrapf(structure.rotation_degrees, 0.0, 180.0) - 90.0) < 0.01:
+		size = Vector2(size.y, size.x)
+	return size
 
 
 func _obstacle_aabb(obstacle: ObstacleDefinition) -> Rect2:

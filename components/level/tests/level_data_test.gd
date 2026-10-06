@@ -210,7 +210,7 @@ func _check_v1_compat() -> int:
 		],
 	}
 	var def := LevelDefinition.from_dict(legacy)
-	if def.generator_version != 1 or def.cannon_scale != Vector2(0.2, 0.2):
+	if def.generator_version != 1 or def.cannon_scale != Vector2(0.16, 0.16):
 		printerr("  [v1_compat] versão/escala do canhão divergem.")
 		return 1
 	if not def.floors.is_empty() or not def.structures.is_empty():

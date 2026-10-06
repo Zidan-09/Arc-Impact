@@ -18,7 +18,7 @@ const GENERATOR_VERSION: int = 3 # v3: grade discreta intencional (GridLevelGene
 @export var level_number: int = 1
 @export var ammo: int = 3 # 1..4 (RN-03 do PRD)
 @export var cannon_position: Vector2 = Vector2(173, 523)
-@export var cannon_scale: Vector2 = Vector2(0.2, 0.2) # guides usam 0.3
+@export var cannon_scale: Vector2 = Vector2(0.16, 0.16) # canônica (ver Cannon.CANNON_SCALE)
 @export var cannon_angle_min: float = -20.0 # espelha cannon.gd
 @export var cannon_angle_max: float = 83.0 # espelha cannon.gd
 @export var power_min: float = 0.3 # espelha power_slider.gd
@@ -91,8 +91,8 @@ static func from_dict(data: Dictionary) -> LevelDefinition:
 	var cannon_pos: Dictionary = data.get("cannon_position", {"x": 173.0, "y": 523.0})
 	def.cannon_position = Vector2(float(cannon_pos.get("x", 173.0)), float(cannon_pos.get("y", 523.0)))
 	# Compatibilidade: dicts v1 não têm escala do canhão (sempre 0.2).
-	var cannon_scl: Dictionary = data.get("cannon_scale", {"x": 0.2, "y": 0.2})
-	def.cannon_scale = Vector2(float(cannon_scl.get("x", 0.2)), float(cannon_scl.get("y", 0.2)))
+	var cannon_scl: Dictionary = data.get("cannon_scale", {"x": 0.16, "y": 0.16})
+	def.cannon_scale = Vector2(float(cannon_scl.get("x", 0.16)), float(cannon_scl.get("y", 0.16)))
 	def.cannon_angle_min = float(data.get("cannon_angle_min", -20.0))
 	def.cannon_angle_max = float(data.get("cannon_angle_max", 83.0))
 	def.power_min = float(data.get("power_min", 0.3))

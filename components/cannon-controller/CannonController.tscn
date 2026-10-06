@@ -10,7 +10,7 @@ script = ExtResource("1_vu4is")
 
 [node name="Cannon" parent="." unique_id=1115613926 instance=ExtResource("1_l1rob")]
 position = Vector2(38.000004, 697)
-scale = Vector2(0.2, 0.2)
+scale = Vector2(0.16, 0.16)
 min_angle = -20.0
 max_angle = 83.0
 rotation_sensitivity = 0.5

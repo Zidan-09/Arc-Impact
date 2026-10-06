@@ -20,10 +20,6 @@ const ARCH_VERTICAL := &"vertical"
 const ARCH_TOWER := &"tower"
 const ARCH_MIXED := &"mixed"
 
-const GLASS_SCALE := Vector2(0.1, 0.1)
-const BLOCK_SCALE := Vector2(0.2, 0.2)
-const STRUCT_SCALE := Vector2(0.15, 0.15)
-
 
 ## Porta de entrada. Retorna {"def", "grid_ascii", "archetype",
 ## "candidates", "ms", "fallback_used", "ultimate", "log"}.
@@ -397,16 +393,16 @@ static func to_def(grid: GridState, seed_value: int, level_number: int, ammo: in
 	def.seed = seed_value
 	def.level_number = level_number
 	def.ammo = ammo
-	def.world_bounds = def.play_bounds
+	def.world_bounds = grid.phase_bounds()
 	def.cannon_position = GridLevelValidator.cannon_world_pos(grid)
-	def.cannon_scale = Vector2(0.2, 0.2)
-	# Floors.
+	def.cannon_scale = Cannon.CANNON_SCALE
+	# Floors: tile de exatamente CELL_SIZE (500px de arte+colisor).
 	for row in grid.rows:
 		for col in grid.cols:
 			if grid.get_cell(col, row) == GridState.Cell.FLOOR:
 				var floor := FloorDefinition.new()
 				floor.position = grid.world_pos(col, row)
-				floor.scale = Vector2(0.2, 0.2)
+				floor.scale = GridState.cell_scale_for(Vector2(500, 500))
 				def.floors.append(floor)
 	# Obstáculos (ids determinísticos em varredura linha-coluna).
 	var id_by_cell := {}
@@ -421,7 +417,9 @@ static func to_def(grid: GridState, seed_value: int, level_number: int, ammo: in
 			ob.id = "obs_%02d" % n
 			ob.kind = _kind_for(v)
 			ob.position = grid.world_pos(col, row)
-			ob.scale = GLASS_SCALE if v == GridState.Cell.GLASS else BLOCK_SCALE
+			# Escala exata da célula a partir da arte/colisor reais
+			# (vidro 952x935, pedra 500x500, metal 547x547).
+			ob.scale = GridState.cell_scale_for(MaterialRules.base_size(_kind_for(v)))
 			ob.group = grid.archetype
 			ob.role = _role_for(grid, col, row)
 			ob.anchor = _anchor_for(grid, id_by_cell, col, row)
@@ -440,7 +438,8 @@ static func to_def(grid: GridState, seed_value: int, level_number: int, ammo: in
 			st.id = "struct_%02d" % m
 			st.position = grid.world_pos(col, row)
 			st.rotation_degrees = 90.0 if _is_horizontal_link(grid, col, row) else 0.0
-			st.scale = STRUCT_SCALE
+			# Viga de exatamente CELL_SIZE (arte 482x448, rotação preserva).
+			st.scale = GridState.cell_scale_for(Vector2(482, 448))
 			if (links[0] as String).is_empty() or (links[1] as String).is_empty():
 				st.role = StructureDefinition.ROLE_SUPPORT
 				st.link_a = links[0] if not (links[0] as String).is_empty() else links[1]

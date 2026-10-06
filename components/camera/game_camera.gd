@@ -13,7 +13,6 @@ const ZOOM_MIN := 0.5
 const ZOOM_MAX := 2.0
 const ZOOM_STEP := 1.1
 const ZOOM_SMOOTH_SPEED := 10.0
-const LIMIT_MARGIN := 100.0
 const KEYBOARD_PAN_SPEED := 600.0
 const RESET_FOCUS_MARGIN := 200.0
 const DEFAULT_BOUNDS := Rect2(0, 0, 1280, 720)
@@ -129,23 +128,24 @@ func screen_to_world(screen_point: Vector2) -> Vector2:
 
 ## Clamp manual (docs/plan.md §8.2): não usa `Camera2D.limit_*`, que não
 ## recentraliza quando a visão excede os limites e briga com zoom animado.
+## Contenção ESTRITA: a área visível da viewport nunca sai da área da
+## fase. `bounds` vem da grade gerada (`LevelDefinition.world_bounds` =
+## `GridState.phase_bounds()`), logo é dinâmico por fase. Se a viewport
+## for maior que a fase num eixo (zoom-out além do fit é barrado por
+## `zoom_min_effective()`, mas resize pode causar), a câmera centraliza
+## naquele eixo em vez de permitir navegação para o vazio.
 func apply_bounds_clamp() -> void:
 	var viewport_size := get_viewport_rect().size
 	var half_view := viewport_size * 0.5 / zoom.x
-	var center := position
-	if bounds.size.x + LIMIT_MARGIN * 2.0 <= half_view.x * 2.0:
-		center.x = bounds.get_center().x
-	else:
-		center.x = clampf(center.x,
-				bounds.position.x + half_view.x - LIMIT_MARGIN,
-				bounds.end.x - half_view.x + LIMIT_MARGIN)
-	if bounds.size.y + LIMIT_MARGIN * 2.0 <= half_view.y * 2.0:
-		center.y = bounds.get_center().y
-	else:
-		center.y = clampf(center.y,
-				bounds.position.y + half_view.y - LIMIT_MARGIN,
-				bounds.end.y - half_view.y + LIMIT_MARGIN)
-	position = center
+	position = Vector2(
+		_clamp_axis(position.x, bounds.position.x, bounds.end.x, half_view.x, bounds.get_center().x),
+		_clamp_axis(position.y, bounds.position.y, bounds.end.y, half_view.y, bounds.get_center().y))
+
+
+static func _clamp_axis(center: float, bounds_min: float, bounds_max: float, half_view: float, bounds_center: float) -> float:
+	if bounds_max - bounds_min >= half_view * 2.0:
+		return clampf(center, bounds_min + half_view, bounds_max - half_view)
+	return bounds_center
 
 
 func _update_smooth_zoom(delta: float) -> void:

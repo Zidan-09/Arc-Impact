@@ -34,7 +34,7 @@ mouse_filter = 2
 
 [node name="Cannon" parent="WorldArea/World" unique_id=1115613927 instance=ExtResource("2_cannon")]
 position = Vector2(173, 523)
-scale = Vector2(0.2, 0.2)
+scale = Vector2(0.25, 0.25)
 base_shot_speed = 2000.0
 
 [node name="GameCamera" type="Camera2D" parent="WorldArea/World" unique_id=771234567]
@@ -45,7 +45,7 @@ script = ExtResource("4_camera")
 [node name="BackgroundLayer" type="CanvasLayer" parent="." unique_id=771234569]
 layer = -1
 
-[node name="Background" parent="BackgroundLayer" instance=ExtResource("6_bg")]
+[node name="Background" parent="BackgroundLayer" unique_id=71035873 instance=ExtResource("6_bg")]
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=771234570]
 layer = 10

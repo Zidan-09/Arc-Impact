@@ -22,10 +22,14 @@ enum Cell {
 
 const PLAY_W := 1280.0
 const PLAY_H := 720.0
-const FLOOR_Y := 670.0
-const LEFT_X := 70.0
-const RIGHT_X := 1210.0
-const TOP_Y := 80.0
+## Tamanho da célula em px — FONTE ÚNICA de verdade dimensional da fase.
+## Determina posição das células, tamanho visual, físico e de colisão de
+## TODOS os elementos (Floor, Glass, Stone, Metal, Structure, Cannon,
+## Target): cada cena foi ajustada para ocupar exatamente CELL_SIZE x
+## CELL_SIZE na escala de instanciação, e todas as escalas derivam daqui
+## via `cell_scale_for()`. Medido contra as artes reais: 128 comporta o
+## giro completo do barril do canhão e a seta do alvo sem vazar.
+const CELL_SIZE := 128.0
 
 var cols: int = 13
 var rows: int = 8
@@ -98,23 +102,31 @@ static func is_obstacle(value: int) -> bool:
 	return value == Cell.GLASS or value == Cell.STONE or value == Cell.METAL
 
 
-## Passo horizontal: col0 -> LEFT_X, última col -> RIGHT_X.
-func step_x() -> float:
-	if cols <= 1:
-		return 0.0
-	return (RIGHT_X - LEFT_X) / float(cols - 1)
+## Origem (canto superior esquerdo) da grade em px, determinística a
+## partir das dimensões: fase centralizada na viewport base 1280x720.
+static func origin_for(p_cols: int, p_rows: int) -> Vector2:
+	return Vector2(
+		(PLAY_W - float(p_cols) * CELL_SIZE) * 0.5,
+		(PLAY_H - float(p_rows) * CELL_SIZE) * 0.5)
 
 
-## Passo vertical: última linha -> FLOOR_Y, linha0 -> TOP_Y.
-func step_y() -> float:
-	if rows <= 1:
-		return 0.0
-	return (FLOOR_Y - TOP_Y) / float(rows - 1)
+## Retângulo exato da fase em px (usado pelos limites da câmera).
+func phase_bounds() -> Rect2:
+	return Rect2(origin_for(cols, rows), Vector2(cols, rows) * CELL_SIZE)
 
 
-## Centro mundial da célula (lógica -> física).
+## Escala que faz um conteúdo de `base_size` px ocupar exatamente uma
+## célula (por eixo — artes não-quadradas recebem ajuste sub-pixel
+## invisível em vez de sobra dimensional).
+static func cell_scale_for(base_size: Vector2) -> Vector2:
+	return Vector2(CELL_SIZE / base_size.x, CELL_SIZE / base_size.y)
+
+
+## Centro mundial da célula (lógica -> física). Células quadradas de
+## CELL_SIZE: vizinhas se encostam exatamente, sem sobreposição nem vão.
 func world_pos(col: int, row: int) -> Vector2:
-	return Vector2(LEFT_X + float(col) * step_x(), FLOOR_Y - float((rows - 1) - row) * step_y())
+	var origin := origin_for(cols, rows)
+	return origin + (Vector2(col, row) + Vector2(0.5, 0.5)) * CELL_SIZE
 
 
 ## Altura do relevo do Floor numa coluna: quantas células de Floor

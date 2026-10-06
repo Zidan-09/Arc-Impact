@@ -23,17 +23,19 @@ var rotation_sensitivity: float = 0.5
 var recoil_tween: Tween
 var barrel_initial_position: Vector2
 
-const PIVOT_OFFSET := Vector2(-2, -44)
+const PIVOT_OFFSET := Vector2(-2, 0)
 const MUZZLE_OFFSET := Vector2(267, -48)
 
+## Escala canônica do canhão no jogo (fonte única, usada pelo gerador).
+## Com ela, o giro completo do barril cabe na célula de 128px e a bala
+## mantém o tamanho calibrado.
+const CANNON_SCALE := Vector2(0.16, 0.16)
+
 ## Queda vertical (px locais, antes da escala) da origem do canhão até o
-## ponto de apoio do pé — referência da refatoração composition-first
-## (docs/plan.md, Etapa 2). Medido no Guide1 (`guide/Guide1.tscn`):
-## canhão em (150, 487) scale 0.3 sobre plataforma centrada em y=570 =>
-## 570 - 487 = 83px em escala 0.3 => 83 / 0.3 ~= 277px locais.
-## `foot_position()` aplica a escala: 0.3 => 83px, 0.2 => ~55px.
-## O validador estrutural exige um tile de Floor contendo esse ponto.
-const FOOT_DROP := 277.0
+## ponto de apoio do pé. A cena compõe a base com o fundo exatamente no
+## fundo da célula, então o pé fica a meia célula abaixo da origem:
+## 400 x 0.16 = 64px = CELL_SIZE / 2 (ver GridState.CELL_SIZE).
+const FOOT_DROP := 400.0
 
 const RECOIL_DISTANCE := 25.0
 const RECOIL_BACK_TIME := 0.06

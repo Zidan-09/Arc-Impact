@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://6dx7xs50gitw" path="res://components/bullet/bullet.gd" id="1_j7bu3"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_dlv83"]
-radius = 46.173584
+radius = 57.717
 
 [node name="Bullet" type="RigidBody2D" unique_id=1821898189]
 z_index = 2
@@ -15,7 +15,7 @@ contact_monitor = true
 max_contacts_reported = 8
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=763157955]
-scale = Vector2(0.3, 0.3)
+scale = Vector2(0.375, 0.375)
 texture = ExtResource("1_142lv")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=530604187]
