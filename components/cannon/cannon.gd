@@ -29,7 +29,7 @@ const MUZZLE_OFFSET := Vector2(267, -48)
 ## Escala canônica do canhão no jogo (fonte única, usada pelo gerador).
 ## Com ela, o giro completo do barril cabe na célula de 128px e a bala
 ## mantém o tamanho calibrado.
-const CANNON_SCALE := Vector2(0.16, 0.16)
+const CANNON_SCALE := Vector2(0.32, 0.32)
 
 ## Queda vertical (px locais, antes da escala) da origem do canhão até o
 ## ponto de apoio do pé. A cena compõe a base com o fundo exatamente no
