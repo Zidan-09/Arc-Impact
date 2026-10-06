@@ -153,7 +153,7 @@ func _check_intent_roundtrip() -> int:
 	def.target = TargetDefinition.new()
 	def.target.position = Vector2(1150, 590)
 	def.target.rotation_degrees = 90.0
-	def.target.role = Composition.TARGET_FOOT
+	def.target.role = &"foot"
 	var floor := FloorDefinition.new()
 	floor.position = Vector2(150, 570)
 	def.floors.append(floor)
@@ -170,18 +170,18 @@ func _check_intent_roundtrip() -> int:
 	gate.kind = ObstacleDefinition.KIND_GLASS
 	gate.position = Vector2(950, 455)
 	gate.scale = Vector2(0.1, 0.1)
-	gate.group = Composition.GROUP_GATE
+	gate.group = &"gate"
 	gate.role = "joint"
 	gate.anchor = "floor"
-	gate.mechanic = Composition.MECH_BREAKABLE
+	gate.mechanic = &"breakable"
 	def.obstacles.append(gate)
-	def.composition_tags = [Composition.CANNON_PLATFORM, Composition.GROUP_GATE]
+	def.composition_tags = [&"platform", &"gate"]
 	var first := def.to_dict()
 	var rebuilt := LevelDefinition.from_dict(first)
 	if JSON.stringify(first) != JSON.stringify(rebuilt.to_dict()):
 		printerr("  [intent_roundtrip] dicionários divergem.")
 		return 1
-	if rebuilt.target.rotation_degrees != 90.0 or rebuilt.target.role != Composition.TARGET_FOOT:
+	if rebuilt.target.rotation_degrees != 90.0 or rebuilt.target.role != &"foot":
 		printerr("  [intent_roundtrip] alvo perdeu rotação/função.")
 		return 1
 	if rebuilt.cannon_scale != Vector2(0.3, 0.3) or rebuilt.floors.size() != 1:
@@ -190,7 +190,7 @@ func _check_intent_roundtrip() -> int:
 	if rebuilt.structures.size() != 1 or rebuilt.structures[0].link_b != "obs_02":
 		printerr("  [intent_roundtrip] structure perdeu papel/ligação.")
 		return 1
-	if rebuilt.obstacles[0].mechanic != Composition.MECH_BREAKABLE:
+	if rebuilt.obstacles[0].mechanic != &"breakable":
 		printerr("  [intent_roundtrip] obstáculo perdeu função mecânica.")
 		return 1
 	return 0

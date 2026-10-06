@@ -59,7 +59,7 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 	current_target = null
 	level_number = new_level_number
 	_status("Gerando fase %d..." % level_number)
-	var result := await ProceduralLevelGenerator.generate(seed_value, level_number, self)
+	var result := FastLevelGenerator.generate(seed_value, level_number)
 	var def: LevelDefinition = result["def"]
 	if bool(result["fallback_used"]):
 		push_warning("CannonController: fallback usado (%s)." % str(result["log"]))

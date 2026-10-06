@@ -11,7 +11,7 @@ class_name LevelDefinition extends Resource
 ## rígidos). Dicts v1 (sem as chaves novas) desserializam com padrões
 ## que reproduzem a fase legada (chão plano via builder, canhão 0.2).
 
-const GENERATOR_VERSION: int = 2 # bump quando o algoritmo mudar
+const GENERATOR_VERSION: int = 3 # v3: grade discreta intencional (GridLevelGenerator)
 
 @export var seed: int = 0
 @export var generator_version: int = GENERATOR_VERSION
