@@ -23,6 +23,9 @@ const ERR_MUZZLE_BLOCKED := "MUZZLE_BLOCKED"
 const ERR_WRONG_MATERIAL := "WRONG_MATERIAL"
 
 const BULLET_RADIUS := 10.0
+## Distância mínima canhão↔alvo (Manhattan) EM CÉLULAS-BASE de 128px;
+## convertida na hora do teste por `GridState.to_cells()` para valer a
+## mesma distância física em qualquer resolução.
 const MIN_CANNON_TARGET_CELLS := 5
 
 
@@ -69,7 +72,8 @@ static func _check_floor(grid: GridState, errors: Array[String]) -> void:
 	for col in grid.cols:
 		if grid.floor_height_at(col) > 0:
 			relief += 1
-	if relief < 1:
+	# Piso precisa de relevo em pelo menos 1 célula-base de largura.
+	if relief < GridState.to_cells(1):
 		errors.append(ERR_FLOOR_FLAT)
 
 
@@ -79,7 +83,8 @@ static func _check_cannon(grid: GridState, errors: Array[String]) -> void:
 		errors.append(ERR_NO_CANNON)
 		return
 	var c: Vector2i = cannons[0]
-	if c.x < 0 or c.x > 3:
+	# Zona do canhão: 4 células-base a partir da borda esquerda.
+	if c.x < 0 or c.x > GridState.to_cells(4) - 1:
 		errors.append(ERR_CANNON_SIDE)
 	if c.y >= grid.rows - 1:
 		errors.append(ERR_CANNON_FLOATING)
@@ -87,6 +92,8 @@ static func _check_cannon(grid: GridState, errors: Array[String]) -> void:
 	if grid.get_cell(c.x, c.y + 1) != GridState.Cell.FLOOR:
 		errors.append(ERR_CANNON_FLOATING)
 	# Boca do canhão: as duas células à frente precisam estar livres.
+	# Topológico (em volta da própria boca, cuja arte encolhe com a
+	# célula), não medida física de arena — não escala com RESOLUTION.
 	for dx in [1, 2]:
 		var v := grid.get_cell(c.x + dx, c.y)
 		if v != GridState.Cell.EMPTY and v != -1:
@@ -103,7 +110,7 @@ static func _check_target(grid: GridState, errors: Array[String]) -> void:
 	if t.y >= grid.rows - 1:
 		errors.append(ERR_TARGET_ON_FLOOR)
 	var c := grid.find_first(GridState.Cell.CANNON)
-	if c.x >= 0 and abs(c.x - t.x) + abs(c.y - t.y) < MIN_CANNON_TARGET_CELLS:
+	if c.x >= 0 and abs(c.x - t.x) + abs(c.y - t.y) < GridState.to_cells(MIN_CANNON_TARGET_CELLS):
 		# Distância de Manhattan mínima canhão↔alvo.
 		errors.append(ERR_TARGET_TOO_CLOSE)
 
@@ -163,12 +170,16 @@ static func _check_connectivity(grid: GridState, errors: Array[String]) -> void:
 ## Coerência do desafio: arquétipo precisa dos materiais certos e a
 ## fase não pode ser trivial (direta aberta quando o arquétipo exige
 ## bloqueio; mínimo de peças sempre).
+## Limiares de CONTAGEM (peças) e de ALTURA são em unidades-base de
+## 128px, convertidos por `GridState.to_cells()`; presença de material
+## (>=1 peça de um kind) e diversidade de kinds são topológicas e ficam
+## como estão.
 static func _check_challenge(grid: GridState, errors: Array[String]) -> void:
 	var n_glass := grid.count(GridState.Cell.GLASS)
 	var n_stone := grid.count(GridState.Cell.STONE)
 	var n_metal := grid.count(GridState.Cell.METAL)
 	var total := n_glass + n_stone + n_metal
-	if total < 2:
+	if total < GridState.to_cells(2):
 		errors.append(ERR_TRIVIAL)
 		return
 	match grid.archetype:
@@ -181,17 +192,17 @@ static func _check_challenge(grid: GridState, errors: Array[String]) -> void:
 				errors.append(ERR_WRONG_MATERIAL)
 				return
 		&"maze":
-			if total < 4:
+			if total < GridState.to_cells(4):
 				errors.append(ERR_TRIVIAL)
 				return
 		&"vertical":
 			var c := grid.find_first(GridState.Cell.CANNON)
 			var t := grid.find_first(GridState.Cell.TARGET)
-			if c.y + 2 > t.y:
+			if c.y + GridState.to_cells(2) > t.y:
 				errors.append(ERR_TRIVIAL)
 				return
 		&"tower":
-			if total < 3:
+			if total < GridState.to_cells(3):
 				errors.append(ERR_TRIVIAL)
 				return
 		&"mixed":
@@ -202,7 +213,7 @@ static func _check_challenge(grid: GridState, errors: Array[String]) -> void:
 				kinds += 1
 			if n_metal > 0:
 				kinds += 1
-			if total < 3 or kinds < 2:
+			if total < GridState.to_cells(3) or kinds < 2:
 				errors.append(ERR_TRIVIAL)
 				return
 	# Bloqueio da reta canhão→alvo (Bresenham na grade) quando exigido.
@@ -268,8 +279,11 @@ static func _target_reachable_open(grid: GridState) -> bool:
 	# power_min/max da LevelDefinition): um arco existente aqui é
 	# condição necessária p/ solubilidade; a suficiência (desafio com
 	# bloqueio) é verificada nas regras de arquétipo, não aqui.
-	var angles := [-20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
-	var powers := [0.3, 0.4, 0.5, 0.7, 0.85, 1.0]
+	# O passo da malha acompanha GridState.RESOLUTION: o alvo encolhe
+	# junto com a célula, então as amostras afinam na mesma proporção
+	# (sem falso INALCANÇÁVEL por malha grosseira).
+	var angles := _refine([-20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0])
+	var powers := _refine([0.3, 0.4, 0.5, 0.7, 0.85, 1.0])
 	for angle in angles:
 		for power in powers:
 			var muzzle := Cannon.muzzle_state_for(cannon_pos, angle)
@@ -284,6 +298,24 @@ static func _target_reachable_open(grid: GridState) -> bool:
 				if pos.y > phase.end.y or not kill.has_point(pos):
 					break
 	return false
+
+
+## Afina uma malha de amostras (ângulos/potências) em RESOLUTION
+## intervalos entre vizinhos consecutivos. Em RESOLUTION = 1 devolve a
+## lista intacta; em N, o passo cai para 1/N — a mesma fidelidade de
+## captura do alvo, que passa a ocupar 1/N da célula.
+static func _refine(values: Array) -> Array:
+	var res := GridState.RESOLUTION
+	if res <= 1 or values.size() < 2:
+		return values
+	var out: Array = []
+	for i in range(values.size() - 1):
+		var a := float(values[i])
+		var b := float(values[i + 1])
+		for step in res:
+			out.append(lerpf(a, b, float(step) / float(res)))
+	out.append(float(values[values.size() - 1]))
+	return out
 
 
 static func _segment_hits_rect(from: Vector2, to: Vector2, rect: Rect2) -> bool:

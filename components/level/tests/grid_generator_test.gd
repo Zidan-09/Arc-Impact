@@ -73,7 +73,10 @@ func _check_def(def: LevelDefinition, ascii: String, tag: String) -> int:
 	var failures := 0
 	var grid := _grid_from_ascii(ascii)
 	var cell := GridState.CELL_SIZE
-	if grid.cols < 12 or grid.cols > 14 or grid.rows < 7 or grid.rows > 10:
+	# Dimensões da resolução-base (12-14 x 7-10 células de 128px); a
+	# faixa válida acompanha GridState.RESOLUTION (área física igual).
+	if grid.cols < 12 * GridState.RESOLUTION or grid.cols > 14 * GridState.RESOLUTION \
+			or grid.rows < 7 * GridState.RESOLUTION or grid.rows > 10 * GridState.RESOLUTION:
 		printerr("  [dims:%s] grade %dx%d fora da faixa" % [tag, grid.cols, grid.rows])
 		failures += 1
 	# Grade: base contínua, relevo, canhão à esquerda apoiado, alvo válido.
@@ -83,7 +86,8 @@ func _check_def(def: LevelDefinition, ascii: String, tag: String) -> int:
 			failures += 1
 	var cannons := grid.find_all(GridState.Cell.CANNON)
 	var targets := grid.find_all(GridState.Cell.TARGET)
-	if cannons.size() != 1 or cannons[0].x > 3:
+	# Zona do canhão: 4 células-base a partir da borda esquerda.
+	if cannons.size() != 1 or cannons[0].x > GridState.to_cells(4) - 1:
 		printerr("  [cannon:%s] fora das 4 primeiras colunas" % tag)
 		failures += 1
 	elif grid.get_cell(cannons[0].x, cannons[0].y + 1) != GridState.Cell.FLOOR:
@@ -126,7 +130,7 @@ func _check_def(def: LevelDefinition, ascii: String, tag: String) -> int:
 		if not def.cannon_position.is_equal_approx(expect_c):
 			printerr("  [cannon:%s] fora do centro da célula" % tag)
 			failures += 1
-		if def.cannon_scale != Cannon.CANNON_SCALE:
+		if def.cannon_scale != Cannon.CANNON_SCALE / GridState.RESOLUTION:
 			printerr("  [cannon:%s] escala fora da canônica" % tag)
 			failures += 1
 		var foot := Cannon.foot_position(def.cannon_position, def.cannon_scale)

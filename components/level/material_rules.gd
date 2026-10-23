@@ -112,15 +112,19 @@ static func floor_size() -> Vector2:
 ## alargado para casar com o visual (~144x474 base → ~28.8x94.8 @0.2;
 ## era 114x474 antes do alargamento de 3px/lado instanciados).
 ## `LevelValidator._target_rect` e `FastLevelGenerator.target_body()`
-## derivam daqui; a cena é a materialização do mesmo número.
+## derivam daqui; a cena é a materialização do mesmo número. O corpo
+## instanciado é sempre a MESMA fração da célula, porque `target_scale()`
+## acompanha `GridState.RESOLUTION`.
 static func target_size() -> Vector2:
 	return Vector2(144, 474)
 
 
-## Escala fixa do Target na cena (raiz de target.tscn, sempre 0.2 —
-## o builder nunca sobrescreve; ver docs/plan.md §2).
+## Escala do Target na cena (raiz de target.tscn, base 0.2): encolhe
+## junto com a célula para o alvo continuar cabendo dentro dela em
+## QUALQUER resolução (ver docs/plan.md §2). O builder aplica este
+## número explicitamente — `LevelBuilder.build`.
 static func target_scale() -> Vector2:
-	return Vector2(0.2, 0.2)
+	return Vector2(0.2, 0.2) / GridState.RESOLUTION
 
 
 ## Corpo instanciado do alvo em px (para validador e solver analítico).

@@ -84,6 +84,7 @@ static func _build_candidate(rng: RandomNumberGenerator, level_number: int) -> G
 		_:
 			_build_mixed(grid, rng, level_number >= 4)
 	_add_cap_structures(grid, rng)
+	_add_ground_details(grid, rng)
 	return grid
 
 
@@ -106,31 +107,38 @@ static func _pick_archetype(rng: RandomNumberGenerator, level_number: int) -> St
 
 ## Dimensões controladas, compatíveis com o desafio (ricochete e
 ## labirinto pedem área maior; vertical pede altura).
+## Os intervalos são da resolução-base (128px); a volta para a
+## resolução atual preserva a área física da fase para QUALQUER grade.
 static func _pick_dimensions(rng: RandomNumberGenerator, archetype: StringName) -> Vector2i:
+	var base: Vector2i
 	match archetype:
 		ARCH_BREAK:
-			return Vector2i(rng.randi_range(12, 13), rng.randi_range(7, 8))
+			base = Vector2i(rng.randi_range(12, 13), rng.randi_range(7, 8))
 		ARCH_RICOCHET:
-			return Vector2i(rng.randi_range(13, 14), rng.randi_range(8, 9))
+			base = Vector2i(rng.randi_range(13, 14), rng.randi_range(8, 9))
 		ARCH_MAZE:
-			return Vector2i(rng.randi_range(13, 14), rng.randi_range(8, 10))
+			base = Vector2i(rng.randi_range(13, 14), rng.randi_range(8, 10))
 		ARCH_VERTICAL:
-			return Vector2i(rng.randi_range(12, 13), rng.randi_range(9, 10))
+			base = Vector2i(rng.randi_range(12, 13), rng.randi_range(9, 10))
 		ARCH_TOWER:
-			return Vector2i(rng.randi_range(12, 14), rng.randi_range(8, 9))
-	return Vector2i(rng.randi_range(12, 14), rng.randi_range(7, 10))
+			base = Vector2i(rng.randi_range(12, 14), rng.randi_range(8, 9))
+		_:
+			base = Vector2i(rng.randi_range(12, 14), rng.randi_range(7, 10))
+	return Vector2i(base.x * GridState.RESOLUTION, base.y * GridState.RESOLUTION)
 
 
 ## Floor: base contínua na última linha + relevo procedural (2-4
 ## lombadas de 1-3 colunas x 1-2 de altura, degraus de no máx. 1).
+## Lombadas são medida FÍSICA da arena: contagem e tamanho vêm em
+## células-base e entram na grade já convertidos por `to_cells()`.
 static func _build_floor(grid: GridState, rng: RandomNumberGenerator) -> void:
 	for col in grid.cols:
 		grid.set_cell(col, grid.rows - 1, GridState.Cell.FLOOR)
-	var humps := rng.randi_range(2, 4)
+	var humps := GridState.to_cells(rng.randi_range(2, 4))
 	for _i in humps:
-		var w := rng.randi_range(1, 3)
-		var h := rng.randi_range(1, 2)
-		var start_col := rng.randi_range(4, maxi(4, grid.cols - w - 1))
+		var w := GridState.to_cells(rng.randi_range(1, 3))
+		var h := GridState.to_cells(rng.randi_range(1, 2))
+		var start_col := rng.randi_range(GridState.to_cells(4), maxi(GridState.to_cells(4), grid.cols - w - 1))
 		for dx in w:
 			for dy in h:
 				var row := grid.rows - 2 - dy
@@ -138,23 +146,23 @@ static func _build_floor(grid: GridState, rng: RandomNumberGenerator) -> void:
 					grid.set_cell(start_col + dx, row, GridState.Cell.FLOOR)
 
 
-## Cannon sempre nas 4 primeiras colunas; o Floor SOBE até ele
+## Cannon sempre nas 4 primeiras colunas-base; o Floor SOBE até ele
 ## (coluna/plataforma), nunca flutuando.
 static func _place_cannon(grid: GridState, rng: RandomNumberGenerator, archetype: StringName) -> void:
-	var ccol := rng.randi_range(0, 3)
+	var ccol := rng.randi_range(0, GridState.to_cells(4) - 1)
 	var crow := grid.rows - 2
 	if archetype == ARCH_VERTICAL:
-		crow = rng.randi_range(1, 2)
+		crow = rng.randi_range(GridState.to_cells(1), GridState.to_cells(2))
 	else:
 		var roll := rng.randf()
 		if roll < 0.45:
 			crow = grid.rows - 2 # baixo, integrado ao plano
 		elif roll < 0.8:
-			crow = maxi(2, grid.rows - 4) # meia altura
+			crow = maxi(2, grid.rows - 1 - GridState.to_cells(3)) # meia altura
 		else:
-			crow = rng.randi_range(1, maxi(2, grid.rows - 4)) # alto
-	# Sobe o Floor até o canhão (largura 2 quando elevado).
-	var width := 1 if crow >= grid.rows - 2 else 2
+			crow = rng.randi_range(GridState.to_cells(1), maxi(2, grid.rows - 1 - GridState.to_cells(3))) # alto
+	# Sobe o Floor até o canhão (largura 2-base quando elevado).
+	var width := GridState.to_cells(1) if crow >= grid.rows - 2 else GridState.to_cells(2)
 	for dx in width:
 		var col := mini(ccol + dx, grid.cols - 1)
 		for row in range(crow + 1, grid.rows):
@@ -169,20 +177,20 @@ static func _place_target(grid: GridState, rng: RandomNumberGenerator, archetype
 	var tcol := 0
 	var trow := 0
 	for _try in 8:
-		tcol = rng.randi_range(maxi(5, grid.cols - 4), grid.cols - 1)
+		tcol = rng.randi_range(maxi(GridState.to_cells(5), grid.cols - GridState.to_cells(4)), grid.cols - 1)
 		if archetype == ARCH_VERTICAL:
-			trow = rng.randi_range(maxi(1, grid.rows - 3), grid.rows - 2)
+			trow = rng.randi_range(maxi(1, grid.rows - 1 - GridState.to_cells(2)), grid.rows - 2)
 		else:
 			trow = rng.randi_range(0, grid.rows - 2)
 		if not grid.is_empty(tcol, trow):
 			continue
 		var dist: int = absi(tcol - c.x) + absi(trow - c.y)
-		if dist >= 5:
+		if dist >= GridState.to_cells(5):
 			break
 	if not grid.is_empty(tcol, trow):
 		# Varredura determinística de reserva: primeira livre à direita.
 		for row in grid.rows - 1:
-			for col in range(grid.cols - 1, 4, -1):
+			for col in range(grid.cols - 1, GridState.to_cells(4), -1):
 				if grid.is_empty(col, row):
 					tcol = col
 					trow = row
@@ -201,14 +209,18 @@ static func _put_ob(grid: GridState, col: int, row: int, kind: int) -> bool:
 	return true
 
 
-## Empilha `height` peças a partir do Floor (base conectada).
+## Empilha uma pilha a partir do Floor (base conectada).
+## `kinds` é o DESENHO da pilha em células-base (128px): cada camada do
+## desenho vira `GridState.RESOLUTION` células atuais. Assim a altura
+## física, a proporção de materiais e a ordem das camadas ficam idênticas
+## à resolução-base — só a contagem em células muda.
 static func _stack(grid: GridState, col: int, kinds: Array) -> int:
 	var top_row := grid.floor_top_row_at(col)
 	if top_row < 0:
 		return 0
 	var placed := 0
 	var row := top_row - 1
-	for kind in kinds:
+	for kind in _layers(kinds):
 		if not _put_ob(grid, col, row, kind):
 			break
 		placed += 1
@@ -216,7 +228,19 @@ static func _stack(grid: GridState, col: int, kinds: Array) -> int:
 	return placed
 
 
+## Expande o desenho de uma pilha: cada camada-base ocupa RESOLUTION
+## células atuais (mesma altura física da fase).
+static func _layers(kinds: Array) -> Array:
+	var out: Array = []
+	for kind in kinds:
+		for _i in GridState.RESOLUTION:
+			out.append(kind)
+	return out
+
+
 ## Barreira de vidro entre canhão e alvo: caminho só abre destruindo.
+## `height` é desenho em células-base (cada camada vira RESOLUTION
+## células — ver `_stack`); o vão livre mínimo em células é topológico.
 static func _build_break(grid: GridState, rng: RandomNumberGenerator) -> void:
 	var c := grid.find_first(GridState.Cell.CANNON)
 	var t := grid.find_first(GridState.Cell.TARGET)
@@ -237,7 +261,7 @@ static func _build_break(grid: GridState, rng: RandomNumberGenerator) -> void:
 static func _build_ricochet(grid: GridState, rng: RandomNumberGenerator) -> void:
 	var c := grid.find_first(GridState.Cell.CANNON)
 	var t := grid.find_first(GridState.Cell.TARGET)
-	var mid := clampi(t.x - 2, c.x + 2, grid.cols - 1)
+	var mid := clampi(t.x - GridState.to_cells(2), c.x + 2, grid.cols - 1)
 	var height := rng.randi_range(3, 4)
 	var kinds: Array = []
 	for i in height:
@@ -245,7 +269,7 @@ static func _build_ricochet(grid: GridState, rng: RandomNumberGenerator) -> void
 	kinds[0] = GridState.Cell.STONE # base portante
 	_stack(grid, mid, kinds)
 	# Poste baixo à esquerda do alvo (moldura, nunca raspão alto).
-	var post_col := maxi(c.x + 1, t.x - 4)
+	var post_col := maxi(c.x + 1, t.x - GridState.to_cells(4))
 	_put_ob(grid, post_col, grid.rows - 2, GridState.Cell.GLASS)
 
 
@@ -254,7 +278,7 @@ static func _build_ricochet(grid: GridState, rng: RandomNumberGenerator) -> void
 static func _build_maze(grid: GridState, rng: RandomNumberGenerator) -> void:
 	var c := grid.find_first(GridState.Cell.CANNON)
 	var t := grid.find_first(GridState.Cell.TARGET)
-	var left := clampi((c.x + t.x) / 2 - 1, c.x + 2, grid.cols - 3)
+	var left := clampi((c.x + t.x) / 2 - 1, c.x + 2, grid.cols - 1 - GridState.to_cells(2))
 	var h1 := rng.randi_range(2, 3)
 	var h2 := rng.randi_range(3, 4)
 	var k1: Array = []
@@ -267,8 +291,9 @@ static func _build_maze(grid: GridState, rng: RandomNumberGenerator) -> void:
 		k1[k1.size() - 1] = GridState.Cell.GLASS # junta fraca
 	_stack(grid, left, k1)
 	_stack(grid, left + 2, k2)
-	# Viga no topo unindo as colunas (ponte/corredor).
-	var top_row := grid.floor_top_row_at(left + 2) - h2
+	# Viga no topo unindo as colunas (ponte/corredor): `h2` é desenho em
+	# células-base, então a altura empilhada é to_cells(h2).
+	var top_row := grid.floor_top_row_at(left + 2) - GridState.to_cells(h2)
 	if grid.in_bounds(left + 1, top_row) and grid.is_empty(left + 1, top_row):
 		grid.set_cell(left + 1, top_row, GridState.Cell.STRUCTURE)
 
@@ -301,14 +326,15 @@ static func _build_tower(grid: GridState, rng: RandomNumberGenerator) -> void:
 	var cursor := grid.rows - 2
 	if grid.floor_height_at(t.x) > 0:
 		cursor = grid.floor_top_row_at(t.x) - 1
-	for kind in under:
+	for kind in _layers(under):
 		if cursor <= t.y:
 			break
 		if grid.is_empty(t.x, cursor):
 			grid.set_cell(t.x, cursor, kind)
 		cursor -= 1
 	# Ala lateral (prédio anexo) + viga de coroamento.
-	var wing := t.x - 2 if t.x - 2 > 3 else t.x + 2
+	var wing_gap := GridState.to_cells(2)
+	var wing := t.x - wing_gap if t.x - wing_gap > GridState.to_cells(3) else t.x + wing_gap
 	if grid.in_bounds(wing, 0):
 		_stack(grid, wing, [GridState.Cell.STONE, GridState.Cell.GLASS])
 		var top_a := _top_obstacle_row(grid, t.x)
@@ -340,19 +366,21 @@ static func _build_mixed(grid: GridState, rng: RandomNumberGenerator, allow_meta
 	if roll < 0.5 or not allow_metal:
 		_build_break(grid, rng)
 		if allow_metal:
-			_stack(grid, clampi(mid + 3, 0, grid.cols - 1),
+			_stack(grid, clampi(mid + GridState.to_cells(3), 0, grid.cols - 1),
 					[GridState.Cell.STONE, GridState.Cell.METAL, GridState.Cell.METAL])
 		else:
-			_stack(grid, clampi(mid + 3, 0, grid.cols - 1),
+			_stack(grid, clampi(mid + GridState.to_cells(3), 0, grid.cols - 1),
 					[GridState.Cell.STONE, GridState.Cell.GLASS])
 	else:
 		_build_ricochet(grid, rng)
-		_stack(grid, clampi(mid - 2, 0, grid.cols - 1),
+		_stack(grid, clampi(mid - GridState.to_cells(2), 0, grid.cols - 1),
 				[GridState.Cell.GLASS, GridState.Cell.GLASS])
 
 
 ## Coroamento: vigas de Structure entre topos vizinhos (telhados,
 ## pontes). Só onde há dois obstáculos próximos com vão livre.
+## O vão MÁXIMO da ponte é medida física (em células-base); o vão
+## mínimo é topológico (precisa sobrar ao menos 1 célula entre os topos).
 static func _add_cap_structures(grid: GridState, rng: RandomNumberGenerator) -> void:
 	if rng.randf() < 0.25:
 		return # nem toda fase precisa de viga
@@ -365,7 +393,7 @@ static func _add_cap_structures(grid: GridState, rng: RandomNumberGenerator) -> 
 		for j in range(i + 1, tops.size()):
 			var a: Vector2i = tops[i]
 			var b: Vector2i = tops[j]
-			if abs(a.x - b.x) > 4 or abs(a.x - b.x) < 2:
+			if abs(a.x - b.x) > GridState.to_cells(4) or abs(a.x - b.x) < 2:
 				continue
 			var beam_row := mini(a.y, b.y) - 1
 			if beam_row < 0:
@@ -386,6 +414,30 @@ static func _add_cap_structures(grid: GridState, rng: RandomNumberGenerator) -> 
 				return
 
 
+## Detalhe de solo: pilhas curtas ancoradas no Floor espalhadas pela
+## base da fase. Existe para a fase GENUÍNAMENTE usar a resolução extra
+## (mais elementos, menores, melhor distribuídos — a mesma área física
+## comporta mais peças). Entra DEPOIS das vigas de coroamento para não
+## alimentar a lógica de viga flutuante; nunca toca a zona da boca do
+## canhão e nunca usa Metal (a progressão de material é do arquétipo).
+static func _add_ground_details(grid: GridState, rng: RandomNumberGenerator) -> void:
+	var c := grid.find_first(GridState.Cell.CANNON)
+	var min_col := maxi(GridState.to_cells(4), c.x + 3)
+	if min_col > grid.cols - 1:
+		return
+	var designs: Array = [
+		[GridState.Cell.GLASS],
+		[GridState.Cell.STONE],
+		[GridState.Cell.STONE, GridState.Cell.GLASS],
+	]
+	for _spot in GridState.to_cells(rng.randi_range(1, 2)):
+		var col := rng.randi_range(min_col, grid.cols - 1)
+		var top := grid.floor_top_row_at(col) - 1
+		if not grid.in_bounds(col, top) or not grid.is_empty(col, top):
+			continue # coluna já ocupada (alvo/peça/viga): nada a detalhar
+		_stack(grid, col, designs[rng.randi_range(0, designs.size() - 1)])
+
+
 # ---- Conversão lógica -> dados (instanciação fica no LevelBuilder) ----
 
 static func to_def(grid: GridState, seed_value: int, level_number: int, ammo: int) -> LevelDefinition:
@@ -394,8 +446,11 @@ static func to_def(grid: GridState, seed_value: int, level_number: int, ammo: in
 	def.level_number = level_number
 	def.ammo = ammo
 	def.world_bounds = grid.phase_bounds()
-	def.cannon_position = GridLevelValidator.cannon_world_pos(grid) + Vector2(0, 30)
-	def.cannon_scale = Cannon.CANNON_SCALE
+	# Nudge do pé sobre o apoio: ajuste da arte do canhão em px-base,
+	# dividido pela resolução para manter o MESMO encaixe relativo.
+	def.cannon_position = GridLevelValidator.cannon_world_pos(grid) + Vector2(0, 30.0 / GridState.RESOLUTION)
+	# Escala da arte do canhão acompanha a célula (mesma proporção).
+	def.cannon_scale = Cannon.CANNON_SCALE / GridState.RESOLUTION
 	# Floors: tile de exatamente CELL_SIZE (500px de arte+colisor).
 	for row in grid.rows:
 		for col in grid.cols:
@@ -532,17 +587,20 @@ static func _is_horizontal_link(grid: GridState, col: int, row: int) -> bool:
 
 ## Rede final: fase mínima válida (barreira de vidro = desafio de
 ## destruição; arco aberto existe ignorando obstáculos).
+## Todos os números aqui são células-base: na resolução 1 o desenho é
+## idêntico ao original; na resolução N ele cresce na mesma proporção.
 static func _ultimate_grid(_level_number: int) -> GridState:
-	var grid := GridState.new(13, 8)
+	var grid := GridState.new(GridState.to_cells(13), GridState.to_cells(8))
 	grid.archetype = ARCH_BREAK
 	for col in grid.cols:
 		grid.set_cell(col, grid.rows - 1, GridState.Cell.FLOOR)
 	# Relevo mínimo (longe da boca do canhão e da reta do desafio).
-	for col in [4, 5]:
+	for col in [GridState.to_cells(4), GridState.to_cells(5)]:
 		grid.set_cell(col, grid.rows - 2, GridState.Cell.FLOOR)
-	grid.set_cell(1, grid.rows - 2, GridState.Cell.CANNON)
-	grid.set_cell(grid.cols - 2, grid.rows - 3, GridState.Cell.TARGET)
-	var mid := 7
-	grid.set_cell(mid, grid.rows - 2, GridState.Cell.GLASS)
-	grid.set_cell(mid, grid.rows - 3, GridState.Cell.GLASS)
+	grid.set_cell(GridState.to_cells(1), grid.rows - 2, GridState.Cell.CANNON)
+	grid.set_cell(grid.cols - 2, grid.rows - 1 - GridState.to_cells(2), GridState.Cell.TARGET)
+	var mid := GridState.to_cells(7)
+	# Barreira de 2 células-base de altura sobre o piso.
+	for step in GridState.to_cells(2):
+		grid.set_cell(mid, grid.rows - 2 - step, GridState.Cell.GLASS)
 	return grid

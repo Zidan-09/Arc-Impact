@@ -54,6 +54,9 @@ func build(world: Node2D, def: LevelDefinition) -> Dictionary:
 		target.position = def.target.position
 		# Rotação funcional da composição (Etapa 7).
 		target.rotation_degrees = def.target.rotation_degrees
+		# Escala vem da fonte única (MaterialRules) e acompanha a
+		# resolução da grade: mesma fração da célula em qualquer escala.
+		target.scale = MaterialRules.target_scale()
 		target.add_to_group("level_spawned")
 		world.add_child(target)
 	var floors := build_floor(world, def)

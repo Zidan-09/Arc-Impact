@@ -22,14 +22,30 @@ enum Cell {
 
 const PLAY_W := 1280.0
 const PLAY_H := 720.0
+## Resolução da grade: quantas células atuais cabem no lugar de cada
+## célula-base. É O ÚNICO parâmetro de escala do gerador — não existe
+## nenhum tamanho de grade fixo em lugar algum.
+##
+## `RESOLUTION = 2` => células de 64px e dimensões em células 2x =>
+## `cols * CELL_SIZE` fica INVARIANTE: mesma área física da fase, mesmos
+## `phase_bounds`, mesma moldura de câmera, mesmos colisores por área.
+## Serve para distribuir mais elementos na mesma área (fases mais
+## ricas), sem alterar o desenho/estética da fase.
+const RESOLUTION := 2
+
+## Tamanho da célula-base em px (referência física da resolução 1).
+const BASE_CELL_SIZE := 128.0
+
 ## Tamanho da célula em px — FONTE ÚNICA de verdade dimensional da fase.
 ## Determina posição das células, tamanho visual, físico e de colisão de
 ## TODOS os elementos (Floor, Glass, Stone, Metal, Structure, Cannon,
 ## Target): cada cena foi ajustada para ocupar exatamente CELL_SIZE x
 ## CELL_SIZE na escala de instanciação, e todas as escalas derivam daqui
-## via `cell_scale_for()`. Medido contra as artes reais: 128 comporta o
-## giro completo do barril do canhão e a seta do alvo sem vazar.
-const CELL_SIZE := 128.0
+## via `cell_scale_for()`. Medido contra as artes reais: a célula-base
+## de 128 comporta o giro completo do barril do canhão e a seta do alvo
+## sem vazar; na resolução atual a arte encolhe na mesma proporção
+## (ver `GridLevelGenerator.to_def` e `MaterialRules.target_scale`).
+const CELL_SIZE := BASE_CELL_SIZE / RESOLUTION
 
 var cols: int = 13
 var rows: int = 8
@@ -120,6 +136,15 @@ func phase_bounds() -> Rect2:
 ## invisível em vez de sobra dimensional).
 static func cell_scale_for(base_size: Vector2) -> Vector2:
 	return Vector2(CELL_SIZE / base_size.x, CELL_SIZE / base_size.y)
+
+
+## Converte uma medida expressa em CÉLULAS-BASE (128px, a resolução 1)
+## para a resolução atual. É o único caminho para ampliar distâncias,
+## alturas e faixas físicas: `to_cells(3)` = a mesma altura física de
+## antes, contada em células de hoje. Relações de vizinhança (viga de 1
+## célula, coluna ao lado, célula acima do piso) NÃO passam por aqui.
+static func to_cells(base_cells: int) -> int:
+	return base_cells * RESOLUTION
 
 
 ## Centro mundial da célula (lógica -> física). Células quadradas de
