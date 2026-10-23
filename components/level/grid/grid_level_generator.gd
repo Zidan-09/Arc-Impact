@@ -37,7 +37,7 @@ static func generate(seed_value: int, level_number: int, cfg: DifficultyConfig =
 	for _attempt in MAX_CANDIDATES:
 		tried += 1
 		var grid := _build_candidate(rng, level_number)
-		var result := GridLevelValidator.validate(grid)
+		var result := GridLevelValidator.validate(grid, ammo)
 		if not bool(result["ok"]):
 			log.append("reject:%s:%s" % [String(grid.archetype), str((result["errors"] as Array).front())])
 			continue
@@ -238,64 +238,180 @@ static func _layers(kinds: Array) -> Array:
 	return out
 
 
-## Barreira de vidro entre canhão e alvo: caminho só abre destruindo.
-## `height` é desenho em células-base (cada camada vira RESOLUTION
-## células — ver `_stack`); o vão livre mínimo em células é topológico.
+## Silhueta: várias colunas com ALTURAS DIFERENTES ancoradas no piso de
+## cada uma. É a primitiva que quebra o bloco retangulado — degraus,
+## paredes escalonadas, dentes, formatos assimétricos. As alturas vêm em
+## CÉLULAS-BASE (128px), então a mesma silhueta desenha o mesmo fisco em
+## qualquer resolução, só com mais células de precisão.
+## `base`/`body`/`cap` definem o material por camada (de baixo p/ cima).
+static func _silhouette(grid: GridState, col0: int, heights: Array, base: int, body: int, cap: int = -1) -> void:
+	if cap < 0:
+		cap = base
+	for i in heights.size():
+		var h := int(heights[i])
+		if h <= 0:
+			continue
+		var kinds: Array = []
+		for layer in h:
+			if layer == 0:
+				kinds.append(base)
+			elif layer == h - 1:
+				kinds.append(cap)
+			else:
+				kinds.append(body)
+		_stack(grid, col0 + i, kinds)
+
+
+## Braço horizontal ancorado no topo de uma pilha existente: cria
+## beiradas, telhados e portais CONECTADOS (a base do braço encosta na
+## coluna que o originou, então nunca fica flutuante). É a peça que
+## fecha a zona superior e faz o arco alto deixar de ser livre.
+## Retorna quantas células foram posicionadas.
+static func _arm(grid: GridState, col: int, row: int, dir: int, len_base: int, kind: int) -> int:
+	var placed := 0
+	var c := col
+	for _i in GridState.to_cells(len_base):
+		c += dir
+		if not _put_ob(grid, c, row, kind):
+			break
+		placed += 1
+	return placed
+
+
+## Alvo protegido: pilar ao lado do alvo + beirada pendurada sobre ele.
+## É a peça que fecha o arco alto NA DESCIDA (o arremesso por cima morre
+## no teto), mantendo a abertura rasa — o jogador passa a ter de achar o
+## vão ou destruir o obstáculo. Ancorada no pilar, nunca flutua.
+## Usada nos arquétipos de DESTRUIÇÃO/CORREDOR; os de ricochete ficam
+## de fora de propósito (o rebote precisa descer livre até o alvo).
+static func _add_target_shelter(grid: GridState, rng: RandomNumberGenerator) -> void:
+	var t := grid.find_first(GridState.Cell.TARGET)
+	var roof_row := t.y - GridState.to_cells(1)
+	if roof_row < 0:
+		return
+	# Pilar do lado que sobra espaço (preferência: depois do alvo).
+	var pillar := t.x + GridState.to_cells(1)
+	if pillar >= grid.cols - 1:
+		pillar = t.x - GridState.to_cells(1)
+	if pillar <= 0 or not grid.in_bounds(pillar, 0):
+		return
+	var floor_top := grid.floor_top_row_at(pillar)
+	if floor_top < 0:
+		return
+	var h_cells := floor_top - roof_row
+	if h_cells < GridState.RESOLUTION:
+		return # nada a pendurar: o pilar já chega à beirada
+	var h_base := ceili(float(h_cells) / float(GridState.RESOLUTION))
+	_silhouette(grid, pillar, [h_base], GridState.Cell.STONE, GridState.Cell.STONE, GridState.Cell.GLASS)
+	var toward := -1 if pillar > t.x else 1
+	_arm(grid, pillar, roof_row, toward, GridState.to_cells(1), GridState.Cell.STONE)
+
+
+## Barreira destrutível entre canhão e alvo: caminho só abre destruindo.
+## 3 VARIANTES de macroformato (mesma intenção "quebre para passar"):
+##   1 MURALHA  - parede alta com silhueta (o arco por cima é fechado).
+##   2 DEGRAUS  - parede escalonada + anexo curto (desnível legível).
+##   3 BRECHA   - dois postes com vão (o jogador encontra a abertura).
+## `height`/gaps são desenho em células-base (cada camada vira
+## RESOLUTION células — ver `_stack`); vão livre mínimo é topológico.
 static func _build_break(grid: GridState, rng: RandomNumberGenerator) -> void:
 	var c := grid.find_first(GridState.Cell.CANNON)
 	var t := grid.find_first(GridState.Cell.TARGET)
 	var mid := clampi((c.x + t.x) / 2, c.x + 2, t.x - 1)
-	var height := rng.randi_range(2, 3)
-	var kinds: Array = []
-	for i in height:
-		kinds.append(GridState.Cell.GLASS)
-	if rng.randf() < 0.5:
-		kinds[0] = GridState.Cell.STONE # base com desgaste
-	_stack(grid, mid, kinds)
-	if rng.randf() < 0.4:
-		_stack(grid, mid + 1, [GridState.Cell.GLASS])
+	var variant := rng.randi_range(0, 2)
+	match variant:
+		0: # MURALHA: silhueta alta, topo irregular, fecha o arco por cima.
+			var h := rng.randi_range(4, 6)
+			_silhouette(grid, mid, [h, h - 1], GridState.Cell.STONE, GridState.Cell.GLASS, GridState.Cell.GLASS)
+		1: # DEGRAUS: altura caindo para a direita + base de desgaste.
+			var hl := rng.randi_range(3, 4)
+			_silhouette(grid, mid, [hl, hl - 1, maxi(1, hl - 2)], GridState.Cell.STONE, GridState.Cell.GLASS, GridState.Cell.GLASS)
+			_stack(grid, mid + GridState.to_cells(3), [GridState.Cell.GLASS])
+		_: # JANELA: parede com um vão rasa (o jogador acha a abertura).
+			var h := rng.randi_range(3, 5)
+			_silhouette(grid, mid, [h, h], GridState.Cell.STONE, GridState.Cell.GLASS, GridState.Cell.GLASS)
+			# Vão em células-base, ABAIXO da reta direta: a reta continua
+			# bloqueada (o arquétipo exige) mas a abertura rasa existe.
+			var win_base := rng.randi_range(1, 2)
+			var win_row := mini(t.y + GridState.to_cells(win_base), grid.rows - 2)
+			for dx in GridState.to_cells(1):
+				for dy in GridState.to_cells(1):
+					if GridState.is_obstacle(grid.get_cell(mid + 1 + dx, win_row + dy)):
+						grid.set_cell(mid + 1 + dx, win_row + dy, GridState.Cell.EMPTY)
+	# Alvo protegido (fecha o arremesso por cima; sobra a abertura rasa).
+	if rng.randf() < 0.7:
+		_add_target_shelter(grid, rng)
 
 
-## Espelho de metal alto entre canhão e alvo + poste de vidro baixo
-## (moldura): a direta morre no metal, o arco por cima resolve.
+## Espelho de metal + placa de ricochete. A reta direta morre no metal
+## e o arco ALTO livre é fechado pela placa no alto — a superfície que
+## devolve o projétil para BAIXO (um espelho vertical só rebate para
+## trás, então a placa horizontal é a peça que torna o rebote real).
+## 3 VARIANTES:  1 ALTO  - espelho alto + placa pendurada.
+##              2 LARGO - parede de metal anexa ao piso + placa.
+##              3 CANAL - espelho alto + pilar curto = janela rasa.
 static func _build_ricochet(grid: GridState, rng: RandomNumberGenerator) -> void:
 	var c := grid.find_first(GridState.Cell.CANNON)
 	var t := grid.find_first(GridState.Cell.TARGET)
 	var mid := clampi(t.x - GridState.to_cells(2), c.x + 2, grid.cols - 1)
-	var height := rng.randi_range(3, 4)
-	var kinds: Array = []
-	for i in height:
-		kinds.append(GridState.Cell.METAL)
-	kinds[0] = GridState.Cell.STONE # base portante
-	_stack(grid, mid, kinds)
+	var toward := 1 if t.x > mid else -1
+	match rng.randi_range(0, 2):
+		1: # LARGO: parede larga de metal ancorada no piso.
+			var hl := rng.randi_range(3, 5)
+			_silhouette(grid, mid, [hl, hl - 1, hl - 2], GridState.Cell.STONE, GridState.Cell.METAL, GridState.Cell.METAL)
+		2: # CANAL: espelho + pilar curto, deixando janela rasa entre eles.
+			var hm := rng.randi_range(3, 4)
+			_silhouette(grid, mid, [hm, hm], GridState.Cell.STONE, GridState.Cell.METAL, GridState.Cell.METAL)
+			_silhouette(grid, mid + GridState.to_cells(2), [rng.randi_range(1, 2)],
+					GridState.Cell.STONE, GridState.Cell.STONE, GridState.Cell.GLASS)
+		_: # ALTO: espelho alto (a parede que mata a reta).
+			var h := rng.randi_range(4, 6)
+			_silhouette(grid, mid, [h, h], GridState.Cell.STONE, GridState.Cell.METAL, GridState.Cell.METAL)
+	# Placa horizontal no topo do espelho, pendurada para o lado do alvo:
+	# é ela que rebate o projétil para baixo (e fecha o arco alto livre).
+	var top := _top_obstacle_row(grid, mid)
+	if top >= 0:
+		_arm(grid, mid, top, toward, GridState.to_cells(2), GridState.Cell.METAL)
 	# Poste baixo à esquerda do alvo (moldura, nunca raspão alto).
 	var post_col := maxi(c.x + 1, t.x - GridState.to_cells(4))
 	_put_ob(grid, post_col, grid.rows - 2, GridState.Cell.GLASS)
 
 
-## Corredor: duas colunas de pedra + viga de Structure no topo.
-## O projétil precisa descobrir a passagem pelo vão.
+## Corredor: o projétil precisa descobrir a passagem. 3 VARIANTES de
+## macroformato (mesma intenção "ache o vão"):
+##   1 CORREDOR - duas colunas + viga de topo (portal).
+##   2 COLMEIA  - pilares alternados com janelas em alturas diferentes.
+##   3 ESCADA   - degraus ascendentes (o vão fica no alto/lado).
 static func _build_maze(grid: GridState, rng: RandomNumberGenerator) -> void:
 	var c := grid.find_first(GridState.Cell.CANNON)
 	var t := grid.find_first(GridState.Cell.TARGET)
 	var left := clampi((c.x + t.x) / 2 - 1, c.x + 2, grid.cols - 1 - GridState.to_cells(2))
-	var h1 := rng.randi_range(2, 3)
-	var h2 := rng.randi_range(3, 4)
-	var k1: Array = []
-	var k2: Array = []
-	for i in h1:
-		k1.append(GridState.Cell.STONE)
-	for i in h2:
-		k2.append(GridState.Cell.STONE)
-	if rng.randf() < 0.5 and not k1.is_empty():
-		k1[k1.size() - 1] = GridState.Cell.GLASS # junta fraca
-	_stack(grid, left, k1)
-	_stack(grid, left + 2, k2)
-	# Viga no topo unindo as colunas (ponte/corredor): `h2` é desenho em
-	# células-base, então a altura empilhada é to_cells(h2).
-	var top_row := grid.floor_top_row_at(left + 2) - GridState.to_cells(h2)
-	if grid.in_bounds(left + 1, top_row) and grid.is_empty(left + 1, top_row):
-		grid.set_cell(left + 1, top_row, GridState.Cell.STRUCTURE)
+	var weak := GridState.Cell.GLASS if rng.randf() < 0.5 else GridState.Cell.STONE # junta fraca
+	match rng.randi_range(0, 2):
+		1: # COLMEIA: pilares de alturas trocadas, janelas em níveis distintos.
+			_silhouette(grid, left, [3, 0, 2, 0, 1], GridState.Cell.STONE, GridState.Cell.STONE, weak)
+		2: # ESCADA: degraus subindo — a janela boa fica alta e ao lado.
+			_silhouette(grid, left, [1, 2, 3, 4], GridState.Cell.STONE, GridState.Cell.STONE, weak)
+		_: # CORREDOR: duas colunas + viga de topo (portal).
+			_stack(grid, left, _repeat(GridState.Cell.STONE, rng.randi_range(2, 3)))
+			var h2 := rng.randi_range(3, 4)
+			_stack(grid, left + 2, _repeat(GridState.Cell.STONE, h2))
+			# Viga no topo unindo as colunas (ponte/corredor): `h2` é
+			# desenho em células-base, então a altura empilhada é to_cells.
+			var top_row := grid.floor_top_row_at(left + 2) - GridState.to_cells(h2)
+			if grid.in_bounds(left + 1, top_row) and grid.is_empty(left + 1, top_row):
+				grid.set_cell(left + 1, top_row, GridState.Cell.STRUCTURE)
+	# Alvo protegido: o corredor existe, mas o por-cima está fechado.
+	if rng.randf() < 0.7:
+		_add_target_shelter(grid, rng)
+
+
+## Array de `n` cópias do mesmo kind (desenho de pilha em células-base).
+static func _repeat(kind: int, n: int) -> Array:
+	var out: Array = []
+	for _i in n:
+		out.append(kind)
+	return out
 
 
 ## Torre alta no meio: arco cheio por cima + mergulho sobre o alvo.
@@ -303,17 +419,27 @@ static func _build_vertical(grid: GridState, rng: RandomNumberGenerator) -> void
 	var c := grid.find_first(GridState.Cell.CANNON)
 	var t := grid.find_first(GridState.Cell.TARGET)
 	var mid := clampi((c.x + t.x) / 2, c.x + 2, t.x - 1)
-	var height := rng.randi_range(3, 4)
-	var kinds: Array = []
-	for i in height:
-		kinds.append(GridState.Cell.STONE)
-	kinds[kinds.size() - 1] = GridState.Cell.GLASS # topo fraco
-	_stack(grid, mid, kinds)
+	var h := rng.randi_range(3, 5)
+	var weak := GridState.Cell.GLASS # topo fraco
+	match rng.randi_range(0, 2):
+		1: # FENDA: torre partida em dois — o mergulho tem de passar na fenda.
+			_silhouette(grid, mid, [h, 0, h - 1], GridState.Cell.STONE, GridState.Cell.STONE, weak)
+		2: # RAMPAS: plataformas descendentes em direção ao alvo.
+			_silhouette(grid, mid, [h, h - 1, maxi(1, h - 2)], GridState.Cell.STONE, GridState.Cell.STONE, weak)
+		_: # TORRE: coluna única no meio (o mergulho clássico).
+			var kinds := _repeat(GridState.Cell.STONE, h)
+			kinds[kinds.size() - 1] = weak
+			_stack(grid, mid, kinds)
 
 
-## Fortificação sobre o alvo: torre portante + alas + coroamento.
+## Fortificação sobre o alvo. 3 VARIANTES de macroformato (mesma
+## intenção "o alvo está protegido"):
+##   1 TORRE    - torre portante + ala + viga de coroamento.
+##   2 CASEMATE - torre lateral alta + beirada pendurada sobre o alvo.
+##   3 ZIGURATE - ala assimétrica (uma lateral mais alta que a outra).
 static func _build_tower(grid: GridState, rng: RandomNumberGenerator) -> void:
 	var t := grid.find_first(GridState.Cell.TARGET)
+	var variant := rng.randi_range(0, 2)
 	# Torre portante sob o alvo (pirâmide/zigurate simplificada).
 	var under: Array = [GridState.Cell.STONE, GridState.Cell.STONE]
 	if rng.randf() < 0.5:
@@ -332,21 +458,39 @@ static func _build_tower(grid: GridState, rng: RandomNumberGenerator) -> void:
 		if grid.is_empty(t.x, cursor):
 			grid.set_cell(t.x, cursor, kind)
 		cursor -= 1
-	# Ala lateral (prédio anexo) + viga de coroamento.
+	# Ala lateral (prédio anexo). A viga de coroamento vai na linha do
+	# topo mais BAIXO dos dois (maxi, não mini-1): encosta nos dois
+	# lados e nasce conectada, virando telhado/ponte de verdade.
 	var wing_gap := GridState.to_cells(2)
 	var wing := t.x - wing_gap if t.x - wing_gap > GridState.to_cells(3) else t.x + wing_gap
-	if grid.in_bounds(wing, 0):
-		_stack(grid, wing, [GridState.Cell.STONE, GridState.Cell.GLASS])
-		var top_a := _top_obstacle_row(grid, t.x)
-		var top_b := _top_obstacle_row(grid, wing)
-		if top_a >= 0 and top_b >= 0:
-			var beam_row := mini(top_a, top_b) - 1
-			var step := 1 if wing > t.x else -1
-			var cc := t.x + step
-			while cc != wing:
-				if grid.in_bounds(cc, beam_row) and grid.is_empty(cc, beam_row):
-					grid.set_cell(cc, beam_row, GridState.Cell.STRUCTURE)
-				cc += step
+	if not grid.in_bounds(wing, 0):
+		return
+	match variant:
+		1: # CASEMATE: ala alta + beirada pendurada sobre o alvo.
+			var roof_row := maxi(0, t.y - GridState.to_cells(1))
+			var h_cells := grid.floor_top_row_at(wing) - roof_row
+			if h_cells > 0:
+				var h_base := ceili(float(h_cells) / float(GridState.RESOLUTION))
+				_silhouette(grid, wing, [maxi(2, h_base)], GridState.Cell.STONE, GridState.Cell.STONE, GridState.Cell.GLASS)
+				var toward := 1 if wing < t.x else -1
+				_arm(grid, wing, roof_row, toward, GridState.to_cells(1), GridState.Cell.STONE)
+				return
+			_stack(grid, wing, [GridState.Cell.STONE, GridState.Cell.GLASS])
+		2: # ZIGURATE: ala em degraus, um lado mais alto que o outro.
+			_silhouette(grid, wing, [rng.randi_range(2, 3), rng.randi_range(1, 2)],
+					GridState.Cell.STONE, GridState.Cell.STONE, GridState.Cell.GLASS)
+		_:
+			_stack(grid, wing, [GridState.Cell.STONE, GridState.Cell.GLASS])
+	var top_a := _top_obstacle_row(grid, t.x)
+	var top_b := _top_obstacle_row(grid, wing)
+	if top_a >= 0 and top_b >= 0:
+		var beam_row := maxi(top_a, top_b)
+		var step := 1 if wing > t.x else -1
+		var cc := t.x + step
+		while cc != wing:
+			if grid.in_bounds(cc, beam_row) and grid.is_empty(cc, beam_row):
+				grid.set_cell(cc, beam_row, GridState.Cell.STRUCTURE)
+			cc += step
 
 
 static func _top_obstacle_row(grid: GridState, col: int) -> int:
@@ -356,8 +500,13 @@ static func _top_obstacle_row(grid: GridState, col: int) -> int:
 	return -1
 
 
-## Híbrida: barreira destrutível + espelho + anexo em posições distintas.
-## Metal só a partir da fase 4 (progressão: vidro/pedra cedo).
+## Híbrida: combina duas intenções em posições distintas (barreira +
+## espelho + anexo). Metal só a partir da fase 4 (progressão: vidro e
+## pedra cedo). A segunda peça entra como SILHUETA (alturas diferentes),
+## não como bloco retangulado.
+## 3 VARIANTES:   1 PEDRA+METAL - barreira + espelho lateral.
+##               2 VIDRO+PEDRA - barreira + monte de desgaste.
+##               3 VIDRO+METAL - barreira + parede estreita de metal.
 static func _build_mixed(grid: GridState, rng: RandomNumberGenerator, allow_metal: bool) -> void:
 	var c := grid.find_first(GridState.Cell.CANNON)
 	var t := grid.find_first(GridState.Cell.TARGET)
@@ -365,53 +514,82 @@ static func _build_mixed(grid: GridState, rng: RandomNumberGenerator, allow_meta
 	var roll := rng.randf()
 	if roll < 0.5 or not allow_metal:
 		_build_break(grid, rng)
+		var col := clampi(mid + GridState.to_cells(3), 0, grid.cols - 1)
 		if allow_metal:
-			_stack(grid, clampi(mid + GridState.to_cells(3), 0, grid.cols - 1),
-					[GridState.Cell.STONE, GridState.Cell.METAL, GridState.Cell.METAL])
+			_silhouette(grid, col, [3, 2], GridState.Cell.STONE, GridState.Cell.METAL, GridState.Cell.METAL)
 		else:
-			_stack(grid, clampi(mid + GridState.to_cells(3), 0, grid.cols - 1),
-					[GridState.Cell.STONE, GridState.Cell.GLASS])
+			_silhouette(grid, col, [2, 1], GridState.Cell.STONE, GridState.Cell.GLASS, GridState.Cell.GLASS)
 	else:
 		_build_ricochet(grid, rng)
-		_stack(grid, clampi(mid - GridState.to_cells(2), 0, grid.cols - 1),
-				[GridState.Cell.GLASS, GridState.Cell.GLASS])
+		_silhouette(grid, clampi(mid - GridState.to_cells(2), 0, grid.cols - 1),
+				[2, 3], GridState.Cell.STONE, GridState.Cell.GLASS, GridState.Cell.GLASS)
 
 
-## Coroamento: vigas de Structure entre topos vizinhos (telhados,
-## pontes). Só onde há dois obstáculos próximos com vão livre.
-## O vão MÁXIMO da ponte é medida física (em células-base); o vão
-## mínimo é topológico (precisa sobrar ao menos 1 célula entre os topos).
+## Coroamento: vigas de Structure ligando topos de obstáculos (telhados,
+## pontes, portais). A viga fica EXATAMENTE na linha do topo mais baixo
+## dos dois lados — encosta horizontalmente nos dois pilares, então
+## nasce CONECTADA (a versão anterior a posicionava 1 célula acima do
+## topo mais alto, encostando em nada, e morria como
+## STRUCTURE_ISOLATED: por isso a fase nunca tinha teto e o arco alto
+## era sempre livre).
+## O vão MÁXIMO é medida física (em células-base); o mínimo é
+## topológico (precisa sobrar ao menos 1 célula entre os topos).
 static func _add_cap_structures(grid: GridState, rng: RandomNumberGenerator) -> void:
-	if rng.randf() < 0.25:
-		return # nem toda fase precisa de viga
 	var tops: Array = []
 	for col in grid.cols:
 		var r := _top_obstacle_row(grid, col)
 		if r >= 0:
 			tops.append(Vector2i(col, r))
+	if tops.size() < 2:
+		return
+	var t := grid.find_first(GridState.Cell.TARGET)
+	# Uma fase pode querer 1 viga (ponte única) ou 2 (teto + portal).
+	var want := 1 + (1 if rng.randf() < 0.6 else 0)
+	var placed := 0
+	var rows_used: Array[int] = []
+	for pair in _pairs_by_span(tops):
+		if placed >= want:
+			break
+		if _try_beam(grid, pair[0] as Vector2i, pair[1] as Vector2i, t, rows_used):
+			placed += 1
+
+
+## Pares de topos ordenados pelo vão (mais largo primeiro): a viga
+## larga vira teto/ponte de verdade; as seguintes viram portais menores.
+static func _pairs_by_span(tops: Array) -> Array:
+	var pairs: Array = []
 	for i in range(tops.size()):
 		for j in range(i + 1, tops.size()):
-			var a: Vector2i = tops[i]
-			var b: Vector2i = tops[j]
-			if abs(a.x - b.x) > GridState.to_cells(4) or abs(a.x - b.x) < 2:
-				continue
-			var beam_row := mini(a.y, b.y) - 1
-			if beam_row < 0:
-				continue
-			var ok := true
-			var step := 1 if b.x > a.x else -1
-			var cc := a.x + step
-			while cc != b.x:
-				if not grid.in_bounds(cc, beam_row) or not grid.is_empty(cc, beam_row):
-					ok = false
-					break
-				cc += step
-			if ok:
-				cc = a.x + step
-				while cc != b.x:
-					grid.set_cell(cc, beam_row, GridState.Cell.STRUCTURE)
-					cc += step
-				return
+			pairs.append([tops[i], tops[j]])
+	pairs.sort_custom(func(p: Array, q: Array) -> bool:
+		return absi((p[0] as Vector2i).x - (p[1] as Vector2i).x) > absi((q[0] as Vector2i).x - (q[1] as Vector2i).x))
+	return pairs
+
+
+## Tenta ligar os topos a e b com uma viga. Exige vão físico livre, a
+## linha do topo mais baixo vazia em todo o vão e os dois topos do
+## mesmo lado do alvo (nunca encurrala o alvo nem crava viga na linha
+## dele). Devolve true quando posicionou.
+static func _try_beam(grid: GridState, a: Vector2i, b: Vector2i, t: Vector2i, rows_used: Array[int]) -> bool:
+	if absi(a.x - b.x) < 2 or absi(a.x - b.x) > GridState.to_cells(4):
+		return false
+	var row := maxi(a.y, b.y)
+	if row in rows_used:
+		return false
+	if (a.y > t.y) != (b.y > t.y):
+		return false
+	var step := 1 if b.x > a.x else -1
+	var cc := a.x + step
+	while cc != b.x:
+		if not grid.in_bounds(cc, row) or not grid.is_empty(cc, row):
+			return false
+		cc += step
+	cc = a.x + step
+	while cc != b.x:
+		grid.set_cell(cc, row, GridState.Cell.STRUCTURE)
+		cc += step
+	rows_used.append(row)
+	return true
 
 
 ## Detalhe de solo: pilhas curtas ancoradas no Floor espalhadas pela

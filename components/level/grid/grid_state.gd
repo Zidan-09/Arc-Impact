@@ -154,6 +154,19 @@ func world_pos(col: int, row: int) -> Vector2:
 	return origin + (Vector2(col, row) + Vector2(0.5, 0.5)) * CELL_SIZE
 
 
+## Célula que contém o ponto mundial (física -> lógica), ou (-1,-1)
+## fora da fase. É o inverso de [method world_pos]: permite que a
+## amostragem balística enxerge o CONTEÚDO da grade sob a trajetória,
+## sem nenhuma conversão mágica de escala.
+func cell_of(pos: Vector2) -> Vector2i:
+	var origin := origin_for(cols, rows)
+	var col := floori((pos.x - origin.x) / CELL_SIZE)
+	var row := floori((pos.y - origin.y) / CELL_SIZE)
+	if not in_bounds(col, row):
+		return Vector2i(-1, -1)
+	return Vector2i(col, row)
+
+
 ## Altura do relevo do Floor numa coluna: quantas células de Floor
 ## empilhadas acima da linha de base.
 func floor_height_at(col: int) -> int:
