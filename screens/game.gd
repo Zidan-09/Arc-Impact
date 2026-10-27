@@ -3,6 +3,11 @@ extends Control
 const END_DELAY := 8.0
 const DEFAULT_SEED := 1
 
+## Grupos transitórios da fase: projéteis, rastros e shards. Nenhum pode
+## sobreviver à troca de fase — uma bala/shard da fase antiga continuaria
+## na árvore e na física, interagindo com a nova fase.
+const TRANSIENT_GROUPS: Array[String] = ["bullets", "bullet_trails", "shards"]
+
 @onready var world_area: Control = $WorldArea
 @onready var world: Node2D = $WorldArea/World
 @onready var level_node: Node2D = $WorldArea/World/Level
@@ -71,10 +76,7 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 	level_number = new_level_number
 	current_seed = seed_value
 	victory_popup.visible = false
-	for bullet in get_tree().get_nodes_in_group("bullets"):
-		bullet.queue_free()
-	for trail in get_tree().get_nodes_in_group("bullet_trails"):
-		trail.queue_free()
+	_clear_transient_elements()
 	var result := FastLevelGenerator.generate(seed_value, level_number)
 	var def: LevelDefinition = result["def"]
 	if bool(result["fallback_used"]):
@@ -95,6 +97,24 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 	_loading = false
 	hud.set_level(level_number)
 	hud.set_ammo(ammo_total, ammo_left)
+
+
+## Remove da árvore e libera TODOS os elementos transitórios da fase
+## anterior (balas, rastros e shards). `remove_child` tira o corpo do
+## mundo físico imediatamente (mesmo padrão de LevelBuilder.clear) e
+## `queue_free` garante a exclusão no flush do frame. Precisa rodar ANTES
+## de builder.build() instanciar a nova fase: os elementos da fase nova
+## só são criados após um physics_frame de folga, então nada da fase
+## antiga sobrevive para colidir, rotear hit() ou rodar lógica contra
+## eles. Falta aqui era o vazamento de shards: eles não pertenciam a
+## nenhum grupo e só morriam pelo lifetime de 3s.
+func _clear_transient_elements() -> void:
+	for group in TRANSIENT_GROUPS:
+		for node in get_tree().get_nodes_in_group(group):
+			var parent := node.get_parent()
+			if parent != null:
+				parent.remove_child(node)
+			node.queue_free()
 
 
 func shoot() -> void:

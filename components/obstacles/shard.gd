@@ -5,6 +5,12 @@ extends RigidBody2D
 
 
 func _ready() -> void:
+	# Elemento transitório da fase: o grupo "shards" é a única forma de
+	# game.gd encontrar e remover os shards na troca de fase
+	# (_clear_transient_elements). Sem ele, o shard sobreviveria à nova
+	# fase como filho de Level e continuaria na física/colisão por até
+	# `lifetime` segundos, interagindo com obstáculos e estruturas novos.
+	add_to_group("shards")
 	await get_tree().create_timer(lifetime).timeout
 	if is_instance_valid(self):
 		queue_free()
