@@ -1,13 +1,15 @@
 [gd_scene format=3 uid="uid://dgwwf5r7wr8u4"]
 
 [ext_resource type="Texture2D" uid="uid://dkafo6lr74gfr" path="res://assets/target/base.png" id="1_1esyr"]
+[ext_resource type="Script" uid="uid://ddt4yfoduxowk" path="res://components/target/target.gd" id="1_tgt"]
 [ext_resource type="Texture2D" uid="uid://dojm4h7254h0l" path="res://assets/target/central-portal.png" id="2_k1821"]
 [ext_resource type="Texture2D" uid="uid://dhncldxvc6576" path="res://assets/target/ring.png" id="3_kb34w"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_dlv83"]
-radius = 150.40279
+radius = 260.7681
 
 [node name="target" type="StaticBody2D" unique_id=904624779]
+script = ExtResource("1_tgt")
 
 [node name="base" type="Sprite2D" parent="." unique_id=525108268]
 texture = ExtResource("1_1esyr")
