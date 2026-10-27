@@ -1,32 +1,23 @@
-[gd_scene format=3 uid="uid://cleehopkqkfag"]
+[gd_scene format=3 uid="uid://dgwwf5r7wr8u4"]
 
-[ext_resource type="Script" uid="uid://d1b3vlr8d5dsk" path="res://components/target/target.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://bb7bq58xupa0c" path="res://assets/target/active_target.png" id="2_1esyr"]
-[ext_resource type="Texture2D" uid="uid://c8wh6dom1hj4j" path="res://assets/target/inactive_target.png" id="3_k1821"]
-[ext_resource type="Texture2D" uid="uid://bao3vvfl5bhfk" path="res://assets/target/arrow.png" id="4_k1821"]
+[ext_resource type="Texture2D" uid="uid://dkafo6lr74gfr" path="res://assets/target/base.png" id="1_1esyr"]
+[ext_resource type="Texture2D" uid="uid://dojm4h7254h0l" path="res://assets/target/central-portal.png" id="2_k1821"]
+[ext_resource type="Texture2D" uid="uid://dhncldxvc6576" path="res://assets/target/ring.png" id="3_kb34w"]
 
-[node name="Target" type="StaticBody2D" unique_id=192068329]
-scale = Vector2(0.2, 0.2)
-script = ExtResource("1")
+[sub_resource type="CircleShape2D" id="CircleShape2D_dlv83"]
+radius = 150.40279
 
-[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="." unique_id=1413171782]
-position = Vector2(4.9999995, 0)
-build_mode = 1
-polygon = PackedVector2Array(84.99999, -39.999996, 84.99999, -79.99999, 78.6842, -134.99998, 66.05262, -194.99998, 53.42105, -224.99998, 47.10526, -234.99998, 40.78947, -237, -9.73684, -237, -22.36842, -229.99998, -28.6842, -214.99998, -34.99999, -194.99998, -43.8421, -160, -52.68421, -119, -56.47368, -76, -57.73684, -37, -59.0, 10, -57.73684, 59, -55.21052, 108, -51.42105, 149, -41.31578, 189.99998, -28.6842, 219.99998, -22.36842, 229.99998, -16.05263, 236, 34.47369, 237, 47.10526, 234.99998, 59.73684, 219.99998, 66.05262, 194.99998, 72.36841, 149.99998, 78.6842, 99.99999, 84.99999, 59.999992, 84.99999, 14.999998, 84.99999, -4.9999995)
+[node name="target" type="StaticBody2D" unique_id=904624779]
 
-[node name="Active" type="Sprite2D" parent="." unique_id=2052029463]
-position = Vector2(15.840351, 1.3848074e-06)
-rotation = -3.1415925
-scale = Vector2(1.3432661, 0.99999994)
-texture = ExtResource("3_k1821")
+[node name="base" type="Sprite2D" parent="." unique_id=525108268]
+texture = ExtResource("1_1esyr")
 
-[node name="Inactive" type="Sprite2D" parent="." unique_id=1779213626]
-position = Vector2(17.5, 0)
-scale = Vector2(1.3181819, 1)
-texture = ExtResource("2_1esyr")
+[node name="portal" type="Sprite2D" parent="." unique_id=2096622595]
+scale = Vector2(0.34667966, 0.34667972)
+texture = ExtResource("2_k1821")
 
-[node name="Arrow" type="Sprite2D" parent="." unique_id=356321024]
-position = Vector2(-174.99997, 0)
-rotation = -1.5707964
-scale = Vector2(0.4, 0.4)
-texture = ExtResource("4_k1821")
+[node name="ring" type="Sprite2D" parent="." unique_id=613076624]
+texture = ExtResource("3_kb34w")
+
+[node name="hitbox" type="CollisionShape2D" parent="." unique_id=1303930322]
+shape = SubResource("CircleShape2D_dlv83")
