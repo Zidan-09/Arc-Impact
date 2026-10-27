@@ -5,8 +5,11 @@
 [ext_resource type="Texture2D" uid="uid://dojm4h7254h0l" path="res://assets/target/central-portal.png" id="2_k1821"]
 [ext_resource type="Texture2D" uid="uid://dhncldxvc6576" path="res://assets/target/ring.png" id="3_kb34w"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_dlv83"]
-radius = 260.7681
+[sub_resource type="CircleShape2D" id="CircleShape2D_gravity"]
+radius = 305.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_absorb"]
+radius = 149.4
 
 [node name="target" type="StaticBody2D" unique_id=904624779]
 script = ExtResource("1_tgt")
@@ -21,5 +24,16 @@ texture = ExtResource("2_k1821")
 [node name="ring" type="Sprite2D" parent="." unique_id=613076624]
 texture = ExtResource("3_kb34w")
 
-[node name="hitbox" type="CollisionShape2D" parent="." unique_id=1303930322]
-shape = SubResource("CircleShape2D_dlv83")
+[node name="GravityArea" type="Area2D" parent="."]
+collision_layer = 4
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GravityArea"]
+shape = SubResource("CircleShape2D_gravity")
+
+[node name="AbsorptionArea" type="Area2D" parent="."]
+collision_layer = 4
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AbsorptionArea"]
+shape = SubResource("CircleShape2D_absorb")

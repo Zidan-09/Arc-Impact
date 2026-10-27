@@ -8,8 +8,8 @@ radius = 57.717
 
 [node name="Bullet" type="RigidBody2D" unique_id=1821898189]
 z_index = 2
+collision_layer = 3
 script = ExtResource("1_j7bu3")
-# CCD cast-shape: impede o tunneling do projétil rápido (docs/plan.md §5 item 1).
 continuous_cd = 2
 contact_monitor = true
 max_contacts_reported = 8

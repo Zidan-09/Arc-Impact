@@ -4,9 +4,12 @@ extends RigidBody2D
 ## - Corpo: CircleShape2D raio 57.717 (valor-base em `bullet.tscn`;
 ##   x escala canônica 0.16 do canhão = ~9.2px, o calibre calibrado;
 ##   `apply_cannon_scale()` o reescala por instância sem mutar o recurso).
-## - collision_layer/mask: defaults (1/1). Colide fisicamente com
-##   StaticBody2D (metal/pedra, paredes do cano, floor, corpo do alvo).
-## - Lógica de gameplay (`Obstacle.hit()`, `Target.hit()`) roteada AQUI:
+## - collision_layer/mask: 3/1. O mask 1 segue igual (colide fisicamente
+##   com StaticBody2D: metal/pedra, paredes do cano, floor); o layer 2 é
+##   o bit "pode ser atraído", lido só pelo `collision_mask` das Areas2D
+##   do Target. O `Target` não tem mais shape — a bala o atravessa.
+## - Lógica de gameplay (`Obstacle.hit()`) roteada AQUI; o alvo é
+##   absorvido fora daqui, pelo `body_entered` da `AbsorptionArea`:
 ##   `body_entered` do corpo + varredura `intersect_ray` do segmento
 ##   prev→current com `collide_with_areas = true` (alcança o `HitBox`
 ##   Area2D do vidro mesmo quando o tick pula o collider fino).
