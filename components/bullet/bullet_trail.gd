@@ -13,6 +13,12 @@ extends Node2D
 @export var light_energy := 0.7
 @export var light_radius := 160.0
 
+## Raio da luz do prewarm (BulletTrail.prewarm). Bem maior que o real
+## (160): o retângulo da luz cobre a tela inteira na pose da câmera do
+## carregamento, então TODO tipo de item visível aquece os pipelines
+## "com luz" que o primeiro disparo venha a exigir.
+const WARMUP_LIGHT_RADIUS := 1024.0
+
 var follow_target: Node2D
 
 var _core: Line2D
@@ -219,3 +225,63 @@ func _make_light_texture() -> Texture2D:
 	texture.width = 128
 	texture.height = 128
 	return texture
+
+
+## Pré-aquecimento do primeiro disparo (corrige o pico de FPS do primeiro
+## tiro da fase, observado principalmente no celular).
+##
+## Causa raiz: o renderizador RD compila cada pipeline de canvas de forma
+## SINCRONA na primeira vez que a combinação é usada, e a presença de
+## luz 2D muda a specialization constant `use_lighting` da chave do
+## pipeline (`use_lighting = light_count > 0`, renderer_canvas_render_rd.cpp;
+## o bit vira specialization constant em canvas_uniforms_inc.glsl).
+## A fase carrega sem NENHUMA luz — todos os itens desenham com os
+## pipelines "sem luz". No primeiro disparo, este rastro entra com o
+## primeiro PointLight2D do viewport e todos os itens na área da luz
+## passam a exigir os pipelines "com luz", compilados ali mesmo (freeze
+## de vários frames; compilação de driver bem mais lenta em GPUs móveis).
+## Nos disparos seguintes os pipelines já estão em cache — por isso só o
+## primeiro disparo travava.
+##
+## Aqui o rastro real é instanciado no carregamento da fase, no ponto em
+## que a primeira bala nasce, com:
+## - `light_energy = 0`: a luz é composta por ADD e sua contribuição é
+##   multiplicada pela energia (`color[3] *= energy` no renderer e
+##   `light_color.rgb *= light_base_color.a` no shader), então zero =>
+##   nenhum efeito visual — apenas a ativação do caminho "com luz";
+## - `light_radius` maior: cobre a tela => todos os itens visíveis
+##   aquecem os pipelines que o primeiro disparo venha a exigir;
+## - `modulate.a` mínimo: invisível na prática, mas acima do corte de
+##   visibilidade (0.007) para os itens serem DESENHADOS — só assim o
+##   pipeline é compilado (itens ocultos não passam pelo batcher);
+## - `set_process(false)`: rastro estático, sem `_track`/`_begin_gone` —
+##   a vida do nó é controlada aqui.
+##
+## Após os frames de renderização o nó é removido; os pipelines
+## compilados permanecem em cache, então o primeiro disparo já os
+## reutiliza — o mesmo custo de compilação, agora dentro do
+## carregamento, sem alterar física, efeitos ou aparência do jogo.
+static func prewarm(parent: Node, at: Vector2) -> void:
+	if parent == null:
+		return
+	var tree := parent.get_tree()
+	if tree == null:
+		return
+	var trail := BulletTrail.new()
+	trail.light_energy = 0.0
+	trail.light_radius = WARMUP_LIGHT_RADIUS
+	trail.modulate = Color(1.0, 1.0, 1.0, 0.01)
+	parent.add_child(trail)
+	trail.set_process(false)
+	trail.global_position = at
+	trail._add_point(at)
+	trail._add_point(at + Vector2(trail.point_spacing * 8.0, 0.0))
+	# Dois frames com renderização: o primeiro já compila; o segundo
+	# cobre o caso de o primeiro frame não ser desenhado.
+	await tree.process_frame
+	await tree.process_frame
+	if is_instance_valid(trail):
+		var holder := trail.get_parent()
+		if holder != null:
+			holder.remove_child(trail)
+		trail.queue_free()

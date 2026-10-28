@@ -93,6 +93,16 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 	if current_target != null:
 		current_target.target_hit.connect(_on_target_hit)
 	_update_camera_bounds()
+	# Pico de performance do primeiro disparo: a fase carrega sem nenhuma
+	# luz 2D, e os pipelines de renderização "com luz" do renderer só são
+	# compilados quando a primeira luz entra no viewport — acontecia no
+	# primeiro tiro da fase (congelamento; bem pior no celular). O
+	# prewarm instancia o rastro real no ponto de nascimento da primeira
+	# bala, com a luz em energy 0 (contribuição aditiva nula, invisível),
+	# deixa o frame renderizar (compilação em cache) e o remove. Física,
+	# efeitos e aparência dos disparos ficam intactos.
+	var muzzle_origin: Vector2 = cannon.get_muzzle_state()["origin"]
+	await BulletTrail.prewarm(level_node, muzzle_origin)
 	game_over = false
 	_loading = false
 	hud.set_level(level_number)
