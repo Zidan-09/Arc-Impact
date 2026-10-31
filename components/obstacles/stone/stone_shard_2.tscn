@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://7g3ivlqr8n7uu" path="res://components/obstacles/stone/stone_shard.gd" id="1_shard"]
+[ext_resource type="Texture2D" uid="uid://boisa6q0tfb26" path="res://assets/obstacles/stone_shard_2.png" id="1_tex"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_shard"]
+friction = 0.4
+bounce = 0.3
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_shard"]
+size = Vector2(41.04, 28.08)
+
+[node name="StoneShard2" type="RigidBody2D"]
+mass = 0.2
+physics_material_override = SubResource("PhysicsMaterial_shard")
+script = ExtResource("1_shard")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(1, 1, 1, 0.85)
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("1_tex")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(9.48, -15.96)
+shape = SubResource("RectangleShape2D_shard")
