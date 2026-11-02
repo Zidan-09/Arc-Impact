@@ -164,7 +164,12 @@ func _physics_process(_delta: float) -> void:
 	# overlap físico com o sólido, então pedra/metal/vidro precisam ser
 	# vistos pelo raio ANTES do CCD travar no contato (dedup por instância
 	# garante hit() único; o corpo ainda sobrepõe glass/alvo, que seguem
-	# pelo body_entered).
+	# pelo body_entered). O raio sozinho não cobre tudo: ele parte do
+	# CENTRO da bala (o clamp mantém o centro ≥ raio da face, então em
+	# baixa velocidade o passo/tick não alcança a superfície) e pára no
+	# primeiro collider sem hit() de uma junção. O complemento é o
+	# roteamento a partir do próprio contato do CCD (_route_contact_hits):
+	# contato físico ⟺ impacto comunicado, exatamente 1x por bala/corpo.
 	if upcoming.length() > 0.01:
 		_swept_check(current, current + upcoming)
 		upcoming = (linear_velocity + get_gravity() * _delta) * _delta
@@ -186,9 +191,24 @@ func _physics_process(_delta: float) -> void:
 			var hit := _sweep_against_solids(current, remaining)
 			if hit.is_empty():
 				break
+			# Snapshot da velocidade de chegada: o ricochete usa a
+			# velocidade que causou o contato (como o motor faria).
+			var v_arrival := linear_velocity
 			linear_velocity = _apply_solid_bounce(
-				linear_velocity, hit["normal"], hit["bounce"], hit["friction"]
+				v_arrival, hit["normal"], hit["bounce"], hit["friction"]
 			)
+			# Roteia o impacto dos sólidos EFETIVAMENTE contatados DEPOIS
+			# do ricochete: o clamp preditivo impede o overlap físico, o
+			# `body_entered` não dispara mais para sólidos, e o raio de
+			# `_swept_check` parte do centro (sempre ≥ raio da face pelo
+			# próprio clamp) — sem este roteamento o CCD rebate a bala
+			# sem comunicar o obstáculo (baixa velocidade: passo < raio;
+			# junção: o raio pára no chão sem hit(); rasante no canto).
+			# DEPOIS do bounce para hit() ver a velocidade pós-colisão
+			# (o stone shatter reescreve 0.85× dela, como no body_entered).
+			# Dedup por instância (_notified_ids) garante hit() único por
+			# bala por corpo, idempotente com o raio/body_entered.
+			_route_contact_hits(hit)
 			current = hit["position"]
 			remaining = (linear_velocity + get_gravity() * _delta) * _delta
 			if remaining.length() <= CCD_MIN_SWEEP_LEN:
@@ -224,6 +244,7 @@ func _swept_check(from: Vector2, to: Vector2) -> void:
 			_exclude_collider(exclude, node)
 			continue
 		_notified_ids[id] = true
+		print("[dbg-route] RAY node=%s pos=%s" % [node.name, pos])
 		var routed := _route_hit(node, pos)
 		if not routed:
 			# Chão/parede sem hit(): física resolve; nada a rotear.
@@ -303,6 +324,7 @@ func _sweep_against_solids(from: Vector2, motion: Vector2) -> Dictionary:
 			"normal": start_solid["normal"],
 			"bounce": start_solid["bounce"],
 			"friction": start_solid["friction"],
+			"bodies": start_solid.get("bodies", []),
 		}
 	var contact := from + motion * safe
 
@@ -334,6 +356,7 @@ func _sweep_against_solids(from: Vector2, motion: Vector2) -> Dictionary:
 		"normal": probed["normal"],
 		"bounce": probed["bounce"],
 		"friction": probed["friction"],
+		"bodies": probed["bodies"],
 	}
 
 
@@ -346,17 +369,23 @@ func _bullet_radius() -> float:
 
 
 ## Reduz os hits da sonda aos SÓLIDOS retangulares tocados e devolve
-## {normal, bounce, friction} (vazio se nenhum). `intersect_shape` NÃO
-## devolve `normal` (só collider/position), então a face de contato é
+## {normal, bounce, friction, bodies} (vazio se nenhum). `intersect_shape`
+## NÃO devolve `normal` (só collider/position), então a face de contato é
 ## derivada da geometria: menor profundidade de penetração face a face
 ## do retângulo (todos os sólidos do jogo são RectangleShape2D: chão,
 ## metal, pedra, parede do cano). Numa junção a sonda toca os dois
-## lados e as normais SOMAM => resposta de canto (ex.: 45°).
+## lados e as normais SOMAM => resposta de canto (ex.: 45°). `bodies`
+## lista os sólidos efetivamente tocados: é o que permite rotear o
+## hit de gameplay a partir do contato do CCD (`_route_contact_hits`) —
+## o clamp preditivo impede o overlap físico, então o contato do CCD é
+## o sinal de impacto contra sólidos quando o raio do centro não
+## alcança a face (baixa velocidade) ou para antes (junção).
 func _probe_solids(hits: Array, probe_center: Vector2, radius: float) -> Dictionary:
 	var normal := Vector2.ZERO
 	var bounce := 0.0
 	var friction := 1.0
 	var got_material := false
+	var bodies: Array = []
 	for h in hits:
 		var c: Object = h.get("collider")
 		if not (c is StaticBody2D):
@@ -365,8 +394,12 @@ func _probe_solids(hits: Array, probe_center: Vector2, radius: float) -> Diction
 			continue
 		var hn := _static_face_normal(c as CollisionObject2D, probe_center, radius)
 		if hn == Vector2.ZERO:
+			# Sem face tocada (só passou perto): não é contato físico —
+			# não soma normal nem entra no roteamento de gameplay.
 			continue
 		normal += hn
+		if not bodies.has(c):
+			bodies.append(c)
 		if not got_material:
 			var sm: PhysicsMaterial = (c as PhysicsBody2D).physics_material_override
 			if sm != null:
@@ -375,7 +408,12 @@ func _probe_solids(hits: Array, probe_center: Vector2, radius: float) -> Diction
 				got_material = true
 	if normal.length_squared() < 0.0001:
 		return {}
-	return {"normal": normal.normalized(), "bounce": bounce, "friction": friction}
+	return {
+		"normal": normal.normalized(),
+		"bounce": bounce,
+		"friction": friction,
+		"bodies": bodies,
+	}
 
 
 ## Normal da face de contato do círculo (raio `radius`, centro
@@ -433,6 +471,32 @@ func _apply_solid_bounce(v: Vector2, normal: Vector2, s_bounce: float, s_fric: f
 	return vt * (1.0 - f) + normal * (-e * vn)
 
 
+## Roteia o hit de gameplay para cada sólido contatado fisicamente no
+## ponto de contato devolvido pelo CCD (clamp/ricochete ocorreu nele).
+## Dedup por instância (_notified_ids) — a MESMA chave usada pelo raio
+## de `_swept_check` e pelo `_on_body_entered`, garantindo exatamente
+## 1 hit() por bala por corpo mesmo quando o raio já viu o sólido no
+## mesmo tick. Chão/parede sem hit() são marcados e ignorados (mesmo
+## comportamento do raio).
+func _route_contact_hits(contact: Dictionary) -> void:
+	var bodies = contact.get("bodies")
+	if bodies == null:
+		return
+	var pos: Vector2 = contact.get("position", Vector2.ZERO)
+	for body in bodies:
+		if not (body is Node):
+			continue
+		var node := body as Node
+		if not is_instance_valid(node):
+			continue
+		var id := node.get_instance_id()
+		if _notified_ids.has(id):
+			continue
+		_notified_ids[id] = true
+		print("[dbg-route] CCD node=%s pos=%s" % [node.name, pos])
+		_route_hit(node, pos)
+
+
 ## Roteador único de gameplay. Retorna true se houve hit de gameplay.
 func _route_hit(node: Node, pos: Vector2) -> bool:
 	if is_broken or not is_instance_valid(self):
@@ -440,12 +504,15 @@ func _route_hit(node: Node, pos: Vector2) -> bool:
 	if node is Shard:
 		return false
 	if node.has_method("hit"):
+		print("[dbg-route] has_hit node=%s pos=%s" % [node.name, pos])
 		node.call("hit", self, pos)
 		return true
 	if node is Area2D:
 		# HitBox do vidro: o Area2D não tem hit(), o pai tem.
 		var parent := node.get_parent()
 		if parent != null and parent.has_method("hit"):
+			print("[dbg-route] area_parent node=%s parent=%s pos=%s" % [
+				node.name, parent.name, pos])
 			_notified_ids[parent.get_instance_id()] = true
 			parent.call("hit", self, pos)
 			return true
@@ -461,6 +528,7 @@ func _on_body_entered(body: Node) -> void:
 	if _notified_ids.has(id):
 		return
 	_notified_ids[id] = true
+	print("[dbg-route] BODY_ENTERED node=%s pos=%s" % [body.name, global_position])
 	_route_hit(body, global_position)
 
 
