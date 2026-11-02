@@ -24,7 +24,18 @@ var recoil_tween: Tween
 var barrel_initial_position: Vector2
 
 const PIVOT_OFFSET := Vector2(-2, 0)
-const MUZZLE_OFFSET := Vector2(267, -48)
+
+## Boca do cano no espaço do BarrelPivot — tem de espelhar o nó Muzzle
+## de cannon.tscn (origem do spawn em shoot(), da prévia de trajetória
+## e de muzzle_state_for()). O ponto fica FORA das paredes do cano
+## (BarrelPivot/walls): com o raio 57.717 da bala, o centro só está
+## livre de contato a partir de x >= 351.5 (fim do segmento superior
+## em (318, -95) dista 47 do eixo; sqrt(dx^2 + 47^2) >= 57.717).
+## Antes o muzzle ficava em x=267, DENTRO do barril (44.4 da parede
+## superior < raio 57.717): a bala nascia sobreposta às paredes e o
+## motor resolvia o contato nos primeiros frames, desviando a
+## trajetória e perdendo força (bug dos disparos irregulares).
+const MUZZLE_OFFSET := Vector2(360, -48)
 
 ## Escala canônica do canhão no jogo (fonte única, usada pelo gerador).
 ## Com ela, o giro completo do barril cabe na célula de 128px e a bala
