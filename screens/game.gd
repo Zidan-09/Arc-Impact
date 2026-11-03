@@ -46,6 +46,11 @@ func _ready() -> void:
 	fire_button.focus_mode = Control.FOCUS_NONE
 	fire_button.pressed.connect(shoot)
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	# A câmera enquadra o mundo na área jogável (WorldHitArea), que já
+	# desconta a coluna de controles da UI — sem isso a fase era enquadrada
+	# pela viewport inteira e ficava parcialmente atrás dos controles em
+	# várias proporções de tela.
+	game_camera.set_view_area(world_hit_area)
 	cannon.bullet_container = level_node
 	cannon.current_power = power_slider.power
 	power_slider.power_changed.connect(_on_power_changed)

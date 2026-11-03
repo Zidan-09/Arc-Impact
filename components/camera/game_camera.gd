@@ -5,7 +5,9 @@ extends Camera2D
 ## canvas padrão (mundo). HUD e painéis vivem em `UILayer` (CanvasLayer) e o
 ## fundo estático em `BackgroundLayer` (CanvasLayer) — ambos imunes à câmera.
 ## Limites dinâmicos via `set_bounds()` (fonte: `LevelDefinition.world_bounds`);
-## nunca hard-coda 1280x720 — usa `get_viewport_rect().size` (aspect = expand).
+## nunca hard-coda 1280x720 — usa o retângulo de tela reservado ao mundo
+## (`set_view_area()` / `view_rect()`), que desconta a coluna de controles da
+## UI; fallback é `get_viewport_rect().size` (aspect = expand).
 ## O zoom mínimo é dinâmico: nunca mostra além da fase inteira (sem vazio).
 ## Física, geração, validação e solver não referenciam esta câmera.
 
@@ -18,6 +20,13 @@ const RESET_FOCUS_MARGIN := 200.0
 const DEFAULT_BOUNDS := Rect2(0, 0, 1280, 720)
 
 var bounds: Rect2 = DEFAULT_BOUNDS
+
+## Control invisível (o `WorldHitArea` do `UILayer`) com a geometria da área
+## reservada ao mundo. Define onde o mundo é REALMENTE visível: sem ele a
+## câmera enquadra pela viewport inteira e a fase acaba parcialmente atrás
+## dos controles da UI (coluna direita) — inacessível em várias proporções
+## de tela, mesmo com zoom-out e pan. Ver `view_rect()`.
+var _view_area: Control = null
 
 var _target_zoom := 1.0
 var _has_anchor := false
@@ -45,6 +54,35 @@ func set_bounds(new_bounds: Rect2) -> void:
 	reset_view()
 
 
+## Define o Control que delimita a área visível do mundo (`game.gd` passa o
+## `WorldHitArea`, de mesma geometria que o `WorldArea`) e reaplica
+## enquadramento/limites com o novo retângulo.
+func set_view_area(area: Control) -> void:
+	_view_area = area
+	refresh()
+
+
+## Retângulo de TELA (coordenadas de viewport) onde o mundo é visível:
+## a área do jogo descontando a coluna de controles. O `WorldHitArea` vive
+## no `UILayer` (CanvasLayer imune à câmera), então o `get_global_rect()`
+## dele já é coordenada de tela. Sem área válida, usa a viewport inteira.
+func view_rect() -> Rect2:
+	if is_instance_valid(_view_area):
+		var rect := _view_area.get_global_rect()
+		if rect.size.x > 0.0 and rect.size.y > 0.0:
+			return rect
+	return Rect2(Vector2.ZERO, get_viewport_rect().size)
+
+
+## Deslocamento (pixels de tela) entre o centro da viewport — onde a
+## Camera2D ancora o mundo — e o centro da área visível do mundo. Com a
+## coluna de controles ocupando uma borda, o enquadramento precisa andar
+## esse valor (convertido para mundo via zoom) para que o mundo fique
+## centrado na área jogável em vez de no meio da tela cheia.
+func _view_offset() -> Vector2:
+	return view_rect().get_center() - get_viewport_rect().size * 0.5
+
+
 ## Volta ao enquadramento inicial: zoom 1 (ou fit se os focos excederem a
 ## visão), posição no ponto médio dos focos ou no centro dos limites.
 func reset_view(focus_a: Vector2 = Vector2.INF, focus_b: Vector2 = Vector2.INF) -> void:
@@ -62,7 +100,9 @@ func reset_view(focus_a: Vector2 = Vector2.INF, focus_b: Vector2 = Vector2.INF) 
 		if fit < 1.0:
 			_target_zoom = fit
 	zoom = Vector2(_target_zoom, _target_zoom)
-	position = center
+	# A Camera2D ancora o mundo no centro da viewport; para o ponto médio
+	# dos focos cair no centro da área visível, compensa o offset dela.
+	position = center - _view_offset() / _target_zoom
 	apply_bounds_clamp()
 
 
@@ -71,17 +111,19 @@ func fit_to_bounds() -> float:
 	return clampf(fit_zoom_raw(), ZOOM_MIN, ZOOM_MAX)
 
 
-## Fit sem clamp: base do zoom mínimo dinâmico.
+## Fit sem clamp: base do zoom mínimo dinâmico. Usa a área visível do
+## mundo (viewport menos controles) — é ali que a fase precisa caber.
 func fit_zoom_raw() -> float:
-	var viewport_size := get_viewport_rect().size
+	var view_size := view_rect().size
 	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
 		return 1.0
-	return minf(viewport_size.x / bounds.size.x, viewport_size.y / bounds.size.y)
+	return minf(view_size.x / bounds.size.x, view_size.y / bounds.size.y)
 
 
 ## Zoom mínimo efetivo: o maior entre o piso absoluto e o fit da fase.
-## Numa fase do tamanho da viewport resulta 1.0 (nada além para revelar);
-## numa fase 2x maior, 0.5. Impede o "vazio" que o zoom-out fixo causava.
+## Numa fase do tamanho da área visível do mundo resulta 1.0 (nada além
+## para revelar); numa fase 2x maior, 0.5. Impede o "vazio" que o zoom-out
+## fixo causava.
 func zoom_min_effective() -> float:
 	return clampf(fit_zoom_raw(), ZOOM_MIN, 1.0)
 
@@ -128,18 +170,26 @@ func screen_to_world(screen_point: Vector2) -> Vector2:
 
 ## Clamp manual (docs/plan.md §8.2): não usa `Camera2D.limit_*`, que não
 ## recentraliza quando a visão excede os limites e briga com zoom animado.
-## Contenção ESTRITA: a área visível da viewport nunca sai da área da
-## fase. `bounds` vem da grade gerada (`LevelDefinition.world_bounds` =
-## `GridState.phase_bounds()`), logo é dinâmico por fase. Se a viewport
-## for maior que a fase num eixo (zoom-out além do fit é barrado por
-## `zoom_min_effective()`, mas resize pode causar), a câmera centraliza
-## naquele eixo em vez de permitir navegação para o vazio.
+## Contenção ESTRITA: a área visível do mundo (viewport menos os controles
+## da UI, via `view_rect()`) nunca sai da área da fase. `bounds` vem da
+## grade gerada (`LevelDefinition.world_bounds` = `GridState.phase_bounds()`),
+## logo é dinâmico por fase. Se a área visível for maior que a fase num
+## eixo (zoom-out além do fit é barrado por `zoom_min_effective()`, mas
+## resize pode causar), a câmera centraliza naquele eixo em vez de permitir
+## navegação para o vazio.
+##
+## A Camera2D ancora o mundo no centro da VIEWPORT, então o clamp é feito
+## sobre o centro da área visível (posição + offset/zoom) e devolvido para
+## `position` — com os controles ocupando uma borda, os dois centros não
+## coincidem e enxergar a fase inteira exigiria justamente esse deslocamento.
 func apply_bounds_clamp() -> void:
-	var viewport_size := get_viewport_rect().size
-	var half_view := viewport_size * 0.5 / zoom.x
-	position = Vector2(
-		_clamp_axis(position.x, bounds.position.x, bounds.end.x, half_view.x, bounds.get_center().x),
-		_clamp_axis(position.y, bounds.position.y, bounds.end.y, half_view.y, bounds.get_center().y))
+	var view_offset := _view_offset()
+	var half_view := view_rect().size * 0.5 / zoom.x
+	var visible_center := position + view_offset / zoom.x
+	visible_center = Vector2(
+		_clamp_axis(visible_center.x, bounds.position.x, bounds.end.x, half_view.x, bounds.get_center().x),
+		_clamp_axis(visible_center.y, bounds.position.y, bounds.end.y, half_view.y, bounds.get_center().y))
+	position = visible_center - view_offset / zoom.x
 
 
 static func _clamp_axis(center: float, bounds_min: float, bounds_max: float, half_view: float, bounds_center: float) -> float:
@@ -188,9 +238,9 @@ func _update_keyboard_pan(delta: float) -> void:
 
 
 func _zoom_to_fit_segment(from: Vector2, to: Vector2) -> float:
-	var viewport_size := get_viewport_rect().size
+	var view_size := view_rect().size
 	var need := Vector2(absf(to.x - from.x), absf(to.y - from.y)) + Vector2(RESET_FOCUS_MARGIN, RESET_FOCUS_MARGIN)
 	if need.x <= 0.0 or need.y <= 0.0:
 		return 1.0
-	var fit := minf(viewport_size.x / need.x, viewport_size.y / need.y)
+	var fit := minf(view_size.x / need.x, view_size.y / need.y)
 	return clampf(fit, zoom_min_effective(), 1.0)
