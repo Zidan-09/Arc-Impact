@@ -61,7 +61,12 @@ func _ready() -> void:
 	hud.pause_pressed.connect(_on_pause_pressed)
 	builder = LevelBuilder.new()
 	add_child(builder)
-	load_level(DEFAULT_SEED, level_number)
+	# Progresso persistente antes da primeira geração: evita gerar a
+	# fase 1 para depois substituir — a fase inicial já nasce correta.
+	var progress: Dictionary = SaveManager.load_progress()
+	level_number = int(progress["level"])
+	current_seed = int(progress["seed"])
+	load_level(current_seed, level_number)
 
 
 func load_level(seed_value: int, new_level_number: int) -> void:
@@ -159,6 +164,9 @@ func _on_target_hit(_body: Bullet) -> void:
 	won = true
 	game_over = true
 	_awaiting_end = false
+	# Persiste imediatamente na vitória (antes de qualquer transição):
+	# fechar o jogo aqui não pode perder o avanço.
+	SaveManager.save_progress(level_number + 1, current_seed + 1)
 	victory_popup.show_popup(0, ammo_left)
 
 
@@ -188,6 +196,10 @@ func _on_popup_next() -> void:
 	if _is_paused:
 		resume_game()
 		return
+	# Redundância intencional: a vitória já salvou, mas a transição
+	# garante o progresso mesmo que o sinal de vitória tenha sido
+	# perdido. É no-op quando nada mudou.
+	SaveManager.save_progress(level_number + 1, current_seed + 1)
 	load_level(current_seed + 1, level_number + 1)
 
 
