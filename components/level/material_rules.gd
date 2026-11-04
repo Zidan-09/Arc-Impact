@@ -132,6 +132,18 @@ static func target_body_size() -> Vector2:
 	return target_size() * target_scale()
 
 
+## Raio do GravityArea do alvo em px — a área que CAPTURA de verdade.
+## Cena `target.tscn`: CircleShape2D raio 305 no node scale do alvo.
+## Dentro dele `Target._attract` gira a velocidade para o centro com
+## piso de velocidade (MIN_PULL_SPEED) e a fuga é geometricamente
+## impossível: entrar no campo == vitória. O corpo (target_size) é só
+## o visual — validar captura pelo corpo subestima o alcance real do
+## alvo (especialmente na horizontal, onde o campo tem ~40px e o corpo
+## ~7px).
+static func target_gravity_radius() -> float:
+	return 305.0 * target_scale().x
+
+
 static func _rules() -> Dictionary:
 	return {
 		ObstacleDefinition.KIND_GLASS: {

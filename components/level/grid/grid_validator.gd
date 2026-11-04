@@ -45,6 +45,14 @@ const MAX_FREE_HIGH_ARCS := 0
 ## convertida na hora do teste por `GridState.to_cells()` para valer a
 ## mesma distância física em qualquer resolução.
 const MIN_CANNON_TARGET_CELLS := 5
+## Teto de ricochetes simulados por trajetória. O metal devolve a bala
+## com restituição 1 / atrito 0 (sem perda de energia), então sem teto a
+## simulação poderia quicar indefinidamente; 4 é folgado para as fases
+## geradas (a solução típica usa 1 rebote) e mantém o laço finito.
+const MAX_BOUNCES := 4
+## Empurrão (px) após o ricochete: maior que a divisão de célula para o
+## próximo passo nascer FORA do metal e não re-refletir na mesma face.
+const CONTACT_EPSILON := 1.0
 
 
 static func validate(grid: GridState, ammo: int = 3) -> Dictionary:
@@ -267,6 +275,18 @@ static func _direct_is_blocked(grid: GridState) -> bool:
 ## outra coisa — por isso o material do bloqueio importa.
 static func _direct_kinds(grid: GridState) -> Array[int]:
 	var out: Array[int] = []
+	for cell in _direct_cells(grid):
+		var v := grid.get_cell(cell.x, cell.y)
+		if v not in out:
+			out.append(v)
+	return out
+
+
+## Células que a reta canhão→alvo atravessa (Bresenham), EXCLUINDO as
+## extremidades canhão e alvo. Fonte única do traçado: quem precisa da
+## linha (o gerador, p/ ancorar o bloqueio na célula exata) reutiliza.
+static func _direct_cells(grid: GridState) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
 	var c := grid.find_first(GridState.Cell.CANNON)
 	var t := grid.find_first(GridState.Cell.TARGET)
 	if c.x < 0 or t.x < 0:
@@ -283,10 +303,10 @@ static func _direct_kinds(grid: GridState) -> Array[int]:
 	var x := x0
 	var y := y0
 	while not (x == x1 and y == y1):
-		if not (x == x0 and y == y0) and GridState.is_obstacle(grid.get_cell(x, y)):
-			var v := grid.get_cell(x, y)
-			if v not in out:
-				out.append(v)
+		if not (x == x0 and y == y0):
+			var cell := Vector2i(x, y)
+			if cell not in out:
+				out.append(cell)
 		var e2 := 2 * err
 		if e2 >= dy:
 			err += dy
@@ -295,6 +315,17 @@ static func _direct_kinds(grid: GridState) -> Array[int]:
 			err += dx
 			y += sy
 	return out
+
+
+## Linha que a reta direta visita na coluna `col` (-1 se não passa lá).
+## O gerador usa isto para posicionar o bloqueio do arquétipo EXATAMENTE
+## na célula que a reta atravessa — aí o teste "metal na reta direta"
+## passa por construção em vez de por sorteio.
+static func direct_row_at(grid: GridState, col: int) -> int:
+	for cell in _direct_cells(grid):
+		if cell.x == col:
+			return cell.y
+	return -1
 
 
 ## Solubilidade e qualidade do desafio com a física real sobre a GRADE.
@@ -308,10 +339,12 @@ static func _check_ballistics(grid: GridState, ammo: int, errors: Array[String])
 	if int(arcs["reachable"]) == 0:
 		errors.append(ERR_UNREACHABLE)
 		return
-	# Ricochete fica de fora do teste de munição: o metal mata as
-	# trajetórias que chegariam (o arquétipo exige bloqueio) e o rebote
-	# que resolve é física do motor, não da amostragem.
-	if grid.archetype != &"ricochet" and int(arcs["viable"]) == 0:
+	# Ricochete é modelado de verdade em `sample_arcs` (face do metal =
+	# espelho perfeito), então TODOS os arquétipos — inclusive
+	# `ricochet` — precisam de um caminho que caiba na munição. Antes o
+	# ricochete ficava fora do teste de viabilidade e fases sem nenhuma
+	# solução (ex.: nível 17, semente 17: viable=0) eram aceitas.
+	if int(arcs["viable"]) == 0:
 		errors.append(ERR_NO_VIABLE_PATH)
 		return
 	# "Mire para cima e ajuste a força": nos arquétipos que exigem
@@ -338,33 +371,85 @@ static func _refine(values: Array) -> Array:
 	return out
 
 
-static func _segment_hits_rect(from: Vector2, to: Vector2, rect: Rect2) -> bool:
-	if rect.has_point(from) or rect.has_point(to):
-		return true
-	var corners := [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]
-	for i in 4:
-		if Geometry2D.segment_intersects_segment(from, to, corners[i], corners[(i + 1) % 4]) != null:
-			return true
-	return false
+## Segmento adentra o círculo de captura do alvo? (método do ponto mais
+## próximo: projeta from→to no centro e testa a distância.)
+static func _segment_hits_circle(from: Vector2, to: Vector2, center: Vector2, radius: float) -> bool:
+	var d := to - from
+	var len_sq := d.length_squared()
+	var t := 0.0
+	if len_sq > 0.000001:
+		t = clampf((center - from).dot(d) / len_sq, 0.0, 1.0)
+	var closest := from + d * t
+	return closest.distance_squared_to(center) <= radius * radius
+
+
+## Ponto e normal da face por onde o segmento (from→to) ENTROU na célula
+## `cell` (o centro anterior estava fora dela). Método dos slabs: a face
+## que produz o maior t de entrada é a atingida; empate exato (canto)
+## soma as duas normais — mesma resposta de canto do CCD do jogo
+## (`Bullet._probe_solids` soma as normais dos sólidos tocados).
+## Retorna {} quando a geometria não dá uma face definível (o caller
+## aborta o arco: conservador, nunca inventa ricochete).
+static func _cell_entry(from: Vector2, to: Vector2, grid: GridState, cell: Vector2i) -> Dictionary:
+	var half := Vector2(GridState.CELL_SIZE, GridState.CELL_SIZE) * 0.5
+	var center := grid.world_pos(cell.x, cell.y)
+	var rect := Rect2(center - half, half * 2.0)
+	var d := to - from
+	var tx_min := -INF
+	var tx_max := INF
+	if absf(d.x) > 0.000001:
+		var a := (rect.position.x - from.x) / d.x
+		var b := (rect.end.x - from.x) / d.x
+		tx_min = minf(a, b)
+		tx_max = maxf(a, b)
+	elif from.x < rect.position.x or from.x > rect.end.x:
+		return {} # paralelo ao eixo e fora: não cruza esta face
+	var ty_min := -INF
+	var ty_max := INF
+	if absf(d.y) > 0.000001:
+		var a := (rect.position.y - from.y) / d.y
+		var b := (rect.end.y - from.y) / d.y
+		ty_min = minf(a, b)
+		ty_max = maxf(a, b)
+	elif from.y < rect.position.y or from.y > rect.end.y:
+		return {}
+	var t_enter := maxf(tx_min, ty_min)
+	if t_enter > minf(tx_max, ty_max) or t_enter > 1.0:
+		return {} # sem interseção no trecho (não deveria acontecer)
+	t_enter = clampf(t_enter, 0.0, 1.0)
+	var normal: Vector2
+	if absf(tx_min - ty_min) <= 0.000001:
+		# Canto: resposta combinada (normais somadas), como no CCD.
+		normal = Vector2(-signf(d.x), -signf(d.y)).normalized()
+	elif tx_min > ty_min:
+		normal = Vector2(-signf(d.x), 0.0)
+	else:
+		normal = Vector2(0.0, -signf(d.y))
+	if normal == Vector2.ZERO:
+		return {}
+	return {"point": from + d * t_enter, "normal": normal}
 
 
 ## Amostra o envelope do canhão sobre a GRADE (não só a geometria) e
 ## classifica cada arco pelo que ele ENCONTRA no caminho. Física real do
 ## jogo, sem simulação paralela: gravidade do projeto, boca via
-## Cannon.muzzle_state_for, corpo do alvo dilatado pelo raio da bala,
-## desaceleração de travessia e piso que segura a bala.
+## Cannon.muzzle_state_for, captura do alvo pelo GravityArea, desaceleração
+## de travessia, piso que segura a bala e ricochete no metal.
 ##
 ## Regras de munição usadas (as mesmas do jogo):
 ##  - vidro: 1 hit e quebra => atravessa NO MESMO disparo, x0.85;
 ##  - pedra: 1º hit racha e mata o disparo, 2º atravessa => cada célula
 ##    de pedra no caminho custa 2 tiros;
-##  - metal: indestrutível => nenhum disparo passa (só ricochete).
+##  - metal: indestrutível => NÃO atravessa: o PhysicsMaterial dele
+##    (restituição 1, atrito 0) devolve a bala em espelho perfeito
+##    (`_cell_entry` + reflexão). Ricochete não custa munição.
 ##
 ## Métricas:
-##  - reachable: arcos que chegam ao alvo pagando a travessia;
-##  - viable: reachable sem metal e cabendo na munição (solucionável
-##    de verdade, não só geometricamente);
-##  - clean: viable sem pedra e sem vidro (tiro livre);
+##  - reachable: arcos que chegam ao alvo (campo de captura);
+##  - viable: reachable cabendo na munição (solucionável de verdade,
+##    não só geometricamente);
+##  - clean: viable sem pedra, sem vidro e sem ricochete (tiro LIVRE);
+##  - viable_ricochet: viable que só chega rebatendo no metal;
 ##  - high_*: idem contando SÓ arcos altos (>= HIGH_ARC_MIN_ANGLE) — a
 ##    solução universal de "mirar para cima e achar a força";
 ##  - direct: materiais que cruzam a reta direta.
@@ -379,11 +464,14 @@ static func sample_arcs(grid: GridState, ammo: int) -> Dictionary:
 	var high_clean := 0
 	var viable_glass := 0
 	var viable_stone := 0
+	var viable_ricochet := 0
 	var cannon_pos := GridLevelValidator.cannon_world_pos(grid)
 	var target_pos := GridLevelValidator.target_world_pos(grid)
 	var gravity := float(ProjectSettings.get_setting("physics/2d/default_gravity", 980.0))
-	var body := MaterialRules.target_body_size()
-	var rect := Rect2(target_pos - body * 0.5, body).grow(BULLET_RADIUS)
+	# Vitória = adentrar o GravityArea do alvo (círculo), que segundo
+	# Target._attract torna a fuga geometricamente impossível; o raio do
+	# campo já dilatado + raio da bala cobre a captura por sobreposição.
+	var capture := MaterialRules.target_gravity_radius() + BULLET_RADIUS
 	var phase := grid.phase_bounds()
 	var kill := phase.grow(300.0)
 	var dt := 1.0 / 60.0
@@ -407,7 +495,7 @@ static func sample_arcs(grid: GridState, ammo: int) -> Dictionary:
 			var vel: Vector2 = (muzzle["direction"] as Vector2) * BULLET_SPEED * float(power)
 			var stones := 0
 			var glass := 0
-			var metal := false
+			var bounces := 0
 			var passed := {}
 			var hit := false
 			# Teto de passos = alcance máximo do envelope (o arco já caiu
@@ -415,25 +503,43 @@ static func sample_arcs(grid: GridState, ammo: int) -> Dictionary:
 			for _step in 140:
 				vel += Vector2(0, gravity) * dt
 				var nxt := pos + vel * dt
-				if _segment_hits_rect(pos, nxt, rect):
+				if _segment_hits_circle(pos, nxt, target_pos, capture):
 					hit = true
 					break
-				pos = nxt
-				if pos.y > phase.end.y or not kill.has_point(pos):
-					break
-				var cell := grid.cell_of(pos)
+				var cell := grid.cell_of(nxt)
 				if cell.x < 0:
 					break
 				var v := grid.get_cell(cell.x, cell.y)
 				if v == GridState.Cell.FLOOR:
 					break # bala crava no chão: este arco não volta
+				if v == GridState.Cell.METAL:
+					# Ricochete REAL: metal tem PhysicsMaterial com
+					# restituição 1 / atrito 0 e a bala não tem material
+					# => a combinação do motor (Bullet._apply_solid_bounce)
+					# é espelho perfeito: só a normal da face inverte, |v|
+					# é preservado. Sem custo de munição (só o metal é
+					# indestrutível; rebater não o destrói nem a bala).
+					var contact := _cell_entry(pos, nxt, grid, cell)
+					if contact.is_empty():
+						break # sem face definível: arco degenerado
+					var normal: Vector2 = contact["normal"]
+					var vn := vel.dot(normal)
+					if vn >= 0.0:
+						break # raspando/saindo: não há contato, aborta
+					vel -= normal * (2.0 * vn)
+					bounces += 1
+					if bounces > MAX_BOUNCES:
+						break
+					pos = (contact["point"] as Vector2) + vel.normalized() * CONTACT_EPSILON
+					continue
+				pos = nxt
+				if pos.y > phase.end.y or not kill.has_point(pos):
+					break
 				if GridState.is_obstacle(v) and not passed.has(cell):
 					passed[cell] = true
 					vel *= PASS_RETAIN
 					if v == GridState.Cell.STONE:
 						stones += 1
-					elif v == GridState.Cell.METAL:
-						metal = true
 					else:
 						glass += 1
 			if not hit:
@@ -441,7 +547,7 @@ static func sample_arcs(grid: GridState, ammo: int) -> Dictionary:
 			reachable += 1
 			if high:
 				high_reachable += 1
-			if metal or 1 + stones > ammo:
+			if 1 + stones > ammo:
 				continue
 			viable += 1
 			if high:
@@ -450,6 +556,8 @@ static func sample_arcs(grid: GridState, ammo: int) -> Dictionary:
 				viable_glass += 1
 			elif stones > 0:
 				viable_stone += 1
+			elif bounces > 0:
+				viable_ricochet += 1
 			else:
 				clean += 1
 				if high:
@@ -459,5 +567,6 @@ static func sample_arcs(grid: GridState, ammo: int) -> Dictionary:
 		"high_total": high_total, "high_reachable": high_reachable,
 		"high_viable": high_viable, "high_clean": high_clean,
 		"viable_glass": viable_glass, "viable_stone": viable_stone,
+		"viable_ricochet": viable_ricochet,
 		"direct": _direct_kinds(grid),
 	}
