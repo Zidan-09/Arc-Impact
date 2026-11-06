@@ -511,7 +511,12 @@ static func sample_arcs(grid: GridState, ammo: int) -> Dictionary:
 					break
 				var v := grid.get_cell(cell.x, cell.y)
 				if v == GridState.Cell.FLOOR:
-					break # bala crava no chão: este arco não volta
+					# O floor.tscn real ricocheeteia (bounce 0.7 / atrito 0),
+					# mas o solver é conservador: trata o chão como absorvedor
+					# (arco aborta) — só conta como alcançado o arco que ele
+					# consegue PROVAR, nunca um que dependeria do ricochete
+					# no chão. Pior caso: subconta arcos, não superconta.
+					break
 				if v == GridState.Cell.METAL:
 					# Ricochete REAL: metal tem PhysicsMaterial com
 					# restituição 1 / atrito 0 e a bala não tem material

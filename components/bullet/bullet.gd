@@ -451,10 +451,13 @@ func _static_face_normal(body: CollisionObject2D, probe_center: Vector2, radius:
 ## Resposta de contato no primeiro toque usando os MESMOS parâmetros de
 ## material do motor: restitution = max(bala, sólido), atrito = geométrico
 ## (regra de combinação de material do motor). Bala sem material => bounce 0 /
-## atrito 1; chão sem material => bounce 0 (absorve, desliza); metal/pedra
-## => bounce 1 / atrito 0 (ricocheete pleno, |v| preservado). Fórmula
-## padrão de restituição: vn' = -e*vn; vt' = vt*(1-f). Pura: devolve a
-## nova velocidade sem mutar nada, para o caller aplicar junto do clamp.
+## atrito 1; chão (floor.tscn, physics_material_override) => bounce 0.7 /
+## atrito 0 (ricocheete parcial: normal × 0.7, tangente preservada);
+## metal/pedra => bounce 1 / atrito 0 (ricocheete pleno, |v| preservado);
+## sólidos sem material (parede do cano etc.) => e=0, atrito 1 (absorve).
+## Fórmula padrão de restituição: vn' = -e*vn; vt' = vt*(1-f). Pura:
+## devolve a nova velocidade sem mutar nada, para o caller aplicar junto do
+## clamp.
 func _apply_solid_bounce(v: Vector2, normal: Vector2, s_bounce: float, s_fric: float) -> Vector2:
 	var b_bounce := 0.0
 	var b_fric := 1.0

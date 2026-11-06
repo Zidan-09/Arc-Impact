@@ -6,7 +6,8 @@ extends SceneTree
 ## real (bullet.tscn, escala de canhão 0.16 => raio ~9.23px).
 ##
 ## Tiles são StaticBody2D de metal (bounce 1 / atrito 0) para que o
-## ricochete pleno seja ASSERcionável (o chão do jogo absorve, e=0).
+## ricochete pleno seja ASSERcionável (o floor.tscn real usa bounce 0.7 /
+## atrito 0; aqui o espelho perfeito torna a asserção nítida).
 ##
 ## Cenários (todos com os 7 exigidos):
 ##  1. centro de um elemento (controle);
@@ -77,11 +78,12 @@ func _run_all() -> void:
 	# 8. Superfície longa: junção intermediária em alta velocidade.
 	await _case_drop("superfície de 5: junção intermediária, %d px/s" % HIGH_SPEED,
 		5, CELL * 0.5, HIGH_SPEED)
-	# 9. Repouso em chão absorvedor (material padrão e=0, como o
-	#    floor.tscn real): a bala para sobre a superfície e permanece
-	#    fora dos tiles (valida o caminho de repouso do CCD, que deixa o
-	#    empuxo do motor resolver sem congelar nem afundar).
-	await _case_absorb_rest("repouso em chão absorvedor, %d px/s" % FAST_SPEED)
+	# 9. Repouso em superfície sem material (bounce 0 / atrito 1, p. ex.
+	#    parede do cano; o floor.tscn agora tem bounce 0.7): a bala para
+	#    sobre a superfície e permanece fora dos tiles (valida o caminho de
+	#    repouso do CCD, que deixa o empuxo do motor resolver sem congelar
+	#    nem afundar).
+	await _case_absorb_rest("repouso em superfície sem material, %d px/s" % FAST_SPEED)
 
 	if _failures == 0:
 		print("SEAM_COLLISION_TEST: PASS")
@@ -127,9 +129,10 @@ func _case_corner(msg: String, speed: float) -> void:
 	await _run_bullet(msg, Vector2(-150.0, -150.0), Vector2(diag, diag))
 
 
-## Repouso: chão com material padrão (bounce 0 / atrito 1, como o
-## floor.tscn real, que absorve). A bala cai, para na superfície e
-## permanece fora dos tiles pelo resto da simulação.
+## Repouso: chão com material padrão (bounce 0 / atrito 1, sem override —
+## como as paredes do cano; o floor.tscn real tem bounce 0.7 / atrito 0).
+## A bala cai, para na superfície e permanece fora dos tiles pelo resto da
+## simulação.
 func _case_absorb_rest(msg: String) -> void:
 	_teardown()
 	_world = Node2D.new()
