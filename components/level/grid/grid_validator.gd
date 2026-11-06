@@ -55,7 +55,11 @@ const MAX_BOUNCES := 4
 const CONTACT_EPSILON := 1.0
 
 
-static func validate(grid: GridState, ammo: int = 3) -> Dictionary:
+## `arcs` opcional: métricas já amostradas por `sample_arcs` (o gerador
+## amostra UMA vez com `AmmoBalancer.MAX_AMMO` e reaproveita aqui — sem
+## simular o envelope duas vezes por candidato). Quando ausente, a
+## amostra é feita com o próprio `ammo`.
+static func validate(grid: GridState, ammo: int = 3, arcs: Dictionary = {}) -> Dictionary:
 	var errors: Array[String] = []
 	_check_floor(grid, errors)
 	_check_cannon(grid, errors)
@@ -63,7 +67,10 @@ static func validate(grid: GridState, ammo: int = 3) -> Dictionary:
 	_check_connectivity(grid, errors)
 	_check_challenge(grid, errors)
 	if errors.is_empty():
-		_check_ballistics(grid, ammo, errors)
+		var metrics := arcs
+		if metrics.is_empty():
+			metrics = sample_arcs(grid, ammo)
+		_check_ballistics(grid, ammo, errors, metrics)
 	return {"ok": errors.is_empty(), "errors": errors}
 
 
@@ -243,7 +250,7 @@ static func _check_challenge(grid: GridState, errors: Array[String]) -> void:
 				errors.append(ERR_TRIVIAL)
 				return
 	# Bloqueio da reta canhão→alvo (Bresenham na grade) quando exigido.
-	var direct := _direct_kinds(grid)
+	var direct := direct_kinds(grid)
 	if _needs_blocked_direct(grid.archetype) and direct.is_empty():
 		errors.append(ERR_DIRECT_OPEN)
 		return
@@ -265,7 +272,7 @@ static func _needs_blocked_direct(archetype: StringName) -> bool:
 
 ## Reta canhão→alvo atravessa alguma célula de obstáculo?
 static func _direct_is_blocked(grid: GridState) -> bool:
-	return not _direct_kinds(grid).is_empty()
+	return not direct_kinds(grid).is_empty()
 
 
 ## Materiais distintos que cruzam a reta canhão→alvo (Bresenham na
@@ -273,7 +280,7 @@ static func _direct_is_blocked(grid: GridState) -> bool:
 ## impossível de atravessar (só ricochete); destrutível (vidro/pedra)
 ## => caminho que abre destruindo. Metal numa fase de "quebra" seria
 ## outra coisa — por isso o material do bloqueio importa.
-static func _direct_kinds(grid: GridState) -> Array[int]:
+static func direct_kinds(grid: GridState) -> Array[int]:
 	var out: Array[int] = []
 	for cell in _direct_cells(grid):
 		var v := grid.get_cell(cell.x, cell.y)
@@ -334,8 +341,7 @@ static func direct_row_at(grid: GridState, col: int) -> int:
 ## exatamente isso que homogeneiza as fases. As regras daqui pedem um
 ## caminho que caiba na MUNIÇÃO e, nos arquétipos de bloqueio, que o
 ## arco alto LIVRE esteja fechado.
-static func _check_ballistics(grid: GridState, ammo: int, errors: Array[String]) -> void:
-	var arcs := sample_arcs(grid, ammo)
+static func _check_ballistics(grid: GridState, ammo: int, errors: Array[String], arcs: Dictionary) -> void:
 	if int(arcs["reachable"]) == 0:
 		errors.append(ERR_UNREACHABLE)
 		return
@@ -344,11 +350,17 @@ static func _check_ballistics(grid: GridState, ammo: int, errors: Array[String])
 	# `ricochet` — precisam de um caminho que caiba na munição. Antes o
 	# ricochete ficava fora do teste de viabilidade e fases sem nenhuma
 	# solução (ex.: nível 17, semente 17: viable=0) eram aceitas.
-	if int(arcs["viable"]) == 0:
+	# "Cabe na munição" = o caminho mais barato (`min_cost`) não custa
+	# mais que `ammo`: equivalente a contar `viable > 0`, mas vale
+	# também para amostras feitas com outro `ammo` (o gerador amostra
+	# com MAX_AMMO e reaproveita a mesma amostra na validação).
+	if int(arcs["min_cost"]) == 0 or int(arcs["min_cost"]) > ammo:
 		errors.append(ERR_NO_VIABLE_PATH)
 		return
 	# "Mire para cima e ajuste a força": nos arquétipos que exigem
 	# bloqueio da reta direta, nenhum arco alto pode chegar LIVRE.
+	# `high_clean` não depende do ammo (arco limpo custa 1 tiro, sempre
+	# viável com qualquer munição >= 1).
 	if _needs_blocked_direct(grid.archetype) and int(arcs["high_clean"]) > MAX_FREE_HIGH_ARCS:
 		errors.append(ERR_HIGH_ARC_FREE)
 
@@ -446,6 +458,11 @@ static func _cell_entry(from: Vector2, to: Vector2, grid: GridState, cell: Vecto
 ##
 ## Métricas:
 ##  - reachable: arcos que chegam ao alvo (campo de captura);
+##  - min_cost: custo do CAMINHO MAIS BARATO entre os alcançáveis
+##    (`1 + pedras` no arco; ricochete e vidro são gratuitos). É a
+##    MUNIÇÃO MÍNIMA comprovável da fase — independe do `ammo` passado,
+##    0 quando nenhum arco alcança o alvo. É a entrada do balanceamento
+##    (`AmmoBalancer`);
 ##  - viable: reachable cabendo na munição (solucionável de verdade,
 ##    não só geometricamente);
 ##  - clean: viable sem pedra, sem vidro e sem ricochete (tiro LIVRE);
@@ -456,6 +473,7 @@ static func _cell_entry(from: Vector2, to: Vector2, grid: GridState, cell: Vecto
 static func sample_arcs(grid: GridState, ammo: int) -> Dictionary:
 	var total := 0
 	var reachable := 0
+	var min_cost := 0 # 0 = nenhum arco alcançável (ver doc de métricas)
 	var viable := 0
 	var clean := 0
 	var high_total := 0
@@ -550,9 +568,12 @@ static func sample_arcs(grid: GridState, ammo: int) -> Dictionary:
 			if not hit:
 				continue
 			reachable += 1
+			var arc_cost := 1 + stones
+			if min_cost == 0 or arc_cost < min_cost:
+				min_cost = arc_cost
 			if high:
 				high_reachable += 1
-			if 1 + stones > ammo:
+			if arc_cost > ammo:
 				continue
 			viable += 1
 			if high:
@@ -568,10 +589,11 @@ static func sample_arcs(grid: GridState, ammo: int) -> Dictionary:
 				if high:
 					high_clean += 1
 	return {
-		"total": total, "reachable": reachable, "viable": viable, "clean": clean,
+		"total": total, "reachable": reachable, "min_cost": min_cost,
+		"viable": viable, "clean": clean,
 		"high_total": high_total, "high_reachable": high_reachable,
 		"high_viable": high_viable, "high_clean": high_clean,
 		"viable_glass": viable_glass, "viable_stone": viable_stone,
 		"viable_ricochet": viable_ricochet,
-		"direct": _direct_kinds(grid),
+		"direct": direct_kinds(grid),
 	}

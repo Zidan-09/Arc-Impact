@@ -2,10 +2,17 @@ class_name DifficultyTable extends RefCounted
 ## Curva de dificuldade por número da fase (Etapa 1, docs/plan.md §4.4).
 ## Traduz a RN-06 do PRD: fases 1–3 só vidro e tiro direto; 4–10 vidro +
 ## pedra; 11+ introduz metal bloqueando a reta e exige ricochete.
-## Munição decresce com a dificuldade (menos sobra = mais difícil).
 ## Bandas de score usam a métrica do §8 (pesos e faixas a calibrar na
 ## Etapa 8). Fases > 20 reutilizam a banda mais difícil (endgame estável)
 ## com o level_number solicitado preservado.
+##
+## MUNIÇÃO: o valor da banda é o PATAMAR do cenário simples da fase —
+## não é a munição final. A munição entregue ao jogador sai do
+## `AmmoBalancer` (patamar + complexidade do cenário gerado, clamp
+## 1..4 da RN-03). Assim a progressão continua controlando a dificuldade
+## base, mas a fase nunca recebe menos munição do que o seu cenário
+## exige (o problema antigo: a banda mais difícil valia 2 para sempre,
+## inclusive no endgame, e o gerador só aceitava cenários de 2 tiros).
 
 
 static func get_config(level_number: int) -> DifficultyConfig:
@@ -51,7 +58,7 @@ static func _bands() -> Array:
 			"score": Vector2(9.0, 26.0),
 		},
 		{
-			"from": 16, "to": 20, "ammo": 2, "max_obstacles": 12,
+			"from": 16, "to": 20, "ammo": 3, "max_obstacles": 12,
 			"glass": Vector2i(1, 4), "stone": Vector2i(2, 4), "metal": Vector2i(2, 4),
 			"ricochets": 2, "archetypes": [&"blocked_direct", &"bunker", &"combo_order"],
 			"score": Vector2(11.0, 32.0),
@@ -62,6 +69,8 @@ static func _bands() -> Array:
 static func _make_config(level_number: int, band: Dictionary) -> DifficultyConfig:
 	var cfg := DifficultyConfig.new()
 	cfg.level_number = level_number
+	# Patamar do cenário simples; a munição final da fase é calculada
+	# pelo AmmoBalancer a partir da complexidade do cenário gerado.
 	cfg.ammo = int(band["ammo"])
 	cfg.max_obstacles = int(band["max_obstacles"])
 	cfg.glass_count = band["glass"]

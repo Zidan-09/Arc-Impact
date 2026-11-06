@@ -23,12 +23,13 @@ const ARCH_MIXED := &"mixed"
 
 ## Porta de entrada. Retorna {"def", "grid_ascii", "archetype",
 ## "candidates", "ms", "fallback_used", "ultimate", "log"}.
+##
+## A munição NÃO vem fixa da banda: cada candidato é medido pelo
+## `AmmoBalancer` (patamar da banda + complexidade do cenário) e o
+## validador confirma a solubilidade com EXATAMENTE essa munição —
+## gerador e balanceamento nunca trabalham com parâmetros diferentes.
 static func generate(seed_value: int, level_number: int, cfg: DifficultyConfig = null) -> Dictionary:
-	var ammo := 3
-	if cfg != null:
-		ammo = cfg.ammo
-	else:
-		ammo = DifficultyTable.get_config(level_number).ammo
+	var baseline: int = cfg.ammo if cfg != null else DifficultyTable.get_config(level_number).ammo
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d:%d" % [seed_value, LevelDefinition.GENERATOR_VERSION, level_number])
 	var log: Array[String] = []
@@ -37,7 +38,12 @@ static func generate(seed_value: int, level_number: int, cfg: DifficultyConfig =
 	for _attempt in MAX_CANDIDATES:
 		tried += 1
 		var grid := _build_candidate(rng, level_number)
-		var result := GridLevelValidator.validate(grid, ammo)
+		# Amostra ÚNICA com o teto da RN-03: métricas independentes da
+		# munição (min_cost, arcos limpos) alimentam o balanceamento e a
+		# validação reaproveita a mesma amostra (sem simular duas vezes).
+		var arcs := GridLevelValidator.sample_arcs(grid, AmmoBalancer.MAX_AMMO)
+		var ammo := AmmoBalancer.ammo_for(grid, arcs, baseline)
+		var result := GridLevelValidator.validate(grid, ammo, arcs)
 		if not bool(result["ok"]):
 			log.append("reject:%s:%s" % [String(grid.archetype), str((result["errors"] as Array).front())])
 			continue
@@ -50,8 +56,11 @@ static func generate(seed_value: int, level_number: int, cfg: DifficultyConfig =
 			"fallback_used": false, "ultimate": false, "log": log,
 		}
 	# Rede final: fase curada mínima (passa no validador, jogável).
+	# A munição do fallback é medida com a MESMA régua dos candidatos.
 	var fallback := _ultimate_grid(level_number)
-	var def := to_def(fallback, seed_value, level_number, ammo)
+	var fallback_arcs := GridLevelValidator.sample_arcs(fallback, AmmoBalancer.MAX_AMMO)
+	var fallback_ammo := AmmoBalancer.ammo_for(fallback, fallback_arcs, baseline)
+	var def := to_def(fallback, seed_value, level_number, fallback_ammo)
 	log.append("ultimate:%s" % String(fallback.archetype))
 	return {
 		"def": def, "grid_ascii": fallback.to_ascii(),

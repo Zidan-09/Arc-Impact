@@ -13,17 +13,18 @@ func _init() -> void:
 	var seeds := [1, 17, 42, 7, 123, 2024, 5, 99]
 	for level in levels:
 		var cfg := DifficultyTable.get_config(level)
-		print("=== level %d (ammo=%d) ===" % [level, cfg.ammo])
+		print("=== level %d (patamar=%d) ===" % [level, cfg.ammo])
 		for seed_value in seeds:
 			var result := FastLevelGenerator.generate(seed_value, level)
+			var def: LevelDefinition = result["def"]
 			var ascii := String(result["grid_ascii"])
 			var grid := _grid_from_ascii(ascii)
 			grid.archetype = StringName(String(result["archetype"]))
-			var check := GridLevelValidator.validate(grid, cfg.ammo)
-			var arcs := GridLevelValidator.sample_arcs(grid, cfg.ammo)
-			print("--- seed=%d arch=%s fallback=%s candidates=%s" % [
-				seed_value, String(result["archetype"]),
+			print("--- seed=%d arch=%s ammo=%d fallback=%s candidates=%s" % [
+				seed_value, String(result["archetype"]), def.ammo,
 				str(result["fallback_used"]), str(result["candidates"])])
+			var check := GridLevelValidator.validate(grid, def.ammo)
+			var arcs := GridLevelValidator.sample_arcs(grid, def.ammo)
 			print(ascii)
 			print("  log=%s" % str(result["log"]))
 			print("  validate ok=%s errors=%s" % [str(check["ok"]), str(check["errors"])])
