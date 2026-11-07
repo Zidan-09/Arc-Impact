@@ -86,6 +86,9 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 	level_number = new_level_number
 	current_seed = seed_value
 	victory_popup.visible = false
+	# Cada fase começa com o botão liberado: um cooldown da fase anterior
+	# (retry/next logo após o último tiro) não pode travar o início.
+	fire_button.reset_cooldown()
 	_clear_transient_elements()
 	var result := FastLevelGenerator.generate(seed_value, level_number)
 	var def: LevelDefinition = result["def"]
@@ -138,12 +141,19 @@ func _clear_transient_elements() -> void:
 
 
 func shoot() -> void:
+	# Cooldown: durante os 2 s qualquer tentativa é ignorada, seja qual for
+	# o meio de acionamento (toque, clique ou atalho futuro) — é o único
+	# caminho até cannon.shoot().
+	if fire_button.is_on_cooldown():
+		return
 	if game_over or _loading or _is_paused:
 		return
 	if ammo_left <= 0:
 		return
 	ammo_left -= 1
 	cannon.shoot(power_slider.power)
+	# Cooldown só começa porque o disparo foi aceito (munição já descontada).
+	fire_button.begin_cooldown()
 	_end_timer = 0.0
 	_awaiting_end = ammo_left <= 0
 	hud.set_ammo(ammo_total, ammo_left)

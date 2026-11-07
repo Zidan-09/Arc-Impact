@@ -2,9 +2,21 @@
 
 [ext_resource type="Texture2D" uid="uid://dkuhnlcfndijl" path="res://assets/buttons/fire/activeFireButton.png" id="1_6lvp3"]
 [ext_resource type="Texture2D" uid="uid://c1c3juqifwg4o" path="res://assets/buttons/fire/inactiveFireButton.png" id="2_ar4my"]
+[ext_resource type="Script" uid="uid://bl0uy2in4jkon" path="res://components/fire-button/fire_button.gd" id="3_firbtn"]
 
 [node name="FireButton" type="TextureButton" unique_id=844494482]
 offset_right = 40.0
 offset_bottom = 40.0
 texture_normal = ExtResource("2_ar4my")
 texture_pressed = ExtResource("1_6lvp3")
+script = ExtResource("3_firbtn")
+
+[node name="CooldownOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.6)
