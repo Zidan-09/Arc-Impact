@@ -5,10 +5,11 @@ extends SceneTree
 ##  2. tentativas repetidas (programáticas e por clique real) durante o
 ##     cooldown não acionam o botão (`pressed`), não disparam e não
 ##     consomem munição;
-##  3. o overlay escuro cobre o botão inteiro e recua de cima para baixo,
+##  3. o escurecimento cobre o botão inteiro e recua de cima para baixo,
 ##     sempre proporcional ao tempo restante — mesma referência de tempo
-##     do bloqueio;
-##  4. o overlay acompanha qualquer tamanho do botão (diferentes
+##     do bloqueio — aplicado pelo shader sobre a silhueta do próprio
+##     sprite (nada de escuro vaza para fora das bordas arredondadas);
+##  4. a máscara acompanha qualquer tamanho do botão (diferentes
 ##     resoluções/proporções) e some por completo ao fim do cooldown;
 ##  5. ao completar ~2 s o botão volta a aceitar disparos;
 ##  6. disparo recusado (sem munição, fase encerrada, em pausa) NÃO
@@ -25,8 +26,8 @@ const MAX_WAIT_FRAMES := 600
 ## Limite de espera do cooldown (a duração real fica ~2 s; a folga cobre
 ## lentidão da máquina sem mascarar um cooldown que nunca termina).
 const TIMEOUT_MS := 20000
-## Tolerância da cobertura do overlay contra o tempo restante, em fração
-## da altura do botão (uma borda de arredondamento de frame).
+## Tolerância da cobertura (fração revelada no shader) contra o tempo
+## restante.
 const RATIO_TOLERANCE := 0.05
 
 var _failures := 0
@@ -60,7 +61,8 @@ func _run() -> void:
 
 func _run_scenarios(game) -> void:
 	var button = game.fire_button
-	var overlay := button.get_node(OVERLAY_NAME) as ColorRect
+	var overlay := button.get_node(OVERLAY_NAME) as Control
+	var mask := button.get_node(OVERLAY_NAME + "/CooldownMask") as TextureRect
 	button.pressed.connect(_on_button_pressed)
 
 	# Vitória/derrota desligadas para o teste: uma bala acertando o alvo
@@ -72,11 +74,27 @@ func _run_scenarios(game) -> void:
 	await process_frame
 	_check(not button.is_on_cooldown(), "inicial: sem cooldown")
 	_check(not bool(button.disabled), "inicial: botão habilitado")
-	_check(overlay.offset_top >= button.size.y - 0.01, "inicial: overlay sem cobertura")
+	_check(_reveal_frac(mask) == 1.0, "inicial: nenhuma cobertura (tudo revelado)")
 	_check(overlay.anchor_right == 1.0 and overlay.anchor_bottom == 1.0,
 		"inicial: overlay ancorado ao botão (não à viewport)")
 	_check(overlay.mouse_filter == Control.MOUSE_FILTER_IGNORE,
 		"inicial: overlay não intercepta cliques")
+	_check(overlay.clip_children == Control.CLIP_CHILDREN_DISABLED,
+		"inicial: sem recorte de pai (o shader faz o recorte do escuro)")
+	_check(mask != null and mask.material is ShaderMaterial
+		and (mask.material as ShaderMaterial).shader != null
+		and String((mask.material as ShaderMaterial).shader.code).contains("reveal_frac"),
+		"inicial: máscara com shader de revelação")
+	_check(mask != null and mask.texture == button.texture_normal,
+		"inicial: máscara usa o próprio sprite do botão")
+	_check(mask != null and mask.stretch_mode == button.stretch_mode
+		and mask.expand_mode == TextureRect.EXPAND_IGNORE_SIZE
+		and bool(button.ignore_texture_size),
+		"inicial: máscara tem o mesmo ajuste de escala do botão")
+	_check(mask != null and mask.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+		"inicial: máscara não intercepta cliques")
+	_check(mask != null and _mask_aligned(button, overlay, mask),
+		"inicial: máscara exatamente sobre o retângulo do botão")
 
 	# Munição controlada pelo teste (o balanceamento do jogo não muda).
 	game.ammo_left = 10
@@ -89,7 +107,7 @@ func _run_scenarios(game) -> void:
 	_check(int(game.ammo_left) == ammo0 - 1, "disparo aceito consumiu exatamente 1 munição")
 	_check(button.is_on_cooldown(), "disparo aceito iniciou o cooldown")
 	_check(bool(button.disabled), "botão bloqueado durante o cooldown")
-	_check(overlay.offset_top <= 0.01, "overlay cobre o botão inteiro imediatamente após o disparo")
+	_check(_reveal_frac(mask) == 0.0, "escuro cobre o botão inteiro imediatamente após o disparo")
 
 	# 2) Tentativas repetidas logo depois: nada dispara.
 	var bullets_first := get_nodes_in_group("bullets").size()
@@ -110,14 +128,18 @@ func _run_scenarios(game) -> void:
 	# 4) Sincronia overlay x tempo restante após ~0.4 s.
 	await _wait_seconds(0.4)
 	_check(button.is_on_cooldown(), "cooldown segue ativo 0.4 s após o disparo")
-	_check(_overlay_matches(button, overlay), "overlay proporcional ao tempo restante")
-	_check(overlay.offset_top > 0.0 and overlay.offset_top < button.size.y,
-		"overlay recua de cima para baixo (topo revelado, base coberta)")
+	_check(_reveal_matches(button, mask), "escurecimento proporcional ao tempo restante")
+	_check(_reveal_frac(mask) > 0.0 and _reveal_frac(mask) < 1.0,
+		"escuro recua de cima para baixo (topo revelado, base coberta)")
+	_check(_mask_aligned(button, overlay, mask),
+		"máscara segue exatamente sobre o botão durante a revelação")
 
 	# 5) Redimensionamento no meio do cooldown mantém a proporção.
 	button.size = Vector2(64.0, 128.0)
 	await process_frame
-	_check(_overlay_matches(button, overlay), "overlay proporcional após redimensionar (64x128)")
+	_check(_reveal_matches(button, mask), "escurecimento proporcional após redimensionar (64x128)")
+	_check(_mask_aligned(button, overlay, mask),
+		"máscara realinhada após redimensionar (64x128)")
 
 	# 6) Ao completar ~2 s o botão volta a aceitar disparos.
 	while button.is_on_cooldown() and Time.get_ticks_msec() - t_shot < TIMEOUT_MS:
@@ -127,7 +149,7 @@ func _run_scenarios(game) -> void:
 	_check(total >= DURATION - 0.2 and total <= DURATION + 1.0,
 		"duração do cooldown ≈ 2 s (medido %.2f s)" % total)
 	_check(not bool(button.disabled), "botão reabilitado após o cooldown")
-	_check(overlay.offset_top >= button.size.y - 0.01, "overlay desapareceu por completo")
+	_check(_reveal_frac(mask) == 1.0, "escuro desapareceu por completo")
 
 	# 7) Controle positivo: clique real aciona e dispara de novo.
 	var ammo1: int = game.ammo_left
@@ -144,7 +166,7 @@ func _run_scenarios(game) -> void:
 	game.call("shoot")
 	_check(not button.is_on_cooldown(), "sem munição: cooldown não inicia")
 	_check(not bool(button.disabled), "sem munição: botão não é bloqueado")
-	_check(overlay.offset_top >= button.size.y - 0.01, "sem munição: overlay continua oculto")
+	_check(_reveal_frac(mask) == 1.0, "sem munição: escuro continua oculto")
 
 	game.ammo_left = 10
 	game.game_over = true
@@ -175,12 +197,34 @@ func _wait_seconds(seconds: float) -> void:
 		await process_frame
 
 
-## Cobertura do overlay tem de ser igual à fração de tempo restante —
-## é o que garante animação e bloqueio sincronizados.
-func _overlay_matches(button, overlay: ColorRect) -> bool:
+## A cobertura aplicada ao shader tem de ser igual à fração de tempo
+## restante — é o que garante animação e bloqueio sincronizados.
+func _reveal_matches(button, mask: TextureRect) -> bool:
 	var ratio := clampf(float(button._cooldown_remaining) / DURATION, 0.0, 1.0)
-	var expected_top := float(button.size.y) * (1.0 - ratio)
-	return absf(float(overlay.offset_top) - expected_top) <= RATIO_TOLERANCE * float(button.size.y)
+	var expected := 1.0 - ratio
+	return absf(_reveal_frac(mask) - expected) <= RATIO_TOLERANCE
+
+
+## Fração do botão que está revelada (sem escuro), lida do shader da
+## máscara. NAN = sem material/shader — qualquer comparação falha.
+func _reveal_frac(mask: TextureRect) -> float:
+	var mat := mask.material as ShaderMaterial
+	if mat == null:
+		return NAN
+	var value: Variant = mat.get_shader_parameter("reveal_frac")
+	if value == null:
+		return NAN
+	return float(value)
+
+
+## A máscara tem de permanecer exatamente sobre o retângulo do botão em
+## qualquer ponto da revelação: a geometria é estática (máscara colada no
+## retângulo inteiro), então o enquadramento do sprite — e portanto a
+## silhueta arredondada que segura o escuro — nunca muda.
+func _mask_aligned(button, overlay: Control, mask: Control) -> bool:
+	var pos_in_button: Vector2 = overlay.position + mask.position
+	return pos_in_button.length() <= 0.01 \
+		and mask.size.distance_to(button.size) <= 0.01
 
 
 ## Simula um clique real (movimento + pressiona + solta) no centro do

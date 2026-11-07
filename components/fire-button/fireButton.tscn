@@ -1,8 +1,14 @@
-[gd_scene format=3 uid="uid://b5hbfx8760rd3"]
+[gd_scene load_steps=6 format=3 uid="uid://b5hbfx8760rd3"]
 
 [ext_resource type="Texture2D" uid="uid://dkuhnlcfndijl" path="res://assets/buttons/fire/activeFireButton.png" id="1_6lvp3"]
 [ext_resource type="Texture2D" uid="uid://c1c3juqifwg4o" path="res://assets/buttons/fire/inactiveFireButton.png" id="2_ar4my"]
 [ext_resource type="Script" uid="uid://bl0uy2in4jkon" path="res://components/fire-button/fire_button.gd" id="3_firbtn"]
+
+[sub_resource type="Shader" id="Shader_cooldown_mask"]
+code = "shader_type canvas_item;\n\nuniform float reveal_frac : hint_range(0.0, 1.0) = 1.0;\n\nvoid fragment() {\n\tif (UV.y < reveal_frac) {\n\t\tCOLOR = vec4(0.0);\n\t}\n}\n"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cooldown_mask"]
+shader = SubResource("Shader_cooldown_mask")
 
 [node name="FireButton" type="TextureButton" unique_id=844494482]
 offset_right = 40.0
@@ -11,7 +17,7 @@ texture_normal = ExtResource("2_ar4my")
 texture_pressed = ExtResource("1_6lvp3")
 script = ExtResource("3_firbtn")
 
-[node name="CooldownOverlay" type="ColorRect" parent="."]
+[node name="CooldownOverlay" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,4 +25,17 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0, 0, 0, 0.6)
+
+[node name="CooldownMask" type="TextureRect" parent="CooldownOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+material = SubResource("ShaderMaterial_cooldown_mask")
+modulate = Color(0, 0, 0, 0.6)
+texture = ExtResource("2_ar4my")
+expand_mode = 1
+stretch_mode = 6
