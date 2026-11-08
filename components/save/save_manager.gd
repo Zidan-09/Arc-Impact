@@ -67,6 +67,18 @@ static func save_progress(level: int, seed: int, path: String = SAVE_PATH) -> bo
 	return ok
 
 
+## Zera o progresso para a fase 1 (botão "Reset" da home). Diferente de
+## `save_progress`, o downgrade aqui é intencional: força a gravação
+## mesmo com progresso maior em disco e regrava sempre, garantindo que o
+## arquivo exista com os valores padrão (fase 1, seed inicial).
+static func reset_progress(path: String = SAVE_PATH) -> bool:
+	var ok := _write_dict(path, {"level": DEFAULT_LEVEL, "seed": DEFAULT_SEED})
+	if ok:
+		_last_written_level = DEFAULT_LEVEL
+		_last_written_seed = DEFAULT_SEED
+	return ok
+
+
 ## Zera o cache em memória (uso em testes).
 static func reset_cache() -> void:
 	_last_written_level = -1

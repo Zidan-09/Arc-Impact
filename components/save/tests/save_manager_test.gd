@@ -23,6 +23,7 @@ func _run() -> void:
 	failures += _check_persistence_across_sessions()
 	failures += _check_invalid_saves()
 	failures += _check_no_redundant_writes()
+	failures += _check_reset()
 	_cleanup()
 	if failures == 0:
 		print("SAVE_MANAGER_TEST: PASS")
@@ -136,5 +137,29 @@ func _check_no_redundant_writes() -> int:
 		return 1
 	if not FileAccess.file_exists(TEST_PATH + ".bak"):
 		printerr("  [write] backup .bak da última gravação boa não existe.")
+		return 1
+	return 0
+
+
+func _check_reset() -> int:
+	_cleanup()
+	SaveManager.load_progress(TEST_PATH) # cria com fase 1
+	SaveManager.save_progress(5, 5, TEST_PATH)
+	if not SaveManager.reset_progress(TEST_PATH):
+		printerr("  [reset] gravação do reset deveria ter acontecido.")
+		return 1
+	var back: Dictionary = SaveManager.load_progress(TEST_PATH)
+	if int(back["level"]) != 1 or int(back["seed"]) != 1:
+		printerr("  [reset] esperado level=1 seed=1, veio %s." % str(back))
+		return 1
+	# Reset não pode ser recusado pela guarda de downgrade nem pular
+	# por "sem mudança": é sempre uma gravação intencional.
+	SaveManager.save_progress(2, 2, TEST_PATH)
+	if not SaveManager.reset_progress(TEST_PATH):
+		printerr("  [reset] reset com progresso maior em disco deveria gravar.")
+		return 1
+	back = SaveManager.load_progress(TEST_PATH)
+	if int(back["level"]) != 1:
+		printerr("  [reset] segundo reset deveria voltar à fase 1, veio %s." % str(back.get("level")))
 		return 1
 	return 0
