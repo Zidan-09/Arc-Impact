@@ -1,6 +1,15 @@
 class_name Shard
 extends RigidBody2D
 
+## Camadas de colisão (autoradas nas cenas glass_shard_*/stone_shard_*):
+## layer 8 = camada 4, EXCLUSIVA dos fragmentos; mask 9 = cenário (bit 1)
+## + shards (bit 4). É o que isola Bullet↔Shards nativamente: a mask 3
+## da bala não enxerga o layer 8 e a mask 9 não enxerga o layer 2 da
+## bala (colisão corpo-corpo é OR — precisa falhar nas duas direções),
+## enquanto fragmento↔cenário (bit 1 em ambos) e fragmento↔fragmento
+## (bit 4) seguem colidindo exatamente como antes. Não mudar sem ler o
+## cabeçalho de bullet.gd.
+
 @export var lifetime: float = 3.0
 
 

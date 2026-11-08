@@ -153,10 +153,14 @@ func _case_structure() -> void:
 		"portal (%.1f) fica dentro do campo (%.1f)" % [_absorb_r, _field_r])
 
 	var probe: Bullet = BULLET_SCENE.instantiate() as Bullet
-	_check(probe.collision_layer == 3,
-		"bala layer 3 = mundo + 'pode ser atraído', veio %d" % probe.collision_layer)
-	_check(probe.collision_mask == 1,
-		"bala mask 1 inalterada (colisões existentes intactas), veio %d" % probe.collision_mask)
+	# Camadas pós-isolamento Bullet↔Shards: layer 2 = só "pode ser
+	# atraído" (a bala saiu da camada 1 "mundo" para o mask dos shards
+	# deixar de enxergá-la); mask 3 = mundo(1) + balas(2), o MESMO
+	# conjunto visível do antigo mask 1 com as balas na camada 1+2.
+	_check(probe.collision_layer == 2,
+		"bala layer 2 = só 'pode ser atraído' (bit 'mundo' liberado p/ shards), veio %d" % probe.collision_layer)
+	_check(probe.collision_mask == 3,
+		"bala mask 3 = mundo+balas (mesmo conjunto do antigo mask 1), veio %d" % probe.collision_mask)
 	probe.free()
 
 

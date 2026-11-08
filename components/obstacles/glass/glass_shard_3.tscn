@@ -11,6 +11,8 @@ bounce = 0.3
 size = Vector2(17.22, 35.4)
 
 [node name="GlassShard3" type="RigidBody2D"]
+collision_layer = 8
+collision_mask = 9
 mass = 0.2
 physics_material_override = SubResource("PhysicsMaterial_shard")
 script = ExtResource("1_shard")

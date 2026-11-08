@@ -4,10 +4,23 @@ extends RigidBody2D
 ## - Corpo: CircleShape2D raio 57.717 (valor-base em `bullet.tscn`;
 ##   x escala canônica 0.16 do canhão = ~9.2px, o calibre calibrado;
 ##   `apply_cannon_scale()` o reescala por instância sem mutar o recurso).
-## - collision_layer/mask: 3/1. O mask 1 segue igual (colide fisicamente
-##   com StaticBody2D: metal/pedra, paredes do cano, floor); o layer 2 é
-##   o bit "pode ser atraído", lido só pelo `collision_mask` das Areas2D
-##   do Target. O `Target` não tem mais shape — a bala o atravessa.
+## - collision_layer/mask: 2/3. O mask 3 = mundo (bit 1, igual ao antigo
+##   mask 1) + balas (bit 2): é a mask que os rays/CCD usam e mantém o
+##   MESMO conjunto visível de antes (as balas estavam na camada 1+2 e
+##   eram enxergadas pelo bit 1 — agora estão só na 2, e o bit 2 do mask
+##   recupera a colisão bala↔bala). O layer 2 é o bit "pode ser atraído",
+##   lido só pelo `collision_mask` das Areas2D do Target. A bala SAIU da
+##   camada 1 ("mundo") para o isolamento Bullet↔Shards: os shards estão
+##   na camada 4 (layer 8) com mask 1+4, então o mask 1 deles não enxerga
+##   mais a bala (que saiu da camada 1) e o mask 3 da bala não enxerga o
+##   layer 8. A colisão corpo-corpo do motor é OR (basta UMA direção
+##   casar): bala↔mundo segue intocado pela direção "mask da bala & layer
+##   do mundo", e bala↔shard morre nas DUAS direções. As Areas2D com
+##   mask 1 que detectavam a bala pela camada 1 — BulletReturnDetector
+##   (cannon.tscn) e HitBox do vidro (glassObstacle.tscn) — passaram a
+##   mask 3 (bit 2 da bala), pois a detecção de Area2D é direcional (só
+##   area.mask & body.layer). O `Target` não tem mais shape — a bala o
+##   atravessa.
 ## - Lógica de gameplay (`Obstacle.hit()`) roteada AQUI; o alvo é
 ##   absorvido fora daqui, pelo `body_entered` da `AbsorptionArea`:
 ##   `body_entered` do corpo + varredura `intersect_ray` do segmento

@@ -56,6 +56,7 @@ position = Vector2(31, -19)
 shape = SubResource("SegmentShape2D_jhbxb")
 
 [node name="BulletReturnDetector" type="Area2D" parent="BarrelPivot" unique_id=1575421084]
+collision_mask = 3
 script = ExtResource("5_k4uss")
 
 [node name="Detector" type="CollisionShape2D" parent="BarrelPivot/BulletReturnDetector" unique_id=1101689337]
