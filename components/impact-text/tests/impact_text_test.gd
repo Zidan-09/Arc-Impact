@@ -4,6 +4,9 @@ extends SceneTree
 ## Cobre os critérios de aceitação:
 ##  - todo impacto válido (stone, metal, vidro, chão) nasce 1 texto,
 ##    exatamente 1x, perto do ponto do impacto;
+##  - um disparo que atinge 2 elementos ao mesmo tempo (encontro de
+##    2 obstáculos na junção) nasce 1 única onomatopeia — o hit() de
+##    cada elemento continua normal (dedup por frame na bala);
 ##  - Target e Shards NUNCA geram onomatopeia (guarda do roteador +
 ##    passagem real pela absorção do alvo);
 ##  - o caminho próprio do vidro (sinal do HitBox) e o raio da bala
@@ -241,8 +244,10 @@ func _case_floor() -> void:
 	await _settle(10)
 
 
-## Junção pedra+pedra: dois elementos válidos no mesmo contato — cada
-## um com seu texto, e o limite de 3 nunca estoura.
+## Junção pedra+pedra: dois elementos válidos no mesmo contato do
+## MESMO frame — hit() acontece nas duas pedras, mas nasce UMA única
+## onomatopeia (dedup por frame de física na bala), e o limite de 3
+## nunca estoura.
 func _case_seam_two_impacts() -> void:
 	await _begin_case()
 	var left := _make_counting_stone(Vector2(-CELL * 0.5, 0.0), Vector2(TILE, TILE))
@@ -261,8 +266,8 @@ func _case_seam_two_impacts() -> void:
 	_check(left.hit_count == 1 and right.hit_count == 1,
 		"junção: 1 hit por pedra (esq=%d dir=%d)" % [left.hit_count, right.hit_count])
 	var texts := _texts()
-	_check(texts.size() == 2,
-		"junção: 1 onomatopeia por elemento, no limite (veio %d)" % texts.size())
+	_check(texts.size() == 1,
+		"junção: 1 única onomatopeia para os 2 elementos simultâneos (veio %d)" % texts.size())
 	await _settle(20)
 
 

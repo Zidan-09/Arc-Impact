@@ -111,6 +111,11 @@ const SOLID_PROBE_DEPTH := 0.2
 # Instâncias já roteadas (corpo e/ou Area2D do vidro).
 var _notified_ids := {}
 
+# Frame de física do último texto criado por ESTA bala (dedup por
+# evento: um disparo que atinge 2 elementos ao mesmo tempo — encontro
+# de 2 obstáculos na junção — gera UMA onomatopeia, não duas).
+var _last_impact_text_frame := -1
+
 var trail: BulletTrail
 
 
@@ -520,7 +525,10 @@ func _route_contact_hits(contact: Dictionary) -> void:
 ## marcam o id em `_notified_ids` antes de chamar; o ramo de área
 ## confere o id do PAI, que é o elemento real do vidro), então cada
 ## elemento gera NO MÁXIMO UM texto — ricochete em rajada ou sinais
-## duplicados não criam segunda onomatopeia. Shards e o Target ficam
+## duplicados não criam segunda onomatopeia. Além disso, um disparo
+## que comunica 2 elementos no MESMO frame de física (encontro de 2
+## obstáculos na junção) nasce UMA única onomatopeia: o dedup por
+## frame mora em `_spawn_impact_text`. Shards e o Target ficam
 ## de fora por requisito (ambos já eram ignorados pelo roteamento: o
 ## shard tem isolamento de camada e o Target não tem shape — a guarda
 ## explícita documenta e blindas a regra).
@@ -581,10 +589,19 @@ func route_external_hit(element: Node, pos: Vector2) -> void:
 
 ## Ponto único de criação da onomatopeia: delega ao gerenciador
 ## central (limite rígido de 3 simultâneas, ver impact_text_manager.gd).
-## Sem gerenciador na cena (ex.: tests/guides), é no-op.
+## Dedup por DISPARO e FRAME DE FÍSICA: um tiro que comunica 2
+## elementos no mesmo instante (encontro de 2 obstáculos na junção,
+## contato CCD com bodies múltiplos) nasce UMA única onomatopeia — a
+## gameplay (hit() de cada elemento) não muda. Frames distintos =
+## impactos distintos = textos próprios (o limite de 3 continua
+## valendo). Sem gerenciador na cena (ex.: tests/guides), é no-op.
 func _spawn_impact_text(pos: Vector2) -> void:
+	var frame := Engine.get_physics_frames()
+	if frame == _last_impact_text_frame:
+		return
 	var manager := ImpactTextManager.current
 	if manager != null:
+		_last_impact_text_frame = frame
 		manager.spawn(pos)
 
 

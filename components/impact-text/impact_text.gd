@@ -24,16 +24,16 @@ extends Node2D
 ## Fonte arcade quadrada (SIL OFL 1.1 — assets/fonts/OFL.txt).
 const FONT := preload("res://assets/fonts/PressStart2P-Regular.ttf")
 
-## Identidade/medidas em px de mundo: font_size 40 => "POW!" ocupa
-## 160x40 — grande o bastante para ser percebida na ação e pequena perto
-## de uma célula de 128 px. A caixa do Label é fixa e centralizada na
+## Identidade/medidas em px de mundo: font_size 32 => "POW!" ocupa
+## 128x32 — destaque na ação sem dominar a tela (célula de 128 px).
+## A caixa do Label é fixa e centralizada na
 ## origem do nó, para escala/rotação da raiz girarem em volta do ponto
 ## de impacto (pivot natural do Node2D, sem pivot de Control).
-const FONT_SIZE := 40
-const LABEL_SIZE := Vector2(280.0, 72.0)
+const FONT_SIZE := 32
+const LABEL_SIZE := Vector2(224.0, 58.0)
 const TEXT_COLOR := Color(1.0, 1.0, 1.0, 1.0)
 const OUTLINE_COLOR := Color(0.0, 0.0, 0.0, 0.85)
-const OUTLINE_SIZE := 7
+const OUTLINE_SIZE := 6
 
 ## Tempos da animação (s). Total curto (LIFETIME): leitura rápida sem
 ## poluir a tela nem atrapalhar a jogabilidade.
