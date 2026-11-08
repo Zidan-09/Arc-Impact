@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://k41s4wr5vu17" path="res://components/camera/game_camera.gd" id="4_camera"]
 [ext_resource type="Texture2D" uid="uid://cswwmgv3r1fvb" path="res://assets/floor/floor.png" id="5_gfkhe"]
 [ext_resource type="PackedScene" uid="uid://d0mom6cj7sqik" path="res://components/background/Background.tscn" id="6_bg"]
+[ext_resource type="Script" uid="uid://c1a8jgsvkxlvi" path="res://components/impact-text/impact_text_manager.gd" id="5_impact"]
 
 [node name="Game" type="Control" unique_id=1263011264]
 layout_mode = 3
@@ -41,6 +42,9 @@ base_shot_speed = 2000.0
 position = Vector2(640, 360)
 editor_draw_limits = true
 script = ExtResource("4_camera")
+
+[node name="ImpactTexts" type="Node2D" parent="WorldArea/World" unique_id=1974010235]
+script = ExtResource("5_impact")
 
 [node name="BackgroundLayer" type="CanvasLayer" parent="." unique_id=771234569]
 layer = -1

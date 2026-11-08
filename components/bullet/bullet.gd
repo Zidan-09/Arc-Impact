@@ -514,25 +514,78 @@ func _route_contact_hits(contact: Dictionary) -> void:
 
 
 ## Roteador único de gameplay. Retorna true se houve hit de gameplay.
+## É TAMBÉM o ponto único de nascimento da onomatopeia de impacto
+## (feature: Sistema de Onomatopeias nos Impactos): todo contato
+## comunicado por aqui já passou pelo dedup por instância (os callers
+## marcam o id em `_notified_ids` antes de chamar; o ramo de área
+## confere o id do PAI, que é o elemento real do vidro), então cada
+## elemento gera NO MÁXIMO UM texto — ricochete em rajada ou sinais
+## duplicados não criam segunda onomatopeia. Shards e o Target ficam
+## de fora por requisito (ambos já eram ignorados pelo roteamento: o
+## shard tem isolamento de camada e o Target não tem shape — a guarda
+## explícita documenta e blindas a regra).
 func _route_hit(node: Node, pos: Vector2) -> bool:
 	if is_broken or not is_instance_valid(self):
 		return false
 	if node is Shard:
 		return false
+	if node is Target:
+		return false
 	if node.has_method("hit"):
 		print("[dbg-route] has_hit node=%s pos=%s" % [node.name, pos])
+		_spawn_impact_text(pos)
 		node.call("hit", self, pos)
 		return true
 	if node is Area2D:
 		# HitBox do vidro: o Area2D não tem hit(), o pai tem.
 		var parent := node.get_parent()
 		if parent != null and parent.has_method("hit"):
+			var parent_id := parent.get_instance_id()
+			# Dedup do ELEMENTO (não da área): se o caminho próprio do
+			# vidro (sinal do HitBox -> route_external_hit) já processou
+			# este impacto, não roteia de novo — nem hit() duplicado,
+			# nem segundo texto.
+			if _notified_ids.has(parent_id):
+				return false
+			_notified_ids[parent_id] = true
 			print("[dbg-route] area_parent node=%s parent=%s pos=%s" % [
 				node.name, parent.name, pos])
-			_notified_ids[parent.get_instance_id()] = true
+			_spawn_impact_text(pos)
 			parent.call("hit", self, pos)
 			return true
+		return false
+	if node is StaticBody2D:
+		# Chão/paredes do cenário: sem hit() (a física resolve o
+		# ricochete, como sempre), mas é impacto válido — nasce a
+		# onomatopeia. Balas (RigidBody2D) e shards ficam fora.
+		_spawn_impact_text(pos)
 	return false
+
+
+## Roteia um impacto detectado FORA dos caminhos internos da bala — o
+## sinal próprio do HitBox do vidro (glass_obstacle.gd), que em
+## contatos rasantes pode vencer a corrida do raio preditivo. Usa o
+## MESMO dedup do roteador (`_notified_ids`, chave = instância do
+## elemento): se a bala já comunicou o elemento, é no-op. Garante 1
+## hit() e 1 onomatopeia por impacto, independentemente de qual caminho
+## venceu. Chamado pela própria bala impactada.
+func route_external_hit(element: Node, pos: Vector2) -> void:
+	if is_broken or not is_instance_valid(self) or not is_instance_valid(element):
+		return
+	var id := element.get_instance_id()
+	if _notified_ids.has(id):
+		return
+	_notified_ids[id] = true
+	_route_hit(element, pos)
+
+
+## Ponto único de criação da onomatopeia: delega ao gerenciador
+## central (limite rígido de 3 simultâneas, ver impact_text_manager.gd).
+## Sem gerenciador na cena (ex.: tests/guides), é no-op.
+func _spawn_impact_text(pos: Vector2) -> void:
+	var manager := ImpactTextManager.current
+	if manager != null:
+		manager.spawn(pos)
 
 
 func _on_body_entered(body: Node) -> void:

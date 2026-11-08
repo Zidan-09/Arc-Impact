@@ -3,10 +3,11 @@ extends Control
 const END_DELAY := 8.0
 const DEFAULT_SEED := 1
 
-## Grupos transitórios da fase: projéteis, rastros e shards. Nenhum pode
-## sobreviver à troca de fase — uma bala/shard da fase antiga continuaria
-## na árvore e na física, interagindo com a nova fase.
-const TRANSIENT_GROUPS: Array[String] = ["bullets", "bullet_trails", "shards"]
+## Grupos transitórios da fase: projéteis, rastros, shards e onomatopeias
+## de impacto. Nenhum pode sobreviver à troca de fase — uma bala/shard
+## da fase antiga continuaria na árvore e na física, interagindo com a
+## nova fase, e um texto solto flutuaria sobre a nova fase.
+const TRANSIENT_GROUPS: Array[String] = ["bullets", "bullet_trails", "shards", "impact_texts"]
 
 @onready var world_area: Control = $WorldArea
 @onready var world: Node2D = $WorldArea/World

@@ -45,7 +45,14 @@ func _on_hit_box_body_entered(body: Node2D) -> void:
 		return
 	if body is Shard:
 		return
-	if body is RigidBody2D:
+	if body is Bullet:
+		# Caminho próprio do vidro (sinal do HitBox): em contatos
+		# rasantes ele pode vencer a corrida do raio preditivo da bala.
+		# Rotear pela bala compartilha o MESMO dedup do roteador único —
+		# 1 hit() e 1 onomatopeia por impacto, sem duplicatas nem
+		# textos perdidos, seja qual caminho vencer.
+		(body as Bullet).route_external_hit(self, body.global_position)
+	elif body is RigidBody2D:
 		hit(body, body.global_position)
 
 
