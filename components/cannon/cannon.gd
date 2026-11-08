@@ -136,14 +136,23 @@ func shoot(power: float = 1.0) -> void:
 
 	var bullet := bullet_scene.instantiate() as Bullet
 
-	get_spawn_parent().add_child(bullet)
-	
 	bullet.add_to_group("bullets")
 
 	bullet.apply_cannon_scale(global_scale)
 
+	# Posição LOCAL calculada ANTES do add_child — sem teleporte.
+	# Godot 4.x: em RigidBody2D com CCD, posicionar o corpo (nó) APÓS
+	# ele entrar na árvore faz o servidor registrar a pose antiga do
+	# parent e, no primeiro passo, tratar o salto até o muzzle como
+	# movimento varrido pelo CCD: o cast passa pelas paredes do cano
+	# (`BarrelPivot/walls`) e `_on_body_entered(walls)` roteia um
+	# impacto fantasma (texto de impacto no instante do disparo).
+	# Com a posição já certa no add_child, o corpo nasce no servidor
+	# direto no muzzle e o CCD só varre o voo real.
+	var spawn_parent := get_spawn_parent()
 	var muzzle_state := get_muzzle_state()
-	bullet.global_position = muzzle_state["origin"]
+	bullet.position = spawn_parent.to_local(muzzle_state["origin"])
+	spawn_parent.add_child(bullet)
 
 	var direction: Vector2 = muzzle_state["direction"]
 	bullet.linear_velocity = direction * base_shot_speed * clampf(power, 0.0, 1.0)

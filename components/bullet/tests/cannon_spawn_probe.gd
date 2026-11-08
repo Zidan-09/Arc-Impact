@@ -41,8 +41,8 @@ func _probe_angle(angle: float, keep_walls: bool) -> void:
 	root.add_child(container)
 	cannon.bullet_container = container
 
-	if not keep_walls:
-		var walls := cannon.get_node("BarrelPivot/walls") as Node
+	var walls := cannon.get_node_or_null("BarrelPivot/walls") as StaticBody2D
+	if walls != null:
 		walls.queue_free()
 		await physics_frame
 
