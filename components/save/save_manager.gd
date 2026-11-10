@@ -13,6 +13,8 @@ class_name SaveManager extends RefCounted
 ## - A fase é sempre um inteiro positivo.
 ## - Escrita atômica (temp + rename, com `.bak` da última gravação boa)
 ##   e sem escritas desnecessárias (só grava quando há mudança real).
+## - O save guarda o progresso MÁXIMO: jogar/vencer uma fase anterior
+##   (tela Levels) nunca regride o valor persistido.
 
 const SAVE_PATH := "user://save.json"
 const SAVE_VERSION := 1
@@ -43,28 +45,45 @@ static func load_progress(path: String = SAVE_PATH) -> Dictionary:
 	return result
 
 
-## Persiste a próxima fase/seed. Só escreve quando há mudança real.
-## Retorna true quando gravou, false quando pulou (sem mudança) ou
-## quando a gravação falhou.
+## Persiste a próxima fase/seed. Só escreve quando há mudança real e
+## NUNCA regride o progresso máximo já persistido (replay de fase
+## anterior, via tela Levels, não apaga nem sobrescreve o avanço).
+## Retorna true quando gravou, false quando pulou (sem mudança, fase
+## inválida ou downgrade) ou quando a gravação falhou.
 static func save_progress(level: int, seed: int, path: String = SAVE_PATH) -> bool:
 	var clean_level := _sanitize_level(level)
 	var clean_seed := _sanitize_seed(seed)
-	if clean_level == _last_written_level and clean_seed == _last_written_seed:
+	# Fase inválida (não inteira/positiva) nunca é persistida.
+	if clean_level < DEFAULT_LEVEL:
 		return false
-	# Evita downgrade acidental: se o disco já tem progresso maior,
-	# não sobrescreve com um valor menor.
+	# Sem cache em memória o disco é a referência de monotonicidade.
 	if _last_written_level < 0:
 		var on_disk := _read_file(path)
 		if not on_disk.is_empty():
 			_last_written_level = int(on_disk["level"])
 			_last_written_seed = int(on_disk["seed"])
-			if clean_level < _last_written_level:
-				return false
+	if clean_level == _last_written_level and clean_seed == _last_written_seed:
+		return false
+	# Evita downgrade: se o disco/cache já tem progresso maior, um valor
+	# menor (vitória numa fase antiga) é descartado.
+	if clean_level < _last_written_level:
+		return false
 	var ok := _write_dict(path, {"level": clean_level, "seed": clean_seed})
 	if ok:
 		_last_written_level = clean_level
 		_last_written_seed = clean_seed
 	return ok
+
+
+## Seed da fase `level` seguindo a regra existente de progressão: a
+## seed avança +1 a cada fase (ver `game.gd`: `load_level(current_seed
+## + 1, level_number + 1)`). O par `(base_level, base_seed)` vem do
+## save e funciona como âncora: para a fase máxima ele devolve
+## exatamente a seed persistida (reprodução determinística da fase ao
+## voltar por ela na tela Levels) e para as fases anteriores estende a
+## mesma regra +1.
+static func seed_for_level(level: int, base_level: int, base_seed: int) -> int:
+	return base_seed + (level - base_level)
 
 
 ## Zera o progresso para a fase 1 (botão "Reset" da home). Diferente de

@@ -9,6 +9,17 @@ const DEFAULT_SEED := 1
 ## nova fase, e um texto solto flutuaria sobre a nova fase.
 const TRANSIENT_GROUPS: Array[String] = ["bullets", "bullet_trails", "shards", "impact_texts"]
 
+## Fase a iniciar no próximo `_ready` (0 = usar o progresso salvo).
+## Definida pela tela Levels antes de trocar de cena; consumida (zerada)
+## no `_ready`. Estático de propósito: o script fica em cache no
+## ResourceLoader, então o valor sobrevive à troca de cena sem criar um
+## mecanismo de estado paralelo.
+static var requested_level := 0
+
+## Cena para a qual o popup "Home" retorna. Permite que quem entrou no
+## jogo pela tela Levels volte para ela, preservando a navegação.
+static var return_scene := "res://screens/home.tscn"
+
 @onready var world_area: Control = $WorldArea
 @onready var world: Node2D = $WorldArea/World
 @onready var level_node: Node2D = $WorldArea/World/Level
@@ -67,6 +78,15 @@ func _ready() -> void:
 	var progress: Dictionary = SaveManager.load_progress()
 	level_number = int(progress["level"])
 	current_seed = int(progress["seed"])
+	# Seleção vinda da tela Levels: inicia exatamente a fase escolhida,
+	# com a seed derivada da mesma regra de progressão (+1 por fase) e
+	# ancorada no save — mesma (seed, versão, fase) => mesma fase.
+	if requested_level > 0:
+		level_number = requested_level
+		current_seed = SaveManager.seed_for_level(
+			requested_level, int(progress["level"]), int(progress["seed"])
+		)
+		requested_level = 0
 	load_level(current_seed, level_number)
 
 
@@ -176,7 +196,9 @@ func _on_target_hit(_body: Bullet) -> void:
 	game_over = true
 	_awaiting_end = false
 	# Persiste imediatamente na vitória (antes de qualquer transição):
-	# fechar o jogo aqui não pode perder o avanço.
+	# fechar o jogo aqui não pode perder o avanço. Vitória numa fase
+	# antiga (replay pela tela Levels) vira no-op: o SaveManager nunca
+	# regride o progresso máximo já gravado.
 	SaveManager.save_progress(level_number + 1, current_seed + 1)
 	victory_popup.show_popup(0, ammo_left)
 
@@ -194,7 +216,9 @@ func _on_power_changed(value: float) -> void:
 func _on_popup_home() -> void:
 	_is_paused = false
 	get_tree().paused = false
-	get_tree().change_scene_to_file("res://screens/home.tscn")
+	# Retorno à tela de origem (home ou Levels, guardado em `return_scene`).
+	# Nada aqui escreve no save: o progresso permanece intacto.
+	get_tree().change_scene_to_file(return_scene)
 
 
 func _on_popup_retry() -> void:
@@ -209,7 +233,8 @@ func _on_popup_next() -> void:
 		return
 	# Redundância intencional: a vitória já salvou, mas a transição
 	# garante o progresso mesmo que o sinal de vitória tenha sido
-	# perdido. É no-op quando nada mudou.
+	# perdido. É no-op quando nada mudou ou quando a fase é anterior ao
+	# progresso máximo (replay: o save só aceita avanços).
 	SaveManager.save_progress(level_number + 1, current_seed + 1)
 	load_level(current_seed + 1, level_number + 1)
 

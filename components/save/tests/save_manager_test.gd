@@ -23,6 +23,8 @@ func _run() -> void:
 	failures += _check_persistence_across_sessions()
 	failures += _check_invalid_saves()
 	failures += _check_no_redundant_writes()
+	failures += _check_no_downgrade()
+	failures += _check_seed_for_level()
 	failures += _check_reset()
 	_cleanup()
 	if failures == 0:
@@ -35,7 +37,7 @@ func _run() -> void:
 func _cleanup() -> void:
 	SaveManager.reset_cache()
 	for suffix in ["", ".tmp", ".bak"]:
-		var p := TEST_PATH + suffix
+		var p: String = TEST_PATH + String(suffix)
 		if FileAccess.file_exists(p):
 			DirAccess.remove_absolute(p)
 
@@ -137,6 +139,61 @@ func _check_no_redundant_writes() -> int:
 		return 1
 	if not FileAccess.file_exists(TEST_PATH + ".bak"):
 		printerr("  [write] backup .bak da última gravação boa não existe.")
+		return 1
+	return 0
+
+
+## Replay de fase antiga (nível menor que o máximo) nunca regride o
+## progresso persistido; fase inválida nunca é gravada.
+func _check_no_downgrade() -> int:
+	_cleanup()
+	SaveManager.load_progress(TEST_PATH) # cria com fase 1
+	SaveManager.save_progress(10, 10, TEST_PATH)
+	# Vitória na fase 3 (replay via tela Levels): descartada.
+	if SaveManager.save_progress(4, 4, TEST_PATH):
+		printerr("  [downgrade] gravação de nível menor que o máximo deveria ser pulada.")
+		return 1
+	var back: Dictionary = SaveManager.load_progress(TEST_PATH)
+	if int(back["level"]) != 10 or int(back["seed"]) != 10:
+		printerr("  [downgrade] progresso regrediu: esperado 10/10, veio %s." % str(back))
+		return 1
+	# Mesmo após limpar o cache (nova sessão), o disco ancora o valor.
+	SaveManager.reset_cache()
+	if SaveManager.save_progress(5, 5, TEST_PATH):
+		printerr("  [downgrade] após reset_cache a gravação menor ainda passou.")
+		return 1
+	back = SaveManager.load_progress(TEST_PATH)
+	if int(back["level"]) != 10:
+		printerr("  [downgrade] segundo downgrade alterou o save: %s." % str(back))
+		return 1
+	# Fase inválida nunca é persistida.
+	if SaveManager.save_progress(0, 1, TEST_PATH) or SaveManager.save_progress(-3, 1, TEST_PATH):
+		printerr("  [downgrade] fase inválida (<=0) não deveria ser gravada.")
+		return 1
+	# Avanço legítimo continua gravando normalmente.
+	if not SaveManager.save_progress(11, 11, TEST_PATH):
+		printerr("  [downgrade] avanço real (10 -> 11) deveria gravar.")
+		return 1
+	return 0
+
+
+## Seed de fase replay: regra +1 por fase ancorada no par do save —
+## fase máxima devolve exatamente a seed persistida.
+func _check_seed_for_level() -> int:
+	# Save realista: fase 10 / seed 10.
+	if SaveManager.seed_for_level(10, 10, 10) != 10:
+		printerr("  [seed] fase máxima deveria devolver a seed do save.")
+		return 1
+	if SaveManager.seed_for_level(3, 10, 10) != 3:
+		printerr("  [seed] fase 3 com âncora 10/10 deveria ser 3, veio %d." % SaveManager.seed_for_level(3, 10, 10))
+		return 1
+	if SaveManager.seed_for_level(1, 1, 1) != 1:
+		printerr("  [seed] fase 1 com âncora 1/1 deveria ser 1.")
+		return 1
+	# Âncora fora de sincronia (save antigo com seed != level) mantém a
+	# mesma regra de progressão relativa à âncora.
+	if SaveManager.seed_for_level(7, 5, 100) != 102:
+		printerr("  [seed] âncora 5/100 na fase 7 deveria ser 102.")
 		return 1
 	return 0
 

@@ -3,6 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://rrnqcx88qao5" path="res://assets/background/background.jpg" id="1_xi7s7"]
 [ext_resource type="PackedScene" uid="uid://d1u475kwrl2io" path="res://components/play-button/PlayButton.tscn" id="2_xtd6d"]
 [ext_resource type="PackedScene" path="res://components/reset-button/ResetButton.tscn" id="3_rstbtn"]
+[ext_resource type="PackedScene" path="res://components/levels-button/LevelsButton.tscn" id="4_lvlbtn"]
 
 [node name="Home" type="Control" unique_id=1216157525]
 layout_mode = 3
@@ -27,4 +28,7 @@ stretch_mode = 6
 layout_mode = 1
 
 [node name="Reset" parent="." instance=ExtResource("3_rstbtn")]
+layout_mode = 1
+
+[node name="Levels" parent="." instance=ExtResource("4_lvlbtn")]
 layout_mode = 1

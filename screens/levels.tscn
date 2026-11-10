@@ -1,0 +1,122 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://screens/levels.gd" id="1_levels"]
+[ext_resource type="PackedScene" uid="uid://d0mom6cj7sqik" path="res://components/background/Background.tscn" id="2_bg"]
+[ext_resource type="PackedScene" path="res://components/level-map/LevelMap.tscn" id="3_map"]
+[ext_resource type="Texture2D" uid="uid://bwc6xl7wswm5i" path="res://assets/buttons/game-popup/inactive_home.png" id="4_home"]
+[ext_resource type="Texture2D" uid="uid://du6g32oa56xkt" path="res://assets/buttons/game-popup/active_home.png" id="5_home_active"]
+
+[node name="Levels" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_levels")
+
+[node name="Background" parent="." instance=ExtResource("2_bg")]
+layout_mode = 1
+
+[node name="Header" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 108.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="Back" type="HBoxContainer" parent="Header"]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 18.0
+offset_top = 26.0
+offset_right = 240.0
+offset_bottom = 74.0
+theme_override_constants/separation = 10
+mouse_filter = 2
+
+[node name="Home" type="TextureButton" parent="Header/Back"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+mouse_default_cursor_shape = 1
+texture_normal = ExtResource("4_home")
+texture_pressed = ExtResource("5_home_active")
+ignore_texture_size = true
+stretch_mode = 5
+tooltip_text = "Voltar para a home"
+
+[node name="BackLabel" type="Label" parent="Header/Back"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_colors/font_color = Color(0.95, 0.9, 1, 0.75)
+theme_override_font_sizes/font_size = 14
+text = "VOLTAR"
+vertical_alignment = 1
+
+[node name="Title" type="Label" parent="Header"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 12.0
+offset_bottom = 64.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.133, 0.827, 0.933, 1)
+theme_override_colors/font_shadow_color = Color(0.851, 0.275, 0.937, 0.9)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 0
+theme_override_font_sizes/font_size = 40
+text = "FASES"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Header"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 72.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.95, 0.9, 1, 0.75)
+theme_override_font_sizes/font_size = 16
+text = "Progresso: fase 1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MapArea" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 108.0
+grow_horizontal = 2
+grow_vertical = 2
+clip_contents = true
+mouse_filter = 2
+
+[node name="LevelMap" parent="MapArea" instance=ExtResource("3_map")]
+layout_mode = 1
+
+[node name="Hint" type="Label" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -260.0
+offset_top = -66.0
+offset_right = 260.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.961, 0.62, 0.043, 1)
+theme_override_colors/font_shadow_color = Color(0.02, 0.01, 0.05, 0.9)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
