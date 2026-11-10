@@ -41,7 +41,7 @@ focus_neighbor_top = NodePath("../Reset")
 focus_neighbor_bottom = NodePath("../Levels")
 
 [node name="Levels" parent="Menu/VBox" instance=ExtResource("4_lvlbtn")]
-custom_minimum_size = Vector2(200, 100)
+custom_minimum_size = Vector2(242, 100)
 layout_mode = 2
 focus_neighbor_top = NodePath("../Play")
 focus_neighbor_bottom = NodePath("../Reset")
