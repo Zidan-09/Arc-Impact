@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://screens/levels.gd" id="1_levels"]
-[ext_resource type="PackedScene" uid="uid://d0mom6cj7sqik" path="res://components/background/Background.tscn" id="2_bg"]
+[ext_resource type="PackedScene" path="res://components/background/levels/Background.tscn" id="2_bg"]
 [ext_resource type="PackedScene" path="res://components/level-map/LevelMap.tscn" id="3_map"]
 [ext_resource type="Texture2D" uid="uid://bwc6xl7wswm5i" path="res://assets/buttons/game-popup/inactive_home.png" id="4_home"]
 [ext_resource type="Texture2D" uid="uid://du6g32oa56xkt" path="res://assets/buttons/game-popup/active_home.png" id="5_home_active"]
