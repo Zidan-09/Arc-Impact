@@ -1,4 +1,4 @@
-extends Button
+extends TextureButton
 
 ## Botão "Fases" da home: abre o mapa de progresso (tela Levels).
 ## Não toca no save — apenas troca de cena; quem lê o progresso é a

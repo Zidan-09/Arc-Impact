@@ -9,15 +9,24 @@ extends Control
 
 ## Amostras por trecho da curva (bezier quadrática).
 const SEGMENTS := 10
-const PATH_WIDTH := 4.0
-const GLOW_WIDTH := 13.0
+## Espessuras da "caneta neon": base escura (separa do background),
+## halo largo, halo próximo e núcleo sólido.
+const PATH_WIDTH := 5.0
+const GLOW_WIDTH := 22.0
+const GLOW_IN_WIDTH := 11.0
+const CASING_WIDTH := 16.0
 ## Amplitude da curvatura leve de cada trecho.
 const SAG_AMP := 13.0
 
-const TRAVELED_COLOR := Color(0.133, 0.827, 0.933, 0.9)
-const TRAVELED_GLOW := Color(0.133, 0.827, 0.933, 0.14)
-const LOCKED_COLOR := Color(0.392, 0.455, 0.545, 0.5)
-const LOCKED_GLOW := Color(0.392, 0.455, 0.545, 0.1)
+const TRAVELED_COLOR := Color(0.133, 0.827, 0.933, 0.95)
+const TRAVELED_GLOW := Color(0.133, 0.827, 0.933, 0.1)
+const TRAVELED_GLOW_IN := Color(0.133, 0.827, 0.933, 0.24)
+const LOCKED_COLOR := Color(0.45, 0.52, 0.63, 0.8)
+const LOCKED_GLOW := Color(0.45, 0.52, 0.63, 0.06)
+const LOCKED_GLOW_IN := Color(0.45, 0.52, 0.63, 0.14)
+## Base escura por baixo do caminho: contorno de separação contra o
+## fundo neon, sem trocar a imagem.
+const CASING_COLOR := Color(0.02, 0.02, 0.06, 0.72)
 
 ## Fase mais alta já desbloqueada: determina a cor de cada trecho
 ## (percorrido até lá = ciano, resto = cinza).
@@ -44,8 +53,12 @@ func _draw() -> void:
 		var traveled := _first_level + i + 1 <= frontier_level
 		var color := TRAVELED_COLOR if traveled else LOCKED_COLOR
 		var glow := TRAVELED_GLOW if traveled else LOCKED_GLOW
+		var glow_in := TRAVELED_GLOW_IN if traveled else LOCKED_GLOW_IN
 		var curve := _curve(_points[i], _points[i + 1], _sag_for(_first_level + i))
+		# Ordem: base escura (separa do background) → halo → núcleo.
+		draw_polyline(curve, CASING_COLOR, CASING_WIDTH, true)
 		draw_polyline(curve, glow, GLOW_WIDTH, true)
+		draw_polyline(curve, glow_in, GLOW_IN_WIDTH, true)
 		draw_polyline(curve, color, PATH_WIDTH, true)
 
 

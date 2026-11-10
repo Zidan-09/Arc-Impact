@@ -21,6 +21,8 @@ layout_mode = 1
 
 [node name="Reset" parent="." instance=ExtResource("3_rstbtn")]
 layout_mode = 1
+offset_top = 20.0
 
 [node name="Levels" parent="." instance=ExtResource("4_lvlbtn")]
 layout_mode = 1
+offset_top = 130.0

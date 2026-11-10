@@ -24,16 +24,22 @@ const ACTIVATION_DRAG := 24.0
 ## Ganho de tamanho no hover (destaque de "clicável").
 const HOVER_GROW := 3.0
 
-const DONE_FILL := Color(0.133, 0.827, 0.933, 0.16)
-const DONE_LINE := Color(0.133, 0.827, 0.933, 0.95)
+## Cores de preenchimento mais sólidas (alpha alto) para os nós se
+## destacarem do fundo neon; o halo fica por trás, em camadas.
+const DONE_FILL := Color(0.133, 0.827, 0.933, 0.62)
+const DONE_LINE := Color(0.133, 0.827, 0.933, 1.0)
 const DONE_TEXT := Color(0.92, 0.99, 1.0, 1.0)
-const CURRENT_FILL := Color(0.851, 0.275, 0.937, 0.3)
+const CURRENT_FILL := Color(0.851, 0.275, 0.937, 0.7)
 const CURRENT_LINE := Color(0.851, 0.275, 0.937, 1.0)
 const CURRENT_TEXT := Color(1.0, 1.0, 1.0, 1.0)
-const LOCKED_FILL := Color(0.07, 0.05, 0.12, 0.6)
-const LOCKED_LINE := Color(0.392, 0.455, 0.545, 0.6)
-const LOCKED_TEXT := Color(0.47, 0.53, 0.62, 0.95)
-const LOCK_GLYPH := Color(0.66, 0.72, 0.8, 0.95)
+const LOCKED_FILL := Color(0.07, 0.06, 0.13, 0.88)
+const LOCKED_LINE := Color(0.47, 0.54, 0.65, 0.9)
+const LOCKED_TEXT := Color(0.62, 0.68, 0.78, 0.95)
+const LOCK_GLYPH := Color(0.72, 0.78, 0.86, 0.95)
+
+## Disco escuro por baixo do nó: separa o preenchimento do background
+## (mesma família da base do caminho, para o conjunto parecer um só).
+const BACKING_FILL := Color(0.02, 0.02, 0.06, 0.85)
 
 var level := 1
 var state: int = State.LOCKED
@@ -123,9 +129,9 @@ func _draw() -> void:
 			grow = 0.0
 	match state:
 		State.DONE:
-			_paint(c, r, grow, DONE_FILL, DONE_LINE, 3.0)
+			_paint(c, r, grow, DONE_FILL, DONE_LINE, 4.0)
 		State.CURRENT:
-			_paint(c, r, grow, CURRENT_FILL, CURRENT_LINE, 4.0)
+			_paint(c, r, grow, CURRENT_FILL, CURRENT_LINE, 5.0)
 			_draw_pulse(c, r)
 		State.LOCKED:
 			_paint(c, r, 0.0, LOCKED_FILL, LOCKED_LINE, 3.0)
@@ -137,11 +143,17 @@ func _draw() -> void:
 
 func _paint(c: Vector2, r: float, grow: float, fill: Color, line: Color, width: float) -> void:
 	var radius := r + grow
-	# Halo neon (disco um pouco maior e bem transparente, depois o
-	# preenchimento por cima) — mesmo efeito de brilho do popup.
-	draw_circle(c, radius + 7.0, Color(fill.r, fill.g, fill.b, fill.a * 0.45))
+	# Halo neon em camadas (raios decrescentes, alphas baixos): brilho
+	# externo suave sem lavar o contorno nem a legibilidade.
+	if state != State.LOCKED:
+		draw_circle(c, radius + 16.0, Color(line.r, line.g, line.b, 0.07))
+		draw_circle(c, radius + 9.0, Color(line.r, line.g, line.b, 0.13))
+	# Base escura atrás do disco: separa o nó do background neon.
+	draw_circle(c, radius + 4.0, BACKING_FILL)
 	draw_circle(c, radius, fill)
 	draw_arc(c, radius, 0.0, TAU, 56, line, width, true)
+	# Aro interno fino: reforça o contorno neon (visual de "anel duplo").
+	draw_arc(c, radius - 5.0, 0.0, TAU, 56, Color(line.r, line.g, line.b, 0.4), 1.5, true)
 
 
 func _draw_pulse(c: Vector2, r: float) -> void:
@@ -170,9 +182,22 @@ func _draw_number(c: Vector2) -> void:
 			color = LOCKED_TEXT
 	# Press Start 2P tem ascendente == tamanho e descendente 0: a baseline
 	# fica em centro + tamanho/2 para centralizar verticalmente.
+	var pos := Vector2(c.x - w * 0.5, c.y + fs * 0.5)
+	# Contorno escuro atrás do glifo: o número se mantém legível sobre o
+	# preenchimento sólido e o halo neon.
+	draw_string_outline(
+		FONT,
+		pos,
+		text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		fs,
+		4,
+		Color(0.02, 0.02, 0.06, 0.9)
+	)
 	draw_string(
 		FONT,
-		Vector2(c.x - w * 0.5, c.y + fs * 0.5),
+		pos,
 		text,
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1,
@@ -185,9 +210,20 @@ func _draw_current_tag(c: Vector2) -> void:
 	var text := "ATUAL"
 	var fs := 9
 	var w := FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var pos := Vector2(c.x - w * 0.5, 10.0)
+	draw_string_outline(
+		FONT,
+		pos,
+		text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		fs,
+		3,
+		Color(0.02, 0.02, 0.06, 0.9)
+	)
 	draw_string(
 		FONT,
-		Vector2(c.x - w * 0.5, 10.0),
+		pos,
 		text,
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1,
