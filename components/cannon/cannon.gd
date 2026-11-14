@@ -169,6 +169,13 @@ func shoot(power: float = 1.0) -> void:
 	if manager != null:
 		manager.spawn(muzzle.global_position, ImpactTextManager.KIND_CANNON_SHOT)
 
+	# SFX do DISPARO: mesmo ponto único do feedback de impacto da bala
+	# (Bullet._play_impact_sound) — nasce junto da onomatopeia acima, só
+	# em disparo aceito. Sem gerenciador na cena, é no-op.
+	var sound_manager := ImpactSoundManager.current
+	if sound_manager != null:
+		sound_manager.play(ImpactSoundManager.KIND_CANNON_SHOT)
+
 func play_recoil() -> void:
 	if recoil_tween and recoil_tween.is_valid():
 		recoil_tween.kill()

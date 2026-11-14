@@ -41,6 +41,10 @@ extends Node
 ## ImpactTextManager (fonte única do kind, lida por Bullet._impact_material).
 const KIND_FLOOR := ImpactTextManager.KIND_FLOOR
 
+## Disparo do canhão — mesma chave da onomatopeia de disparo
+## (ImpactTextManager.KIND_CANNON_SHOT, produzida em Cannon.shoot()).
+const KIND_CANNON_SHOT := ImpactTextManager.KIND_CANNON_SHOT
+
 ## Volume global dos SFX (dB), aplicado antes do trim por material.
 ## Picos dos arquivos ficam perto de -1 dB; -6 dB deixa margem para
 ## impactos simultâneos somarem sem saturar a saída.
@@ -56,6 +60,7 @@ const VOLUME_DB_BY_MATERIAL: Dictionary = {
 	ObstacleDefinition.KIND_STONE: 1.0,
 	ObstacleDefinition.KIND_METAL: -1.0,
 	KIND_FLOOR: 0.0,
+	KIND_CANNON_SHOT: 0.0,
 }
 
 ## Faixa de pitch do Glass (arquivo único — sem variação de arquivo, o
@@ -117,6 +122,9 @@ const SOUNDS_BY_MATERIAL: Dictionary = {
 		preload("res://assets/floor/footstep_concrete_002.ogg"),
 		preload("res://assets/floor/footstep_concrete_003.ogg"),
 		preload("res://assets/floor/footstep_concrete_004.ogg"),
+	],
+	KIND_CANNON_SHOT: [
+		preload("res://assets/cannons/cannonPlasmaShoot.ogg"),
 	],
 }
 
