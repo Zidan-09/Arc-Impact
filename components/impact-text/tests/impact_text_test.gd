@@ -15,8 +15,14 @@ extends SceneTree
 ##  - limite rígido de 3 simultâneas, inclusive com várias colisões
 ##    no MESMO frame (evicção síncrona da mais antiga, que sai da
 ##    árvore e é liberada — não é só escondida);
-##  - identidade: texto da lista predefinida, branco, fonte quadrada
+##  - identidade: texto do conjunto do material, branco, fonte quadrada
 ##    arcade, rotação/deslocação aleatórias dentro dos limites;
+##  - conjuntos por material (stone, metal, floor, glass + disparo do
+##    canhão), cada um com as suas palavras — sem lista global e sem
+##    termos em inglês (BANG!/BOOM!/POW!);
+##  - disparo do canhão: 1 onomatopeia na boca do cano, no padrão das
+##    de impacto, e SOMENTE quando o projétil é efetivamente disparado
+##    (preparar a força não gera texto; sem gerenciador, no-op);
 ##  - sem física, sem _process/_physics_process (Tween controla a vida);
 ##  - limpeza: após a animação o nó é liberado e a fila é prunada;
 ##  - sem gerenciador na cena: no-op sem erro (tests/guides).
@@ -26,6 +32,7 @@ extends SceneTree
 
 const BULLET_SCENE: PackedScene = preload("res://components/bullet/bullet.tscn")
 const TARGET_SCENE: PackedScene = preload("res://components/target/target.tscn")
+const CANNON_SCENE: PackedScene = preload("res://components/cannon/cannon.tscn")
 const FONT: Font = preload("res://assets/fonts/PressStart2P-Regular.ttf")
 
 const CELL := 64.0
@@ -103,7 +110,9 @@ func _run_all() -> void:
 	await _case_glass_direct_path()
 	await _case_cap_same_frame()
 	await _case_identity()
+	await _case_material_sets()
 	await _case_cleanup()
+	await _case_cannon_shot()
 	await _case_without_manager()
 
 	if _failures == 0:
@@ -143,6 +152,7 @@ func _case_stone() -> void:
 		"stone: exatamente 1 onomatopeia (veio %d)" % texts.size())
 	if texts.size() == 1:
 		_assert_near_impact(texts[0], Vector2(0.0, -TILE * 0.5), "stone")
+		_assert_material_word(texts[0], ObstacleDefinition.KIND_STONE, "stone")
 	await _settle(20)
 
 
@@ -170,6 +180,7 @@ func _case_metal() -> void:
 		"metal: exatamente 1 onomatopeia (veio %d)" % texts.size())
 	if texts.size() == 1:
 		_assert_near_impact(texts[0], Vector2(0.0, -TILE * 0.5), "metal")
+		_assert_material_word(texts[0], ObstacleDefinition.KIND_METAL, "metal")
 	await _settle(20)
 
 
@@ -205,6 +216,7 @@ func _case_glass() -> void:
 		% texts.size())
 	if texts.size() == 1:
 		_assert_near_impact(texts[0], Vector2(0.0, -TILE * 0.5), "glass")
+		_assert_material_word(texts[0], ObstacleDefinition.KIND_GLASS, "glass")
 	await _settle(20)
 
 
@@ -231,6 +243,8 @@ func _case_floor() -> void:
 	var texts := _texts()
 	_check(texts.size() == 1,
 		"floor: exatamente 1 onomatopeia no primeiro contato (veio %d)" % texts.size())
+	if texts.size() == 1:
+		_assert_material_word(texts[0], ImpactTextManager.KIND_FLOOR, "floor")
 	# 30 frames com a bala em repouso/tocando: nenhum texto novo (o
 	# primeiro pode expirar durante a espera, por isso acompanha o
 	# máximo observado em vez do total no fim).
@@ -268,6 +282,8 @@ func _case_seam_two_impacts() -> void:
 	var texts := _texts()
 	_check(texts.size() == 1,
 		"junção: 1 única onomatopeia para os 2 elementos simultâneos (veio %d)" % texts.size())
+	if texts.size() == 1:
+		_assert_material_word(texts[0], ObstacleDefinition.KIND_STONE, "junção")
 	await _settle(20)
 
 
@@ -340,6 +356,8 @@ func _case_glass_direct_path() -> void:
 	_check(int(counter_a[0]) == 1, "ordem A: sinal próprio => 1 hit()")
 	_check(_texts().size() == 1, "ordem A: sinal próprio => 1 texto (veio %d)"
 		% _texts().size())
+	if _texts().size() == 1:
+		_assert_material_word(_texts()[0], ObstacleDefinition.KIND_GLASS, "ordem A")
 	# Depois o roteador "vê" a mesma área: no-op (dedup do pai).
 	var area_a := glass_a.get_node_or_null("HitBox")
 	if area_a != null:
@@ -364,6 +382,8 @@ func _case_glass_direct_path() -> void:
 	_check(routed_b, "ordem B: roteador processa o HitBox")
 	_check(int(counter_b[0]) == 1, "ordem B: 1 hit() (%d)" % int(counter_b[0]))
 	_check(_texts().size() == 1, "ordem B: 1 texto (veio %d)" % _texts().size())
+	if _texts().size() == 1:
+		_assert_material_word(_texts()[0], ObstacleDefinition.KIND_GLASS, "ordem B")
 	# Sinal posterior (mesmo frame, antes do free): descartado.
 	if is_instance_valid(glass_b):
 		glass_b._on_hit_box_body_entered(bullet_b)
@@ -408,7 +428,7 @@ func _case_cap_same_frame() -> void:
 	await _settle(5)
 
 
-## Identidade visual e variações: lista de textos, branco, fonte
+## Identidade visual e variações: conjunto do material, branco, fonte
 ## quadrada arcade, rotação/deslocação aleatórias e limites, sem
 ## física e sem _process (a vida é do Tween).
 func _case_identity() -> void:
@@ -417,7 +437,7 @@ func _case_identity() -> void:
 	var base := Vector2(320.0, 240.0)
 	var spawned: Array[Node] = []
 	for i in 8:
-		_manager.spawn(base)
+		_manager.spawn(base, ObstacleDefinition.KIND_STONE)
 		var current := _texts()
 		spawned.append(current[current.size() - 1])
 		_assert_cap("identidade")
@@ -452,7 +472,7 @@ func _case_identity() -> void:
 			process_free = false
 
 	for word in words:
-		if not ImpactTextManager.TEXTS.has(word):
+		if not ImpactTextManager.texts_for(ObstacleDefinition.KIND_STONE).has(word):
 			style_ok = false
 	_check(words.size() >= 2, "identidade: textos variam (%d distintos)" % words.size())
 	_check(rotations.size() >= 2,
@@ -467,11 +487,92 @@ func _case_identity() -> void:
 	_check(jitter_ok, "identidade: deslocamento dentro do jitter (±%d,±%d)" % [
 		ImpactTextManager.JITTER_X, ImpactTextManager.JITTER_Y])
 	_check(style_ok,
-		"identidade: fonte arcade do projeto, tamanho, branco e lista válida")
+		"identidade: fonte arcade do projeto, tamanho, branco e palavra do material")
 	_check(physics_free, "identidade: nenhum nó de texto é CollisionObject2D")
 	_check(process_free,
 		"identidade: sem _process/_physics_process (vida controlada por Tween)")
 	await _settle(5)
+
+
+## Conjuntos por material: cada material (e o disparo do canhão) tem o
+## SEU conjunto de palavras — exatamente o combinado, sem lista global
+## e sem termos em inglês — e todo sorteio de `spawn()` fica dentro do
+## conjunto do material informado. Material fora do mapa cai no do chão
+## (fallback) e o roteador da bala mapeia cada nó para o seu material.
+func _case_material_sets() -> void:
+	await _begin_case()
+	var expected := {
+		ObstacleDefinition.KIND_STONE: ["TUM!", "PÁ!", "TRÁ!", "TÓC!"],
+		ObstacleDefinition.KIND_METAL: ["CLANG!", "TLIN!", "CLONC!", "TANG!"],
+		ImpactTextManager.KIND_FLOOR: ["TUM!", "PUM!", "POC!", "TUMP!"],
+		ObstacleDefinition.KIND_GLASS: ["CRAC!", "TIN!", "TLIC!", "PLOC!"],
+		ImpactTextManager.KIND_CANNON_SHOT: ["PÁ!", "PUM!", "TRÁ!", "TUM!"],
+	}
+	var keys: Array = ImpactTextManager.TEXTS_BY_MATERIAL.keys()
+	_check(keys.size() == expected.size(),
+		"conjuntos: %d entradas (stone/metal/floor/glass/cannon), sem lista global (veio %d)" % [
+			expected.size(), keys.size()])
+
+	var banned := ["BANG!", "BOOM!", "POW!", "KABOOM!"]
+	var clean := true
+	for material in expected:
+		var pool: Array = ImpactTextManager.texts_for(material)
+		var want: Array = expected[material]
+		var exact := pool.size() == want.size()
+		for word in want:
+			if not pool.has(word):
+				exact = false
+		for word in banned:
+			if pool.has(word):
+				clean = false
+		_check(exact, "conjuntos: %s => %s" % [str(material), str(pool)])
+	_check(clean, "conjuntos: sem termos em inglês (BANG!/BOOM!/POW!/KABOOM!)")
+
+	# Sorteio por material: 8 spawns de cada, todos dentro do próprio
+	# conjunto (a última entrada do grupo é sempre a mais recente).
+	for material in expected:
+		var pool: Array = ImpactTextManager.texts_for(material)
+		var ok := true
+		for i in 8:
+			_manager.spawn(Vector2(float(i) * 5.0, 40.0), material)
+			var texts := _texts()
+			var newest: Node = texts[texts.size() - 1]
+			var label := newest.get_child(0) as Label
+			if label == null or not pool.has(label.text):
+				ok = false
+			_assert_cap("conjuntos")
+		_check(ok, "conjuntos: sorteio de %s sempre dentro do conjunto" % str(material))
+
+	# Fallback: material fora do mapa usa o conjunto do chão.
+	var floor_pool: Array = ImpactTextManager.texts_for(ImpactTextManager.KIND_FLOOR)
+	var fallback: Array = ImpactTextManager.texts_for(&"material_inexistente")
+	var same := fallback.size() == floor_pool.size()
+	for word in floor_pool:
+		if not fallback.has(word):
+			same = false
+	_check(same, "conjuntos: material desconhecido cai no conjunto do chão")
+
+	# Roteador da bala: cada nó vira o seu material (a bala não precisa
+	# estar na árvore para a consulta de tipo).
+	var scratch: Bullet = BULLET_SCENE.instantiate() as Bullet
+	var stone := StoneObstacle.new()
+	var metal := MetalObstacle.new()
+	var glass := GlassObstacle.new()
+	var wall := StaticBody2D.new()
+	_check(scratch._impact_material(stone) == ObstacleDefinition.KIND_STONE,
+		"material: StoneObstacle => stone")
+	_check(scratch._impact_material(metal) == ObstacleDefinition.KIND_METAL,
+		"material: MetalObstacle => metal")
+	_check(scratch._impact_material(glass) == ObstacleDefinition.KIND_GLASS,
+		"material: GlassObstacle => glass")
+	_check(scratch._impact_material(wall) == ImpactTextManager.KIND_FLOOR,
+		"material: StaticBody2D (chão/parede) => floor")
+	stone.free()
+	metal.free()
+	glass.free()
+	wall.free()
+	scratch.free()
+	await _settle(20)
 
 
 ## Ciclo de vida completo: após a animação o nó some da árvore e da
@@ -497,6 +598,40 @@ func _case_cleanup() -> void:
 		"cleanup: fila prunada no próximo spawn (veio %d)" % _manager._active.size())
 
 
+## Disparo do canhão: 1 onomatopeia na boca do cano (mesmo padrão
+## visual das de impacto, palavra do conjunto do disparo) — e SOMENTE
+## quando o projétil é efetivamente disparado: preparar a força sem
+## disparar não gera nada (os guards ficam antes de Cannon.shoot()).
+func _case_cannon_shot() -> void:
+	await _begin_case()
+	var cannon := await _make_cannon()
+	if cannon == null:
+		return
+
+	# Preparação sem disparo (força/ângulo, como faz o power_slider).
+	cannon.set_power(0.7)
+	cannon.rotate_cannon(10.0)
+	await physics_frame
+	_check(_texts().size() == 0,
+		"canhão: preparar sem disparar não gera onomatopeia (veio %d)" % _texts().size())
+
+	# Disparo aceito: exatamente 1 texto, perto da boca do cano.
+	cannon.shoot(1.0)
+	var texts := _texts()
+	_check(texts.size() == 1,
+		"canhão: disparo gera 1 onomatopeia (veio %d)" % texts.size())
+	if texts.size() == 1:
+		var muzzle: Vector2 = cannon.get_muzzle_state()["origin"]
+		_assert_near_impact(texts[0], muzzle, "canhão")
+		_assert_material_word(texts[0], ImpactTextManager.KIND_CANNON_SHOT, "canhão")
+	_assert_cap("canhão")
+	await _settle(10)
+	# A bala voa sem tocar as paredes do próprio cano (spawn correto no
+	# muzzle): nenhum texto fantasma de impacto nasce depois do disparo.
+	_check(_texts().size() == 1,
+		"canhão: só o texto do disparo, sem impacto fantasma (veio %d)" % _texts().size())
+
+
 ## Sem gerenciador na cena (tests/guides): no-op silencioso.
 func _case_without_manager() -> void:
 	await _begin_case()
@@ -514,6 +649,13 @@ func _case_without_manager() -> void:
 	_check(stone.hit_count == 1, "sem gerenciador: hit() segue funcionando (%d)"
 		% stone.hit_count)
 	_check(_texts().size() == 0, "sem gerenciador: nenhum texto (no-op)")
+	# O disparo do canhão cai na mesma guarda (ImpactTextManager.current
+	# nulo => Cannon.shoot() não chama spawn).
+	var cannon := await _make_cannon()
+	cannon.shoot(1.0)
+	await physics_frame
+	_check(_texts().size() == 0,
+		"sem gerenciador: disparo do canhão também é no-op (veio %d)" % _texts().size())
 	_manager = null
 
 
@@ -544,6 +686,17 @@ func _assert_near_impact(text: Node, impact: Vector2, where: String) -> void:
 		"%s: texto perto do impacto (dist=%.1f <= %.1f)" % [where, dist, POS_TOLERANCE])
 
 
+## Confere que a palavra do texto pertence ao conjunto do material
+## esperado (sorteio por material, sem lista global compartilhada).
+func _assert_material_word(text: Node, material: StringName, where: String) -> void:
+	var label := text.get_child(0) as Label
+	if label == null:
+		_check(false, "%s: texto tem Label" % where)
+		return
+	_check(ImpactTextManager.texts_for(material).has(label.text),
+		"%s: '%s' pertence ao conjunto de %s" % [where, label.text, str(material)])
+
+
 func _begin_case() -> void:
 	await _teardown()
 	_clear_texts()
@@ -571,6 +724,21 @@ func _spawn_bullet(pos: Vector2, vel: Vector2) -> Bullet:
 	_world.add_child.call_deferred(bullet)
 	await physics_frame
 	return bullet
+
+
+## Canhão real (cannon.tscn) dentro do mundo do caso, com a bala
+## nascendo no próprio mundo (bullet_container) — mesmo arranjo de
+## cannon_shot_test.gd. O _ready do canhão é adiado durante a
+## inicialização do SceneTree, por isso espera-se 1 physics_frame
+## antes de usar as @onready vars (muzzle).
+func _make_cannon() -> Cannon:
+	var cannon := CANNON_SCENE.instantiate() as Cannon
+	cannon.scale = Vector2(CANNON_SCALE, CANNON_SCALE)
+	cannon.position = Vector2(640.0, 240.0)
+	cannon.bullet_container = _world
+	_world.add_child(cannon)
+	await physics_frame
+	return cannon
 
 
 func _make_counting_stone(pos: Vector2, size: Vector2) -> CountingStone:

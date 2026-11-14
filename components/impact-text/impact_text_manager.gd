@@ -1,7 +1,11 @@
 class_name ImpactTextManager
 extends Node2D
 ## Gerenciador centralizado das onomatopeias de impacto — a ÚNICA fonte
-## de instâncias (nenhum obstáculo controla texto próprio).
+## de instâncias (nenhum obstáculo controla texto próprio). O conjunto
+## de palavras é escolhido POR MATERIAL (`TEXTS_BY_MATERIAL`): o caller
+## informa o material que efetivamente recebeu a colisão (a bala, via
+## `_impact_material`) ou o disparo do canhão (`KIND_CANNON_SHOT`) —
+## não existe lista global compartilhada entre todos os impactos.
 ##
 ## Limite rígido: NO MÁXIMO MAX_ACTIVE (3) textos simultâneos, garantido
 ## de forma SÍNCRONA em `spawn()`: várias colisões no mesmo frame
@@ -32,8 +36,30 @@ extends Node2D
 ## Limite rígido de instâncias simultâneas (requisito da feature).
 const MAX_ACTIVE := 3
 
-## Textos possíveis (seleção aleatória por impacto).
-const TEXTS: Array[String] = ["POW!", "PEI!", "BAM!", "PÁ!", "TUM!"]
+## Material do chão/parede estática do cenário (floor.tscn e paredes do
+## cano: StaticBody2D puro, sem ObstacleDefinition.KIND_*).
+const KIND_FLOOR := &"floor"
+
+## Chave do disparo do canhão (onomatopeia na boca do cano; não é um
+## material de colisão — ver Cannon.shoot()).
+const KIND_CANNON_SHOT := &"cannon"
+
+## Mapeamento CENTRAL material -> onomatopeias (feature: Sistema de
+## Onomatopeias nos Impactos). Cada impacto sorteia UMA palavra do
+## conjunto do material que efetivamente recebeu a colisão — sem lista
+## global compartilhada, em português/BR (sem BANG!/BOOM!/POW!).
+##
+## Adicionar material novo = 1 entrada aqui (+ 1 ramo em
+## `Bullet._impact_material()` para o roteador reconhecer o nó). Chaves
+## de obstáculo reutilizam ObstacleDefinition.KIND_* (fonte única dos
+## materiais do jogo).
+const TEXTS_BY_MATERIAL: Dictionary = {
+	ObstacleDefinition.KIND_STONE: ["TUM!", "PÁ!", "TRÁ!", "TÓC!"],
+	ObstacleDefinition.KIND_METAL: ["CLANG!", "TLIN!", "CLONC!", "TANG!"],
+	KIND_FLOOR: ["TUM!", "PUM!", "POC!", "TUMP!"],
+	ObstacleDefinition.KIND_GLASS: ["CRAC!", "TIN!", "TLIC!", "PLOC!"],
+	KIND_CANNON_SHOT: ["PÁ!", "PUM!", "TRÁ!", "TUM!"],
+}
 
 ## Deslocamento aleatório em volta do ponto de impacto (px): evita
 ## sobreposição quando vários impactos acontecem próximos.
@@ -58,9 +84,12 @@ func _exit_tree() -> void:
 
 
 ## Cria uma onomatopeia próxima de `impact_pos` respeitando o limite.
-## Pode ser chamada várias vezes no mesmo frame (múltiplas colisões);
-## a implementação é idempotente com animações em andamento.
-func spawn(impact_pos: Vector2) -> void:
+## `material` escolhe o conjunto de palavras (ver TEXTS_BY_MATERIAL);
+## material desconhecido cai no conjunto do chão — fallback seguro que
+## nunca bloqueia o texto. Pode ser chamada várias vezes no mesmo frame
+## (múltiplas colisões); a implementação é idempotente com animações em
+## andamento.
+func spawn(impact_pos: Vector2, material: StringName = KIND_FLOOR) -> void:
 	_prune()
 	while _active.size() >= MAX_ACTIVE:
 		_evict_oldest()
@@ -70,8 +99,17 @@ func spawn(impact_pos: Vector2) -> void:
 		randf_range(-JITTER_X, JITTER_X),
 		randf_range(-JITTER_Y, JITTER_Y)
 	)
-	text.play(TEXTS.pick_random())
+	text.play(String(texts_for(material).pick_random()))
 	_active.append(text)
+
+
+## Conjunto de onomatopeias de `material`. Material fora do mapa (novo
+## ou digitado errado) usa o do chão: o impacto sempre gera texto.
+static func texts_for(material: StringName) -> Array:
+	var pool: Array = TEXTS_BY_MATERIAL.get(material, [])
+	if not pool.is_empty():
+		return pool
+	return TEXTS_BY_MATERIAL.get(KIND_FLOOR, [])
 
 
 ## Descarta da fila as entradas já liberadas (animação terminou ou a

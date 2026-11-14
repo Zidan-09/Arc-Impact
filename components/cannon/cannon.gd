@@ -157,6 +157,18 @@ func shoot(power: float = 1.0) -> void:
 	var direction: Vector2 = muzzle_state["direction"]
 	bullet.linear_velocity = direction * base_shot_speed * clampf(power, 0.0, 1.0)
 
+	# Onomatopeia do DISPARO na boca do cano, no mesmo padrão visual das
+	# onomatopeias de impacto (ImpactTextManager: limite rígido de 3,
+	# jitter, animação, grupo transitório). Nasce SOMENTE aqui — depois
+	# do projétil instanciado com velocidade: os guards de cooldown e
+	# munição moram em game.gd/shoot() e cannon_controller.gd/shoot(),
+	# que só chegam até este método quando o disparo é aceito, então
+	# pressionar o botão/preparar a força sem disparar não gera texto.
+	# Sem gerenciador na cena (tests/guides), é no-op.
+	var manager := ImpactTextManager.current
+	if manager != null:
+		manager.spawn(muzzle.global_position, ImpactTextManager.KIND_CANNON_SHOT)
+
 func play_recoil() -> void:
 	if recoil_tween and recoil_tween.is_valid():
 		recoil_tween.kill()

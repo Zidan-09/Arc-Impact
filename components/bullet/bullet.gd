@@ -528,10 +528,12 @@ func _route_contact_hits(contact: Dictionary) -> void:
 ## duplicados não criam segunda onomatopeia. Além disso, um disparo
 ## que comunica 2 elementos no MESMO frame de física (encontro de 2
 ## obstáculos na junção) nasce UMA única onomatopeia: o dedup por
-## frame mora em `_spawn_impact_text`. Shards e o Target ficam
-## de fora por requisito (ambos já eram ignorados pelo roteamento: o
-## shard tem isolamento de camada e o Target não tem shape — a guarda
-## explícita documenta e blindas a regra).
+## frame mora em `_spawn_impact_text`. Cada chamada leva o MATERIAL do
+## elemento (`_impact_material`), para o gerenciador sortear a palavra
+## dentro do conjunto certo (TEXTS_BY_MATERIAL). Shards e o Target
+## ficam de fora por requisito (ambos já eram ignorados pelo
+## roteamento: o shard tem isolamento de camada e o Target não tem
+## shape — a guarda explícita documenta e blindas a regra).
 func _route_hit(node: Node, pos: Vector2) -> bool:
 	if is_broken or not is_instance_valid(self):
 		return false
@@ -541,7 +543,7 @@ func _route_hit(node: Node, pos: Vector2) -> bool:
 		return false
 	if node.has_method("hit"):
 		print("[dbg-route] has_hit node=%s pos=%s" % [node.name, pos])
-		_spawn_impact_text(pos)
+		_spawn_impact_text(pos, _impact_material(node))
 		node.call("hit", self, pos)
 		return true
 	if node is Area2D:
@@ -558,15 +560,16 @@ func _route_hit(node: Node, pos: Vector2) -> bool:
 			_notified_ids[parent_id] = true
 			print("[dbg-route] area_parent node=%s parent=%s pos=%s" % [
 				node.name, parent.name, pos])
-			_spawn_impact_text(pos)
+			_spawn_impact_text(pos, _impact_material(parent))
 			parent.call("hit", self, pos)
 			return true
 		return false
 	if node is StaticBody2D:
 		# Chão/paredes do cenário: sem hit() (a física resolve o
 		# ricochete, como sempre), mas é impacto válido — nasce a
-		# onomatopeia. Balas (RigidBody2D) e shards ficam fora.
-		_spawn_impact_text(pos)
+		# onomatopeia (material `floor`). Balas (RigidBody2D) e shards
+		# ficam fora.
+		_spawn_impact_text(pos, _impact_material(node))
 	return false
 
 
@@ -587,22 +590,40 @@ func route_external_hit(element: Node, pos: Vector2) -> void:
 	_route_hit(element, pos)
 
 
+## Material do elemento atingido para a onomatopeia (chave de
+## ImpactTextManager.TEXTS_BY_MATERIAL). O roteador já enxerga o nó:
+## obstáculos são reconhecidos pela classe (Glass/Stone/Metal, todos
+## subclasses de Obstacle), chão e paredes do cenário são StaticBody2D
+## sem hit() => `floor`. Nó com hit() fora dessas classes (sondas de
+## teste) cai em `floor` — fallback seguro, nunca bloqueia o texto.
+## Material novo no jogo = 1 ramo aqui + 1 entrada em TEXTS_BY_MATERIAL.
+func _impact_material(node: Node) -> StringName:
+	if node is GlassObstacle:
+		return ObstacleDefinition.KIND_GLASS
+	if node is StoneObstacle:
+		return ObstacleDefinition.KIND_STONE
+	if node is MetalObstacle:
+		return ObstacleDefinition.KIND_METAL
+	return ImpactTextManager.KIND_FLOOR
+
+
 ## Ponto único de criação da onomatopeia: delega ao gerenciador
-## central (limite rígido de 3 simultâneas, ver impact_text_manager.gd).
-## Dedup por DISPARO e FRAME DE FÍSICA: um tiro que comunica 2
-## elementos no mesmo instante (encontro de 2 obstáculos na junção,
-## contato CCD com bodies múltiplos) nasce UMA única onomatopeia — a
-## gameplay (hit() de cada elemento) não muda. Frames distintos =
-## impactos distintos = textos próprios (o limite de 3 continua
-## valendo). Sem gerenciador na cena (ex.: tests/guides), é no-op.
-func _spawn_impact_text(pos: Vector2) -> void:
+## central (limite rígido de 3 simultâneas, ver impact_text_manager.gd),
+## que sorteia a palavra dentro do conjunto de `material`. Dedup por
+## DISPARO e FRAME DE FÍSICA: um tiro que comunica 2 elementos no mesmo
+## instante (encontro de 2 obstáculos na junção, contato CCD com bodies
+## múltiplos) nasce UMA única onomatopeia — a gameplay (hit() de cada
+## elemento) não muda. Frames distintos = impactos distintos = textos
+## próprios (o limite de 3 continua valendo). Sem gerenciador na cena
+## (ex.: tests/guides), é no-op.
+func _spawn_impact_text(pos: Vector2, material: StringName) -> void:
 	var frame := Engine.get_physics_frames()
 	if frame == _last_impact_text_frame:
 		return
 	var manager := ImpactTextManager.current
 	if manager != null:
 		_last_impact_text_frame = frame
-		manager.spawn(pos)
+		manager.spawn(pos, material)
 
 
 func _on_body_entered(body: Node) -> void:
