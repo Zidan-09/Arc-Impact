@@ -111,6 +111,13 @@ func load_level(seed_value: int, new_level_number: int) -> void:
 	# (retry/next logo após o último tiro) não pode travar o início.
 	fire_button.reset_cooldown()
 	_clear_transient_elements()
+	# SFX da fase anterior: nenhum impacto sonoro atravessa a troca de
+	# fase (nenhum recurso de áudio permanece ativo indevidamente). Os
+	# recursos em si já são compartilhados (preload no gerenciador) —
+	# aqui param apenas as vozes em reprodução.
+	var sound_manager := ImpactSoundManager.current
+	if sound_manager != null:
+		sound_manager.stop_all()
 	var result := FastLevelGenerator.generate(seed_value, level_number)
 	var def: LevelDefinition = result["def"]
 	if bool(result["fallback_used"]):

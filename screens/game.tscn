@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://cswwmgv3r1fvb" path="res://assets/floor/floor.png" id="5_gfkhe"]
 [ext_resource type="PackedScene" uid="uid://d0mom6cj7sqik" path="res://components/background/game/Background.tscn" id="6_bg"]
 [ext_resource type="Script" uid="uid://c1a8jgsvkxlvi" path="res://components/impact-text/impact_text_manager.gd" id="5_impact"]
+[ext_resource type="Script" uid="uid://de5ooeaph137r" path="res://components/impact-sound/impact_sound_manager.gd" id="7_sound"]
 
 [node name="Game" type="Control" unique_id=1263011264]
 layout_mode = 3
@@ -103,3 +104,6 @@ color = Color(0, 0, 0, 1)
 
 [node name="LevelCompletePopup" parent="UILayer" unique_id=1250229010 instance=ExtResource("3_popup")]
 visible = false
+
+[node name="ImpactSounds" type="Node" parent="."]
+script = ExtResource("7_sound")

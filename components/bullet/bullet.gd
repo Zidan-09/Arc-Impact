@@ -116,6 +116,13 @@ var _notified_ids := {}
 # de 2 obstáculos na junção — gera UMA onomatopeia, não duas).
 var _last_impact_text_frame := -1
 
+# Frame de física do último SFX criado por ESTA bala (dedup por evento
+# do MESMO critério do texto): os caminhos de um mesmo impacto que rodam
+# no mesmo tick (raio + contato do CCD; 2 elementos na junção) tocam
+# _play_impact_sound mais de uma vez e geram UM som. Impactos em frames
+# distintos (ricochetes consecutivos) mantêm sons próprios.
+var _last_impact_sound_frame := -1
+
 var trail: BulletTrail
 
 
@@ -510,6 +517,20 @@ func _route_contact_hits(contact: Dictionary) -> void:
 		var node := body as Node
 		if not is_instance_valid(node):
 			continue
+		# SFX do contato físico confirmado pelo CCD (ricochete): roda
+		# ANTES do dedup por instância DE PROPOSITO — contatos NOVOS
+		# contra a mesma peça (bounces consecutivos no chão) são eventos
+		# reais em frames distintos e precisam soar; o dedup por frame da
+		# bala (_play_impact_sound) suprime apenas os múltiplos caminhos
+		# do MESMO impacto (raio + CCD no mesmo tick — sempre o mesmo
+		# valor de get_physics_frames, pois os dois rodam em
+		# _physics_process). Só sólidos com face tocada chegam aqui
+		# (_probe_solids): chão, pedra, metal e parede do cano — vidro e
+		# Target não têm shape próprio e shards/balas não são estáticos.
+		# Target guarda explícita: paridade com _route_hit, que o recusa
+		# antes de qualquer impacto.
+		if not node is Target:
+			_play_impact_sound(_impact_material(node))
 		var id := node.get_instance_id()
 		if _notified_ids.has(id):
 			continue
@@ -519,19 +540,21 @@ func _route_contact_hits(contact: Dictionary) -> void:
 
 
 ## Roteador único de gameplay. Retorna true se houve hit de gameplay.
-## É TAMBÉM o ponto único de nascimento da onomatopeia de impacto
-## (feature: Sistema de Onomatopeias nos Impactos): todo contato
-## comunicado por aqui já passou pelo dedup por instância (os callers
-## marcam o id em `_notified_ids` antes de chamar; o ramo de área
-## confere o id do PAI, que é o elemento real do vidro), então cada
-## elemento gera NO MÁXIMO UM texto — ricochete em rajada ou sinais
-## duplicados não criam segunda onomatopeia. Além disso, um disparo
-## que comunica 2 elementos no MESMO frame de física (encontro de 2
-## obstáculos na junção) nasce UMA única onomatopeia: o dedup por
-## frame mora em `_spawn_impact_text`. Cada chamada leva o MATERIAL do
-## elemento (`_impact_material`), para o gerenciador sortear a palavra
-## dentro do conjunto certo (TEXTS_BY_MATERIAL). Shards e o Target
-## ficam de fora por requisito (ambos já eram ignorados pelo
+## É TAMBÉM o ponto único de nascimento do feedback de impacto —
+## onomatopeia (feature: Sistema de Onomatopeias nos Impactos) e SFX
+## (via `_spawn_impact_feedback`): todo contato comunicado por aqui já
+## passou pelo dedup por instância (os callers marcam o id em
+## `_notified_ids` antes de chamar; o ramo de área confere o id do PAI,
+## que é o elemento real do vidro), então cada elemento gera NO MÁXIMO
+## UM texto e UM som — ricochete em rajada ou sinais duplicados não
+## criam segundo feedback. Além disso, um disparo que comunica 2
+## elementos no MESMO frame de física (encontro de 2 obstáculos na
+## junção) nasce UMA única onomatopeia e UM único SFX: o dedup por
+## frame mora em `_spawn_impact_text`/`_play_impact_sound`. Cada chamada
+## leva o MATERIAL do elemento (`_impact_material`), para o gerenciador
+## sortear a palavra dentro do conjunto certo (TEXTS_BY_MATERIAL) e o
+## som dentro do pool do material (SOUNDS_BY_MATERIAL). Shards e o
+## Target ficam de fora por requisito (ambos já eram ignorados pelo
 ## roteamento: o shard tem isolamento de camada e o Target não tem
 ## shape — a guarda explícita documenta e blindas a regra).
 func _route_hit(node: Node, pos: Vector2) -> bool:
@@ -543,7 +566,7 @@ func _route_hit(node: Node, pos: Vector2) -> bool:
 		return false
 	if node.has_method("hit"):
 		print("[dbg-route] has_hit node=%s pos=%s" % [node.name, pos])
-		_spawn_impact_text(pos, _impact_material(node))
+		_spawn_impact_feedback(pos, _impact_material(node))
 		node.call("hit", self, pos)
 		return true
 	if node is Area2D:
@@ -560,16 +583,16 @@ func _route_hit(node: Node, pos: Vector2) -> bool:
 			_notified_ids[parent_id] = true
 			print("[dbg-route] area_parent node=%s parent=%s pos=%s" % [
 				node.name, parent.name, pos])
-			_spawn_impact_text(pos, _impact_material(parent))
+			_spawn_impact_feedback(pos, _impact_material(parent))
 			parent.call("hit", self, pos)
 			return true
 		return false
 	if node is StaticBody2D:
 		# Chão/paredes do cenário: sem hit() (a física resolve o
 		# ricochete, como sempre), mas é impacto válido — nasce a
-		# onomatopeia (material `floor`). Balas (RigidBody2D) e shards
-		# ficam fora.
-		_spawn_impact_text(pos, _impact_material(node))
+		# onomatopeia e o SFX (material `floor`). Balas (RigidBody2D) e
+		# shards ficam fora.
+		_spawn_impact_feedback(pos, _impact_material(node))
 	return false
 
 
@@ -624,6 +647,35 @@ func _spawn_impact_text(pos: Vector2, material: StringName) -> void:
 	if manager != null:
 		_last_impact_text_frame = frame
 		manager.spawn(pos, material)
+
+
+## Ponto único de criação do feedback de impacto: onomatopeia + SFX
+## nascem JUNTOS nos mesmos 3 pontos confirmados do roteador (obstáculo,
+## HitBox do vidro e chão/paredes), então as duas trilhas de feedback
+## compartilham o mesmo dedup por instância e por frame — nunca existe
+## texto sem som nem som duplicado em relação ao texto. Sem gerenciador
+## de som na cena (tests/guides) só o texto é no-op, como sempre.
+func _spawn_impact_feedback(pos: Vector2, material: StringName) -> void:
+	_spawn_impact_text(pos, material)
+	_play_impact_sound(material)
+
+
+## Ponto único de disparo do SFX de impacto. Dedup por frame de física
+## DESTA bala (mesmo critério do texto): um impacto visto por mais de um
+## caminho no mesmo tick — raio + contato do CCD; 2 elementos na junção —
+## vira UM som; frames distintos (ricochetes consecutivos) mantêm sons
+## próprios. Delega ao gerenciador central (ImpactSoundManager: pool de
+## vozes, variação por material, mixagem). Sem gerenciador na cena, é
+## no-op — igual ao texto.
+func _play_impact_sound(material: StringName) -> void:
+	var frame := Engine.get_physics_frames()
+	if frame == _last_impact_sound_frame:
+		return
+	var manager := ImpactSoundManager.current
+	if manager == null:
+		return
+	_last_impact_sound_frame = frame
+	manager.play(material)
 
 
 func _on_body_entered(body: Node) -> void:
