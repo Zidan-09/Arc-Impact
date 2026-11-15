@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" path="res://components/background/home/Background.tscn" id="1_xi7s7"]
 [ext_resource type="PackedScene" uid="uid://d1u475kwrl2io" path="res://components/play-button/PlayButton.tscn" id="2_xtd6d"]
 [ext_resource type="PackedScene" path="res://components/reset-button/ResetButton.tscn" id="3_rstbtn"]
-[ext_resource type="PackedScene" path="res://components/levels-button/LevelsButton.tscn" id="4_lvlbtn"]
+[ext_resource type="PackedScene" uid="uid://b8sku5tp0h8m2" path="res://components/levels-button/LevelsButton.tscn" id="4_lvlbtn"]
 
 [node name="Home" type="Control" unique_id=1216157525]
 layout_mode = 3
@@ -13,7 +13,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Background" parent="." instance=ExtResource("1_xi7s7")]
+[node name="Background" parent="." unique_id=1989326724 instance=ExtResource("1_xi7s7")]
+layout_mode = 1
+
+[node name="Menu" type="CenterContainer" parent="." unique_id=903468440]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -21,15 +24,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Menu" type="CenterContainer" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBox" type="VBoxContainer" parent="Menu"]
+[node name="VBox" type="VBoxContainer" parent="Menu" unique_id=548015531]
 layout_mode = 2
 theme_override_constants/separation = 16
 alignment = 1
@@ -40,13 +35,13 @@ layout_mode = 2
 focus_neighbor_top = NodePath("../Reset")
 focus_neighbor_bottom = NodePath("../Levels")
 
-[node name="Levels" parent="Menu/VBox" instance=ExtResource("4_lvlbtn")]
+[node name="Levels" parent="Menu/VBox" unique_id=1335570267 instance=ExtResource("4_lvlbtn")]
 custom_minimum_size = Vector2(242, 100)
 layout_mode = 2
 focus_neighbor_top = NodePath("../Play")
 focus_neighbor_bottom = NodePath("../Reset")
 
-[node name="Reset" parent="Menu/VBox" instance=ExtResource("3_rstbtn")]
+[node name="Reset" parent="Menu/VBox" unique_id=1425537148 instance=ExtResource("3_rstbtn")]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 focus_neighbor_top = NodePath("../Levels")

@@ -48,7 +48,7 @@ const KIND_CANNON_SHOT := ImpactTextManager.KIND_CANNON_SHOT
 ## Volume global dos SFX (dB), aplicado antes do trim por material.
 ## Picos dos arquivos ficam perto de -1 dB; -6 dB deixa margem para
 ## impactos simultâneos somarem sem saturar a saída.
-const SFX_VOLUME_DB := -6.0
+const SFX_VOLUME_DB := 15.0
 
 ## Trim de volume por material (dB), somado ao SFX_VOLUME_DB. Calibrado
 ## sobre as medições dos arquivos (ffmpeg volumedetect): metal tem a
