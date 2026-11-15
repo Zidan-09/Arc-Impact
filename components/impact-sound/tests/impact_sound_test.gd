@@ -133,13 +133,18 @@ func _case_assets_and_config() -> void:
 	_check(fallback.size() == floor_pool.size() and fallback.size() > 0,
 		"assets: material desconhecido cai no pool do chão")
 
-	# Configurações de mixagem (centralizadas no gerenciador).
-	_check(ImpactSoundManager.SFX_VOLUME_DB <= 0.0,
-		"config: volume global negativo (veio %.1f dB)" % ImpactSoundManager.SFX_VOLUME_DB)
+	# Configurações de mixagem (centralizadas no gerenciador). O volume
+	# global é um boost DELIBERADO (bb52a17 "fixed low sounds volume":
+	# -6 → +15 dB) — a checagem garante apenas a faixa de sanidade:
+	# boost positivo e limitado, com volume final = global + trim.
+	_check(ImpactSoundManager.SFX_VOLUME_DB > 0.0
+			and ImpactSoundManager.SFX_VOLUME_DB <= 20.0,
+		"config: volume global de SFX em faixa de boost (veio %.1f dB)" %
+			ImpactSoundManager.SFX_VOLUME_DB)
 	for material in expected_counts:
 		var vol := _manager.volume_for(material)
-		_check(vol > -12.0 and vol <= 0.0,
-			"config: volume final de %s dentro de (-12, 0] dB (veio %.1f)" % [
+		_check(vol > -12.0 and vol <= 22.0,
+			"config: volume final de %s dentro de (-12, 22] dB (veio %.1f)" % [
 				str(material), vol])
 	_check(ImpactSoundManager.GLASS_PITCH_MIN < 1.0
 			and ImpactSoundManager.GLASS_PITCH_MAX > 1.0,

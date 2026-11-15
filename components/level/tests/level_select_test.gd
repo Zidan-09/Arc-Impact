@@ -36,8 +36,14 @@ func _init() -> void:
 func _run() -> void:
 	await process_frame
 	_backup_save()
-	# Progresso de partida: fase 10 desbloqueada.
+	# Progresso de partida: fase 10 desbloqueada. O save real do usuário
+	# pode estar ACIMA da fase 10 e o save_progress é monotônico por
+	# design (nunca regride — ver save_manager.gd). Apaga o arquivo
+	# antes da escrita para que o estado inicial do teste seja aceita
+	# em qualquer ambiente; _restore_save devolve o save original.
 	SaveManager.reset_cache()
+	if FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(SAVE_PATH)
 	SaveManager.save_progress(SAVE_LEVEL, SAVE_SEED)
 	SaveManager.reset_cache()
 

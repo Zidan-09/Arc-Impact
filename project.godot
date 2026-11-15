@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Arc Impact"
-config/description="Um jogo de puzzle e precisão em 2D onde o jogador controla um canhão futurista para acertar um alvo lateral em cenários neon gerados de forma procedural. Cada fase possui obstáculos com propriedades de materiais únicas (frágil, equilibrado e resistente) e uma quantidade limitada de disparos."
+config/description="Um jogo de puzzle e precisÃ£o em 2D onde o jogador controla um canhÃ£o futurista para acertar um alvo lateral em cenÃ¡rios neon gerados de forma procedural. Cada fase possui obstÃ¡culos com propriedades de materiais Ãºnicas (frÃ¡gil, equilibrado e resistente) e uma quantidade limitada de disparos."
 run/main_scene="uid://dumyp43ikp2a4"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="uid://d1mb38w5gs31u"
@@ -34,3 +34,7 @@ window/icon="res://icon.svg"
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="mobile"
 textures/vram_compression/import_etc2_astc=true
+
+[autoload]
+
+BackgroundMusic="*res://components/background-music/background_music_manager.gd"
