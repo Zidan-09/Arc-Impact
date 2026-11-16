@@ -16,6 +16,10 @@ run/main_scene="uid://dumyp43ikp2a4"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="uid://d1mb38w5gs31u"
 
+[autoload]
+
+BackgroundMusic="*res://components/background-music/background_music_manager.gd"
+
 [display]
 
 window/size/viewport_width=1280
@@ -34,7 +38,3 @@ window/icon="res://icon.svg"
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="mobile"
 textures/vram_compression/import_etc2_astc=true
-
-[autoload]
-
-BackgroundMusic="*res://components/background-music/background_music_manager.gd"

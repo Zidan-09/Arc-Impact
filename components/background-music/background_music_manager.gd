@@ -45,7 +45,7 @@ const MUSIC_BUS := "Music"
 ## -12 dB sobre a música (média -14,3 dB) mantém a trilha ~19 dB
 ## abaixo dos SFX amplificados +15 dB — audível como fundo, nunca
 ## competindo com os efeitos.
-const VOLUME_DB := -12.0
+const VOLUME_DB := -6.0
 
 ## Stream da música (asset original; `loop` é configuração em memória).
 const MUSIC_STREAM: AudioStreamMP3 = preload("res://assets/audio/Glass_Horizon.mp3")
