@@ -1,0 +1,102 @@
+[gd_scene format=3 uid="uid://0qog4exrubh7"]
+
+[ext_resource type="Script" uid="uid://dwpft5h50qb5g" path="res://screens/intro.gd" id="1_j0kdn"]
+[ext_resource type="Texture2D" uid="uid://ddaejb85meacc" path="res://assets/icons/logo-transparente1.png" id="1_u2kxw"]
+
+[sub_resource type="Animation" id="Animation_j0kdn"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Overlay:color")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(0, 0, 0, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_74wj4"]
+resource_name = "intro"
+length = 3.0000000000000004
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Overlay:color")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1.5, 3),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Color(0, 0, 0, 1), Color(0, 0, 0, 0), Color(0, 0, 0, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_pgig1"]
+_data = {
+&"RESET": SubResource("Animation_j0kdn"),
+&"intro": SubResource("Animation_74wj4")
+}
+
+[node name="Intro" type="Control" unique_id=589385189]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_j0kdn")
+
+[node name="background" type="ColorRect" parent="." unique_id=707937900]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1272423313]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -103.0
+offset_top = 36.5
+offset_right = 103.0
+offset_bottom = 105.5
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="Logo" type="Sprite2D" parent="VBoxContainer" unique_id=1891668485]
+position = Vector2(102, -99.5)
+scale = Vector2(0.3, 0.3)
+texture = ExtResource("1_u2kxw")
+
+[node name="Nome" type="Label" parent="VBoxContainer" unique_id=986310476]
+layout_mode = 2
+theme_override_font_sizes/font_size = 50
+text = "ARVENIS"
+horizontal_alignment = 1
+vertical_alignment = 1
+uppercase = true
+
+[node name="Overlay" type="ColorRect" parent="." unique_id=1182301502]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=119295751]
+autoplay = "intro"
+libraries/ = SubResource("AnimationLibrary_pgig1")
+
+[connection signal="animation_finished" from="AnimationPlayer" to="." method="_on_animation_player_animation_finished"]

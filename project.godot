@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Arc Impact"
 config/description="Um jogo de puzzle e precisÃ£o em 2D onde o jogador controla um canhÃ£o futurista para acertar um alvo lateral em cenÃ¡rios neon gerados de forma procedural. Cada fase possui obstÃ¡culos com propriedades de materiais Ãºnicas (frÃ¡gil, equilibrado e resistente) e uma quantidade limitada de disparos."
-run/main_scene="uid://dumyp43ikp2a4"
+run/main_scene="uid://0qog4exrubh7"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="uid://d1mb38w5gs31u"
 
