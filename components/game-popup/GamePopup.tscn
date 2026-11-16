@@ -7,6 +7,8 @@
 [ext_resource type="Texture2D" uid="uid://drlmj1gi0uy02" path="res://assets/sprite/buttons/game-popup/active_retry.png" id="5_3y8dd"]
 [ext_resource type="Texture2D" uid="uid://cqtqhbr85dg54" path="res://assets/sprite/buttons/game-popup/inactive_next.png" id="6_s7n8a"]
 [ext_resource type="Texture2D" uid="uid://d2cyj0qcjsp6q" path="res://assets/sprite/buttons/game-popup/active_next.png" id="7_litbe"]
+[ext_resource type="Texture2D" uid="uid://b5or2qwg2b8md" path="res://assets/sprite/buttons/levels/inactive_level_icon.png" id="8_lvloff"]
+[ext_resource type="Texture2D" uid="uid://dxibm5pyh4fqi" path="res://assets/sprite/buttons/levels/active_level_icon.png" id="9_lvlon"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_popup"]
 bg_color = Color(0.051, 0.031, 0.078, 0.97)
@@ -148,6 +150,16 @@ custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
 texture_normal = ExtResource("4_xotoe")
 texture_pressed = ExtResource("5_3y8dd")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="Levels" type="TextureButton" parent="Panel/Margin/VBox/ButtonsContainer" unique_id=1612870953]
+visible = false
+custom_minimum_size = Vector2(96, 96)
+layout_mode = 2
+tooltip_text = "Ir para a tela de fases"
+texture_normal = ExtResource("8_lvloff")
+texture_pressed = ExtResource("9_lvlon")
 ignore_texture_size = true
 stretch_mode = 5
 

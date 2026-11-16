@@ -2,6 +2,8 @@ extends Control
 
 const END_DELAY := 8.0
 const DEFAULT_SEED := 1
+## Tela de fases (mapa de progressão) aberta pelo botão do popup de pausa.
+const LEVELS_SCENE := "res://screens/levels.tscn"
 
 ## Grupos transitórios da fase: projéteis, rastros, shards e onomatopeias
 ## de impacto. Nenhum pode sobreviver à troca de fase — uma bala/shard
@@ -69,6 +71,7 @@ func _ready() -> void:
 	victory_popup.home_pressed.connect(_on_popup_home)
 	victory_popup.retry_pressed.connect(_on_popup_retry)
 	victory_popup.next_pressed.connect(_on_popup_next)
+	victory_popup.levels_pressed.connect(_on_popup_levels)
 	victory_popup.process_mode = Node.PROCESS_MODE_ALWAYS
 	hud.pause_pressed.connect(_on_pause_pressed)
 	builder = LevelBuilder.new()
@@ -232,6 +235,16 @@ func _on_popup_retry() -> void:
 	_is_paused = false
 	get_tree().paused = false
 	load_level(current_seed, level_number)
+
+
+## Botão "Fases" do popup de pausa: abre o mapa de progressão. Só troca
+## de cena — o progresso salvo permanece intacto (a tela Levels apenas
+## lê o save). A árvore é despausada antes da troca para que a cena nova
+## já entre rodando.
+func _on_popup_levels() -> void:
+	_is_paused = false
+	get_tree().paused = false
+	get_tree().change_scene_to_file(LEVELS_SCENE)
 
 
 func _on_popup_next() -> void:
