@@ -1,11 +1,11 @@
 [gd_scene format=3 uid="uid://bangr24luog7a"]
 
-[ext_resource type="Texture2D" uid="uid://j5igso5q88ki" path="res://assets/cannons/default/base.png" id="1_67o6l"]
+[ext_resource type="Texture2D" uid="uid://j5igso5q88ki" path="res://assets/sprite/cannon/base.png" id="1_67o6l"]
 [ext_resource type="Script" uid="uid://bxaev1j6ry3cu" path="res://components/cannon/cannon.gd" id="1_nydaa"]
 [ext_resource type="PackedScene" uid="uid://bsnxkop782soy" path="res://components/bullet/bullet.tscn" id="2_xexr0"]
 [ext_resource type="PackedScene" uid="uid://cy3krluiopvrl" path="res://components/trajectory-line/TrajectoryLine.tscn" id="3_f366u"]
-[ext_resource type="Texture2D" uid="uid://bsk0lnitudl7e" path="res://assets/cannons/default/barrelBack.png" id="3_lxeh7"]
-[ext_resource type="Texture2D" uid="uid://boll36wsxgjxm" path="res://assets/cannons/default/barrelFront.png" id="4_k4uss"]
+[ext_resource type="Texture2D" uid="uid://bsk0lnitudl7e" path="res://assets/sprite/cannon/barrel_back.png" id="3_lxeh7"]
+[ext_resource type="Texture2D" uid="uid://boll36wsxgjxm" path="res://assets/sprite/cannon/barrel_front.png" id="4_k4uss"]
 [ext_resource type="Script" uid="uid://d4gek1ol4btmj" path="res://components/cannon/bullet_return_detector.gd" id="5_k4uss"]
 
 [sub_resource type="SegmentShape2D" id="SegmentShape2D_dlv83"]

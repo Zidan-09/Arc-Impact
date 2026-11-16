@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://bangr24luog7a" path="res://components/cannon/cannon.tscn" id="2_cannon"]
 [ext_resource type="PackedScene" uid="uid://dlrnlvqly8g6u" path="res://components/game-popup/GamePopup.tscn" id="3_popup"]
 [ext_resource type="Script" uid="uid://k41s4wr5vu17" path="res://components/camera/game_camera.gd" id="4_camera"]
-[ext_resource type="Texture2D" uid="uid://cswwmgv3r1fvb" path="res://assets/floor/floor.png" id="5_gfkhe"]
+[ext_resource type="Texture2D" uid="uid://cswwmgv3r1fvb" path="res://assets/sprite/floor/floor.png" id="5_gfkhe"]
 [ext_resource type="PackedScene" uid="uid://d0mom6cj7sqik" path="res://components/background/game/Background.tscn" id="6_bg"]
 [ext_resource type="Script" uid="uid://c1a8jgsvkxlvi" path="res://components/impact-text/impact_text_manager.gd" id="5_impact"]
 [ext_resource type="Script" uid="uid://de5ooeaph137r" path="res://components/impact-sound/impact_sound_manager.gd" id="7_sound"]

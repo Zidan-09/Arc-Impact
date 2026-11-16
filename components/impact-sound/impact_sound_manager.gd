@@ -76,7 +76,7 @@ const GLASS_PITCH_MAX := 1.05
 const PITCH_JITTER := 0.025
 
 ## Offset inicial (segundos) por material ao chamar `AudioStreamPlayer.play()`.
-## breakingGlass_000.ogg tem ~3,55 s de silêncio antes do estouro real
+## breaking_glass_000.ogg tem ~3,55 s de silêncio antes do estouro real
 ## (medição ffmpeg: silêncio < -57 dB até 3,5 s; transiente em 3,6 s;
 ## cauda audível até ~5 s; arquivo com 6,04 s no total). Reproduzir do
 ## início atrasaria o som em 3,5 s em relação ao impacto visual — o
@@ -100,31 +100,31 @@ const MAX_VOICES := 8
 ## `Bullet._impact_material()` para o roteador reconhecer o nó).
 const SOUNDS_BY_MATERIAL: Dictionary = {
 	ObstacleDefinition.KIND_STONE: [
-		preload("res://assets/obstacles/stone/impactStone_medium_000.ogg"),
-		preload("res://assets/obstacles/stone/impactStone_medium_001.ogg"),
-		preload("res://assets/obstacles/stone/impactStone_medium_002.ogg"),
-		preload("res://assets/obstacles/stone/impactStone_medium_003.ogg"),
-		preload("res://assets/obstacles/stone/impactStone_medium_004.ogg"),
+		preload("res://assets/audio/obstacles/stone/impact_stone_medium_000.ogg"),
+		preload("res://assets/audio/obstacles/stone/impact_stone_medium_001.ogg"),
+		preload("res://assets/audio/obstacles/stone/impact_stone_medium_002.ogg"),
+		preload("res://assets/audio/obstacles/stone/impact_stone_medium_003.ogg"),
+		preload("res://assets/audio/obstacles/stone/impact_stone_medium_004.ogg"),
 	],
 	ObstacleDefinition.KIND_METAL: [
-		preload("res://assets/obstacles/metal/impactMetal_heavy_000.ogg"),
-		preload("res://assets/obstacles/metal/impactMetal_heavy_001.ogg"),
-		preload("res://assets/obstacles/metal/impactMetal_heavy_002.ogg"),
-		preload("res://assets/obstacles/metal/impactMetal_heavy_003.ogg"),
-		preload("res://assets/obstacles/metal/impactMetal_heavy_004.ogg"),
+		preload("res://assets/audio/obstacles/metal/impact_metal_heavy_000.ogg"),
+		preload("res://assets/audio/obstacles/metal/impact_metal_heavy_001.ogg"),
+		preload("res://assets/audio/obstacles/metal/impact_metal_heavy_002.ogg"),
+		preload("res://assets/audio/obstacles/metal/impact_metal_heavy_003.ogg"),
+		preload("res://assets/audio/obstacles/metal/impact_metal_heavy_004.ogg"),
 	],
 	ObstacleDefinition.KIND_GLASS: [
-		preload("res://assets/obstacles/glass/breakingGlass_000.ogg"),
+		preload("res://assets/audio/obstacles/glass/breaking_glass_000.ogg"),
 	],
 	KIND_FLOOR: [
-		preload("res://assets/floor/footstep_concrete_000.ogg"),
-		preload("res://assets/floor/footstep_concrete_001.ogg"),
-		preload("res://assets/floor/footstep_concrete_002.ogg"),
-		preload("res://assets/floor/footstep_concrete_003.ogg"),
-		preload("res://assets/floor/footstep_concrete_004.ogg"),
+		preload("res://assets/audio/floor/footstep_concrete_000.ogg"),
+		preload("res://assets/audio/floor/footstep_concrete_001.ogg"),
+		preload("res://assets/audio/floor/footstep_concrete_002.ogg"),
+		preload("res://assets/audio/floor/footstep_concrete_003.ogg"),
+		preload("res://assets/audio/floor/footstep_concrete_004.ogg"),
 	],
 	KIND_CANNON_SHOT: [
-		preload("res://assets/cannons/cannonPlasmaShoot.ogg"),
+		preload("res://assets/audio/cannon/cannon_plasma_shoot.ogg"),
 	],
 }
 

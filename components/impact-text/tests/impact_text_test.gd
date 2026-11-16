@@ -33,7 +33,7 @@ extends SceneTree
 const BULLET_SCENE: PackedScene = preload("res://components/bullet/bullet.tscn")
 const TARGET_SCENE: PackedScene = preload("res://components/target/target.tscn")
 const CANNON_SCENE: PackedScene = preload("res://components/cannon/cannon.tscn")
-const FONT: Font = preload("res://assets/fonts/PressStart2P-Regular.ttf")
+const FONT: Font = preload("res://assets/font/press-start-2p/press_start_2p_regular.ttf")
 
 const CELL := 64.0
 const OVERLAP := 1.01            # sobreposição 1.01 da arte (floor.tscn)

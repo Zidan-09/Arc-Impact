@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://b8sku5tp0h8m2"]
 
-[ext_resource type="Texture2D" uid="uid://bvmkxavqjgpdk" path="res://assets/buttons/levels/inactive-level.png" id="1_uv6g0"]
-[ext_resource type="Texture2D" uid="uid://bc7x2t5g5oaa7" path="res://assets/buttons/levels/active-level.png" id="2_cv7cc"]
+[ext_resource type="Texture2D" uid="uid://bvmkxavqjgpdk" path="res://assets/sprite/buttons/levels/inactive_level.png" id="1_uv6g0"]
+[ext_resource type="Texture2D" uid="uid://bc7x2t5g5oaa7" path="res://assets/sprite/buttons/levels/active_level.png" id="2_cv7cc"]
 [ext_resource type="Script" uid="uid://dmie5r2fcxpxp" path="res://components/levels-button/levels_button.gd" id="3_cv7cc"]
 
 [node name="Levels" type="TextureButton"]

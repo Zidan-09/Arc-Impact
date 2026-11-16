@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://dgwwf5r7wr8u4"]
 
-[ext_resource type="Texture2D" uid="uid://dkafo6lr74gfr" path="res://assets/target/base.png" id="1_1esyr"]
+[ext_resource type="Texture2D" uid="uid://dkafo6lr74gfr" path="res://assets/sprite/target/base.png" id="1_1esyr"]
 [ext_resource type="Script" uid="uid://ddt4yfoduxowk" path="res://components/target/target.gd" id="1_tgt"]
-[ext_resource type="Texture2D" uid="uid://dojm4h7254h0l" path="res://assets/target/central-portal.png" id="2_k1821"]
-[ext_resource type="Texture2D" uid="uid://dhncldxvc6576" path="res://assets/target/ring.png" id="3_kb34w"]
+[ext_resource type="Texture2D" uid="uid://dojm4h7254h0l" path="res://assets/sprite/target/central_portal.png" id="2_k1821"]
+[ext_resource type="Texture2D" uid="uid://dhncldxvc6576" path="res://assets/sprite/target/ring.png" id="3_kb34w"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_gravity"]
 radius = 305.0

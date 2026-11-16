@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" uid="uid://7g3ivlqr8n7uu" path="res://components/obstacles/stone/stone_shard.gd" id="1_shard"]
-[ext_resource type="Texture2D" uid="uid://bkrudwwutbuo4" path="res://assets/obstacles/stone_shard_5.png" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://bkrudwwutbuo4" path="res://assets/sprite/obstacles/stone/stone_shard_5.png" id="1_tex"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_shard"]
 friction = 0.4

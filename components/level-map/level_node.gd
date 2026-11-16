@@ -16,7 +16,7 @@ signal blocked(level: int)
 
 enum State { DONE, CURRENT, LOCKED }
 
-const FONT := preload("res://assets/fonts/PressStart2P-Regular.ttf")
+const FONT := preload("res://assets/font/press-start-2p/press_start_2p_regular.ttf")
 
 ## Distância máxima (canvas) entre pressionar e soltar para contar
 ## como ativação da fase.

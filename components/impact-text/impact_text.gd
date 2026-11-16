@@ -8,7 +8,7 @@ extends Node2D
 ## morre com ele, sem Timer e sem polling de duração (§5 performance).
 ##
 ## Identidade visual Arc-Impact: texto branco, fonte quadrada arcade
-## (Press Start 2P — assets/fonts, reuso de recurso novo pois o projeto
+## (Press Start 2P — assets/font/press-start-2p, reuso de recurso novo pois o projeto
 ## não tinha fonte), contorno escuro fino para legibilidade sobre o
 ## cenário neon, leve rotação aleatória mantida fixa na animação.
 ## O deslocamento aleatório em volta do ponto de impacto é aplicado pelo
@@ -21,8 +21,8 @@ extends Node2D
 ##  - saída: fade-out (modulate:a -> 0) combinado com encolhimento e,
 ##    ao fim, `queue_free()` — o nó sai da árvore e libera o Label junto.
 
-## Fonte arcade quadrada (SIL OFL 1.1 — assets/fonts/OFL.txt).
-const FONT := preload("res://assets/fonts/PressStart2P-Regular.ttf")
+## Fonte arcade quadrada (SIL OFL 1.1 — assets/font/press-start-2p/OFL.txt).
+const FONT := preload("res://assets/font/press-start-2p/press_start_2p_regular.ttf")
 
 ## Identidade/medidas em px de mundo: font_size 32 => "POW!" ocupa
 ## 128x32 — destaque na ação sem dominar a tela (célula de 128 px).

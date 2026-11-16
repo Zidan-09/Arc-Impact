@@ -3,7 +3,7 @@ func _init() -> void:
 	_run()
 func _run() -> void:
 	await process_frame
-	var mp3 = load("res://assets/audio/Glass_Horizon.mp3")
+	var mp3 = load("res://assets/audio/music/glass_horizon.mp3")
 	var p := AudioStreamPlayer.new()
 	p.stream = mp3
 	root.add_child(p)
@@ -11,7 +11,7 @@ func _run() -> void:
 	for i in 6:
 		await process_frame
 		print("MP3 frame ", i + 1, ": pos=", p.get_playback_position(), " playing=", p.playing)
-	var ogg = load("res://assets/floor/footstep_concrete_000.ogg")
+	var ogg = load("res://assets/audio/floor/footstep_concrete_000.ogg")
 	var q := AudioStreamPlayer.new()
 	q.stream = ogg
 	root.add_child(q)

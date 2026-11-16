@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bsnxkop782soy"]
 
-[ext_resource type="Texture2D" uid="uid://6dk5f481h10g" path="res://assets/cannons/default/ball.png" id="1_142lv"]
+[ext_resource type="Texture2D" uid="uid://6dk5f481h10g" path="res://assets/sprite/cannon/ball.png" id="1_142lv"]
 [ext_resource type="Script" uid="uid://6dx7xs50gitw" path="res://components/bullet/bullet.gd" id="1_j7bu3"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_dlv83"]

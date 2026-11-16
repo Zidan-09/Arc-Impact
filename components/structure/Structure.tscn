@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://yo8x47fn5125"]
 
-[ext_resource type="Texture2D" uid="uid://ccykmsc6wiruh" path="res://assets/structure/structure.png" id="1_koaml"]
+[ext_resource type="Texture2D" uid="uid://ccykmsc6wiruh" path="res://assets/sprite/structure/structure.png" id="1_koaml"]
 
 [node name="Structure" type="Node2D" unique_id=547570193]
 

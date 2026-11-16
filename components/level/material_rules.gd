@@ -93,7 +93,7 @@ static func base_size(kind: StringName) -> Vector2:
 
 ## Tamanho base do sprite da Structure em px, escala 1.0 (Etapa 2 da
 ## refatoração composition-first). Medido de
-## `assets/structure/structure.png` (482x448); em scale 0.15 (guides)
+## `assets/sprite/structure/structure.png` (482x448); em scale 0.15 (guides)
 ## ~= 72x67. Rotação 90° troca largura/altura, como nos obstáculos.
 static func structure_size() -> Vector2:
 	return Vector2(482, 448)
@@ -101,7 +101,7 @@ static func structure_size() -> Vector2:
 
 ## Tamanho base do tile do Floor em px, escala 1.0 (Etapa 2). Lido de
 ## `components/floor/floor.tscn` (RectangleShape2D 500x500, sprite
-## `assets/floor/floor.png` 500x500); em scale 0.2 = tile 100x100, a
+## `assets/sprite/floor/floor.png` 500x500); em scale 0.2 = tile 100x100, a
 ## unidade da grade dos guides.
 static func floor_size() -> Vector2:
 	return Vector2(500, 500)

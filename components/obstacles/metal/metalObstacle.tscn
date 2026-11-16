@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cdwyigup7yi7r"]
 
 [ext_resource type="Script" uid="uid://c7jhg4dtsdfck" path="res://components/obstacles/metal/metal_obstacle.gd" id="1_n5duv"]
-[ext_resource type="Texture2D" uid="uid://kp0y5mldwih3" path="res://assets/obstacles/metal_square.jpg" id="1_vkk2j"]
+[ext_resource type="Texture2D" uid="uid://kp0y5mldwih3" path="res://assets/sprite/obstacles/metal/metal_square.jpg" id="1_vkk2j"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_dlv83"]
 size = Vector2(547, 547)

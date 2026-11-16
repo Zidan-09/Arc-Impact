@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" uid="uid://l4mxvol03thbk" path="res://components/obstacles/glass/glass_shard.gd" id="1_shard"]
-[ext_resource type="Texture2D" uid="uid://pjv4712im8ga" path="res://assets/obstacles/glass_shard_4.png" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://pjv4712im8ga" path="res://assets/sprite/obstacles/glass/glass_shard_4.png" id="1_tex"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_shard"]
 friction = 0.4

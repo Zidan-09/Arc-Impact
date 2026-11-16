@@ -3,7 +3,7 @@ func _init() -> void:
 	_run()
 func _run() -> void:
 	await process_frame
-	var ogg = load("res://assets/obstacles/glass/breakingGlass_000.ogg")
+	var ogg = load("res://assets/audio/obstacles/glass/breaking_glass_000.ogg")
 	var q := AudioStreamPlayer.new()
 	q.stream = ogg
 	root.add_child(q)

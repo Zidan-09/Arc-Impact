@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Texture2D" uid="uid://baja2hwj7s0ps" path="res://assets/background/levels.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://baja2hwj7s0ps" path="res://assets/image/background/levels.jpg" id="1_tex"]
 
 [node name="Background" type="Control"]
 layout_mode = 3

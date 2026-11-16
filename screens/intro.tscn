@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://0qog4exrubh7"]
 
 [ext_resource type="Script" uid="uid://dwpft5h50qb5g" path="res://screens/intro.gd" id="1_j0kdn"]
-[ext_resource type="Texture2D" uid="uid://ddaejb85meacc" path="res://assets/icons/logo-transparente1.png" id="1_u2kxw"]
+[ext_resource type="Texture2D" uid="uid://7f5ixpg5u5v0" path="res://assets/image/icons/logo_transparent.png" id="2_j0kdn"]
 
 [sub_resource type="Animation" id="Animation_j0kdn"]
 length = 0.001
@@ -76,7 +76,7 @@ alignment = 1
 [node name="Logo" type="Sprite2D" parent="VBoxContainer" unique_id=1891668485]
 position = Vector2(102, -99.5)
 scale = Vector2(0.3, 0.3)
-texture = ExtResource("1_u2kxw")
+texture = ExtResource("2_j0kdn")
 
 [node name="Nome" type="Label" parent="VBoxContainer" unique_id=986310476]
 layout_mode = 2
@@ -96,7 +96,7 @@ grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=119295751]
-autoplay = "intro"
 libraries/ = SubResource("AnimationLibrary_pgig1")
+autoplay = &"intro"
 
 [connection signal="animation_finished" from="AnimationPlayer" to="." method="_on_animation_player_animation_finished"]

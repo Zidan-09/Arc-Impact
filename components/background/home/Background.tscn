@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Texture2D" uid="uid://rrnqcx88qao5" path="res://assets/background/background.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://rrnqcx88qao5" path="res://assets/image/background/background.jpg" id="1_tex"]
 [ext_resource type="Script" uid="uid://bd885nedrbnbb" path="res://components/background/background_shapes.gd" id="2_shapes"]
 
 [node name="Background" type="Control"]

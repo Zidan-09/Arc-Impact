@@ -40,10 +40,10 @@ const MAX_FRAMES := 300
 
 ## Pastas exclusivas de cada material (nenhum áudio de outro material).
 const FOLDER_BY_MATERIAL: Dictionary = {
-	ObstacleDefinition.KIND_STONE: "res://assets/obstacles/stone/",
-	ObstacleDefinition.KIND_METAL: "res://assets/obstacles/metal/",
-	ObstacleDefinition.KIND_GLASS: "res://assets/obstacles/glass/",
-	ImpactTextManager.KIND_FLOOR: "res://assets/floor/",
+	ObstacleDefinition.KIND_STONE: "res://assets/audio/obstacles/stone/",
+	ObstacleDefinition.KIND_METAL: "res://assets/audio/obstacles/metal/",
+	ObstacleDefinition.KIND_GLASS: "res://assets/audio/obstacles/glass/",
+	ImpactTextManager.KIND_FLOOR: "res://assets/audio/floor/",
 }
 
 var _failures := 0
@@ -260,7 +260,7 @@ func _case_pool_offsets_and_stop() -> void:
 	if playing.size() == 1:
 		var voice: AudioStreamPlayer = playing[0]
 		var stream_path := voice.stream.resource_path if voice.stream != null else ""
-		_check(stream_path.begins_with("res://assets/obstacles/stone/"),
+		_check(stream_path.begins_with("res://assets/audio/obstacles/stone/"),
 			"pool: voz toca o arquivo do material (%s)" % stream_path)
 		_check(is_equal_approx(voice.volume_db, _manager.volume_for(
 				ObstacleDefinition.KIND_STONE)),
