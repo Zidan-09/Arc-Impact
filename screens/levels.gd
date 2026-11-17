@@ -43,6 +43,7 @@ func _wait_for_layout() -> void:
 
 
 func _on_back_pressed() -> void:
+	InterfaceSoundManager.pluck()
 	get_tree().change_scene_to_file(HOME_SCENE)
 
 
@@ -50,6 +51,7 @@ func _on_back_pressed() -> void:
 ## gerador procedural existente. Nada é gravado aqui — jogar uma fase
 ## antiga não move o progresso máximo.
 func _on_level_selected(level: int) -> void:
+	InterfaceSoundManager.select_sound()
 	GAME_SCRIPT.requested_level = level
 	GAME_SCRIPT.return_scene = LEVELS_SCENE
 	get_tree().change_scene_to_file(GAME_SCENE)
@@ -57,6 +59,7 @@ func _on_level_selected(level: int) -> void:
 
 ## Fase bloqueada: feedback visual, sem iniciar a fase.
 func _on_blocked_selected(level: int) -> void:
+	InterfaceSoundManager.select_sound()
 	_show_hint("Fase %d bloqueada" % level)
 
 

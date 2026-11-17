@@ -12,4 +12,5 @@ func _ready() -> void:
 
 
 func _on_pressed() -> void:
+	InterfaceSoundManager.pluck()
 	get_tree().change_scene_to_file(LEVELS_SCENE)

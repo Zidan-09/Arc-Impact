@@ -70,16 +70,20 @@ func show_pause_popup(score: int, ammo: int) -> void:
 
 
 func _on_home_button_pressed() -> void:
+	InterfaceSoundManager.pluck()
 	home_pressed.emit()
 
 
 func _on_retry_button_pressed() -> void:
+	InterfaceSoundManager.pluck()
 	retry_pressed.emit()
 
 
 func _on_next_button_pressed() -> void:
+	InterfaceSoundManager.pluck()
 	next_pressed.emit()
 
 
 func _on_levels_button_pressed() -> void:
+	InterfaceSoundManager.pluck()
 	levels_pressed.emit()

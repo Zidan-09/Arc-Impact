@@ -19,6 +19,7 @@ config/icon="uid://d1mb38w5gs31u"
 [autoload]
 
 BackgroundMusic="*res://components/background-music/background_music_manager.gd"
+InterfaceSounds="*res://components/interface-sound/interface_sound_manager.gd"
 
 [display]
 

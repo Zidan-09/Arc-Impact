@@ -12,6 +12,7 @@ func _ready() -> void:
 
 
 func _on_pause_button_pressed() -> void:
+	InterfaceSoundManager.pluck()
 	pause_pressed.emit()
 
 

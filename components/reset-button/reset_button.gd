@@ -8,4 +8,5 @@ func _ready() -> void:
 	pressed.connect(_on_pressed)
 
 func _on_pressed() -> void:
+	InterfaceSoundManager.pluck()
 	SaveManager.reset_progress()

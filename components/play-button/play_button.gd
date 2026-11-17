@@ -10,6 +10,7 @@ func _ready() -> void:
 	pressed.connect(_on_pressed)
 
 func _on_pressed() -> void:
+	InterfaceSoundManager.pluck()
 	# Partida normal pela home: nenhuma fase específica selecionada e o
 	# popup "Home" do jogo volta para a home (não para a tela Levels).
 	GAME_SCRIPT.requested_level = 0
