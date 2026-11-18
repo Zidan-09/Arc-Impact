@@ -1,0 +1,67 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://components/settings/volume_slider.gd" id="1_dcloh"]
+[ext_resource type="Texture2D" path="res://assets/sprite/power-slider/base.png" id="2_track"]
+[ext_resource type="Texture2D" path="res://assets/sprite/power-slider/inactive_handle.png" id="3_handle_normal"]
+[ext_resource type="Texture2D" path="res://assets/sprite/power-slider/active_handle.png" id="4_handle_pressed"]
+
+[node name="VolumeSlider" type="Control" unique_id=199311976]
+layout_mode = 3
+anchors_preset = 0
+custom_minimum_size = Vector2(300, 40)
+size_flags_horizontal = 0
+size_flags_vertical = 0
+mouse_filter = 0
+script = ExtResource("1_dcloh")
+
+[node name="Track" type="TextureRect" parent="." unique_id=642828453]
+z_index = 2
+layout_mode = 1
+anchor_left = 0.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = 6.0
+offset_top = -7.0
+offset_right = -6.0
+offset_bottom = 7.0
+mouse_filter = 0
+texture = ExtResource("2_track")
+expand_mode = 1
+stretch_mode = 1
+
+[node name="Handle" type="Control" parent="." unique_id=1090266475]
+z_index = 5
+layout_mode = 1
+anchors_preset = 0
+offset_left = -14.0
+offset_top = 6.0
+offset_right = 14.0
+offset_bottom = 34.0
+mouse_filter = 2
+
+[node name="Normal" type="TextureRect" parent="Handle" unique_id=679803136]
+layout_mode = 1
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = -14.0
+offset_top = -14.0
+offset_right = 14.0
+offset_bottom = 14.0
+mouse_filter = 0
+texture = ExtResource("3_handle_normal")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Pressed" type="TextureRect" parent="Handle" unique_id=75994612]
+layout_mode = 1
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = -14.0
+offset_top = -14.0
+offset_right = 14.0
+offset_bottom = 14.0
+mouse_filter = 0
+texture = ExtResource("4_handle_pressed")
+expand_mode = 1
+stretch_mode = 5

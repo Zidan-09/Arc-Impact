@@ -2,8 +2,8 @@
 
 [ext_resource type="PackedScene" path="res://components/background/home/Background.tscn" id="1_xi7s7"]
 [ext_resource type="PackedScene" uid="uid://d1u475kwrl2io" path="res://components/play-button/PlayButton.tscn" id="2_xtd6d"]
-[ext_resource type="PackedScene" path="res://components/reset-button/ResetButton.tscn" id="3_rstbtn"]
 [ext_resource type="PackedScene" uid="uid://b8sku5tp0h8m2" path="res://components/levels-button/LevelsButton.tscn" id="4_lvlbtn"]
+[ext_resource type="PackedScene" path="res://components/settings-button/SettingsButton.tscn" id="5_settings"]
 
 [node name="Home" type="Control" unique_id=1216157525]
 layout_mode = 3
@@ -32,17 +32,15 @@ alignment = 1
 [node name="Play" parent="Menu/VBox" unique_id=1159510543 instance=ExtResource("2_xtd6d")]
 custom_minimum_size = Vector2(200, 100)
 layout_mode = 2
-focus_neighbor_top = NodePath("../Reset")
+focus_neighbor_top = NodePath("../Levels")
 focus_neighbor_bottom = NodePath("../Levels")
 
 [node name="Levels" parent="Menu/VBox" unique_id=1335570267 instance=ExtResource("4_lvlbtn")]
 custom_minimum_size = Vector2(242, 100)
 layout_mode = 2
 focus_neighbor_top = NodePath("../Play")
-focus_neighbor_bottom = NodePath("../Reset")
+focus_neighbor_bottom = NodePath("../../Settings")
 
-[node name="Reset" parent="Menu/VBox" unique_id=1425537148 instance=ExtResource("3_rstbtn")]
-custom_minimum_size = Vector2(200, 60)
-layout_mode = 2
-focus_neighbor_top = NodePath("../Levels")
-focus_neighbor_bottom = NodePath("../Play")
+[node name="Settings" parent="." unique_id=1425537149 instance=ExtResource("5_settings")]
+focus_neighbor_top = NodePath("../../Menu/VBox/Levels")
+focus_neighbor_bottom = NodePath("../../Menu/VBox/Play")

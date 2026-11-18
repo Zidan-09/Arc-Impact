@@ -143,9 +143,16 @@ var _play_seq := 0
 ## Último índice sorteado por material (anti-repetição imediata).
 var _last_pick: Dictionary = {}
 
+## Ganho do nível de SFX (0.0..1.0) vindo das configurações
+## (SettingsManager). Multiplica o trim global+material sem alterá-los.
+var _sfx_level := 1.0
+
 
 func _ready() -> void:
 	current = self
+	# Configurações aplicadas ANTES de qualquer impacto: a fase nunca
+	# toca temporariamente com o volume errado.
+	_sfx_level = clampf(float(SettingsManager.get_sfx_volume()) / 100.0, 0.0, 1.0)
 	for i in MAX_VOICES:
 		var voice := AudioStreamPlayer.new()
 		voice.name = "Voice%d" % (i + 1)
@@ -193,6 +200,13 @@ func volume_for(material: StringName) -> float:
 	return SFX_VOLUME_DB + float(VOLUME_DB_BY_MATERIAL.get(material, 0.0))
 
 
+## Aplica o nível de SFX (0.0..1.0) das configurações: ganho somado ao
+## volume final de cada material em `_start_voice`, sem alterar os
+## trims. Vale para impactos, disparo e qualquer efeito futuro.
+func set_sfx_level(level01: float) -> void:
+	_sfx_level = clampf(level01, 0.0, 1.0)
+
+
 ## Pitch de `material`: faixa do Glass (arquivo único) ou micro-jitter
 ## simétrico em torno de 1.0 para os demais.
 func pitch_for(material: StringName) -> float:
@@ -234,7 +248,7 @@ func _pick_stream(material: StringName) -> AudioStream:
 ## Atributos de mixagem + início da reprodução na voz adquirida.
 func _start_voice(stream: AudioStream, material: StringName) -> void:
 	var voice := _acquire_voice()
-	voice.volume_db = volume_for(material)
+	voice.volume_db = volume_for(material) + SettingsManager.level_to_db_gain(_sfx_level)
 	voice.pitch_scale = pitch_for(material)
 	voice.stream = stream
 	voice.play(start_offset_for(material))

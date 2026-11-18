@@ -57,6 +57,11 @@ static var current: BackgroundMusicManager
 ## Único reprodutor da trilha (filho deste nó — morre junto com ele).
 var _player: AudioStreamPlayer
 
+## Ganho do nível de música (0.0..1.0) vindo das configurações
+## (SettingsManager). Multiplica o trim VOLUME_DB sem alterá-lo: 100%
+## mantém exatamente o volume de fundo calibrado.
+var _music_level := 1.0
+
 
 func _ready() -> void:
 	if is_instance_valid(current) and current != self:
@@ -66,10 +71,13 @@ func _ready() -> void:
 		return
 	current = self
 	_ensure_bus()
+	# Configurações aplicadas ANTES da primeira reprodução: o jogo nunca
+	# toca temporariamente com o volume errado no boot.
+	_music_level = clampf(float(SettingsManager.get_music_volume()) / 100.0, 0.0, 1.0)
 	_player = AudioStreamPlayer.new()
 	_player.name = "Music"
 	_player.bus = MUSIC_BUS
-	_player.volume_db = VOLUME_DB
+	_player.volume_db = VOLUME_DB + SettingsManager.level_to_db_gain(_music_level)
 	# Loop em runtime: não altera o .mp3 original, só a instância em
 	# memória (compartilhada via preload — configurada uma única vez).
 	# O alias local contorna a imutabilidade de membros de `const`
@@ -90,6 +98,14 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if current == self:
 		current = null
+
+
+## Aplica o nível de música (0.0..1.0) das configurações: ganho somado
+## ao trim VOLUME_DB, sem alterá-lo. 1.0 mantém o volume calibrado.
+func set_music_level(level01: float) -> void:
+	_music_level = clampf(level01, 0.0, 1.0)
+	if is_instance_valid(_player):
+		_player.volume_db = VOLUME_DB + SettingsManager.level_to_db_gain(_music_level)
 
 
 ## Garante o bus "Music" mesmo sem o default_bus_layout.tres (fallback

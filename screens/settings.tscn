@@ -1,0 +1,382 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://components/settings/volume_slider.tscn" id="1_music_slider"]
+[ext_resource type="PackedScene" path="res://components/settings/volume_slider.tscn" id="2_sfx_slider"]
+[ext_resource type="Script" path="res://screens/settings.gd" id="3_settings_script"]
+[ext_resource type="Texture2D" path="res://assets/sprite/buttons/game-popup/inactive_home.png" id="4_home_inactive"]
+[ext_resource type="Texture2D" path="res://assets/sprite/buttons/game-popup/active_home.png" id="5_home_active"]
+[ext_resource type="Texture2D" path="res://assets/sprite/buttons/pause/inactive_pause.png" id="6_toggle_inactive"]
+[ext_resource type="Texture2D" path="res://assets/sprite/buttons/pause/active_pause.png" id="7_toggle_active"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_popup"]
+bg_color = Color(0.051, 0.031, 0.078, 0.97)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.851, 0.275, 0.937, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.133, 0.827, 0.933, 0.45)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
+bg_color = Color(0.1, 0.06, 0.16, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.027, 0.976, 0.98, 0.85)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+bg_color = Color(0.14, 0.09, 0.22, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.027, 0.976, 0.98, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_pressed"]
+bg_color = Color(0.06, 0.04, 0.1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.506, 0.11, 0.886, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_danger"]
+bg_color = Color(0.16, 0.04, 0.09, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.23, 0.42, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_danger_hover"]
+bg_color = Color(0.22, 0.06, 0.12, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.4, 0.55, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="SettingsScreen" type="Control" unique_id=1122334455]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_settings_script")
+
+[node name="Background" type="ColorRect" parent="." unique_id=840100]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.02, 0.02, 0.06, 0.9)
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="." unique_id=840101]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -280.0
+offset_right = 320.0
+offset_bottom = 280.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_popup")
+
+[node name="Margin" type="MarginContainer" parent="Panel" unique_id=840102]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 28
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin" unique_id=840103]
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox" unique_id=840104]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.133, 0.827, 0.933, 1)
+theme_override_colors/font_shadow_color = Color(0.851, 0.275, 0.937, 0.9)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 0
+theme_override_font_sizes/font_size = 56
+text = "SETTINGS"
+horizontal_alignment = 1
+
+[node name="AudioSection" type="VBoxContainer" parent="Panel/Margin/VBox" unique_id=840105]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="AudioTitle" type="Label" parent="Panel/Margin/VBox/AudioSection" unique_id=840106]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.95, 0.9, 1, 0.85)
+theme_override_font_sizes/font_size = 24
+text = "ÁUDIO"
+uppercase = true
+horizontal_alignment = 1
+
+[node name="MusicRow" type="HBoxContainer" parent="Panel/Margin/VBox/AudioSection" unique_id=840107]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="MusicLabel" type="Label" parent="Panel/Margin/VBox/AudioSection/MusicRow" unique_id=840108]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "Música:"
+horizontal_alignment = 0
+
+[node name="MusicSlider" parent="Panel/Margin/VBox/AudioSection/MusicRow" unique_id=840109 instance=ExtResource("1_music_slider")]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 40)
+
+[node name="MusicValue" type="Label" parent="Panel/Margin/VBox/AudioSection/MusicRow" unique_id=840110]
+layout_mode = 2
+size_flags_horizontal = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "100%"
+
+[node name="SFXRow" type="HBoxContainer" parent="Panel/Margin/VBox/AudioSection" unique_id=840111]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="SFXLabel" type="Label" parent="Panel/Margin/VBox/AudioSection/SFXRow" unique_id=840112]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "Efeitos:"
+horizontal_alignment = 0
+
+[node name="SFXSlider" parent="Panel/Margin/VBox/AudioSection/SFXRow" unique_id=840113 instance=ExtResource("2_sfx_slider")]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 40)
+
+[node name="SFXValue" type="Label" parent="Panel/Margin/VBox/AudioSection/SFXRow" unique_id=840114]
+layout_mode = 2
+size_flags_horizontal = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "100%"
+
+[node name="ControlsSection" type="VBoxContainer" parent="Panel/Margin/VBox" unique_id=840115]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="ControlsTitle" type="Label" parent="Panel/Margin/VBox/ControlsSection" unique_id=840116]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.95, 0.9, 1, 0.85)
+theme_override_font_sizes/font_size = 24
+text = "CONTROLES"
+uppercase = true
+horizontal_alignment = 1
+
+[node name="InvertRow" type="HBoxContainer" parent="Panel/Margin/VBox/ControlsSection" unique_id=840117]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="InvertLabel" type="Label" parent="Panel/Margin/VBox/ControlsSection/InvertRow" unique_id=840118]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "Inverter eixo Y:"
+horizontal_alignment = 0
+
+[node name="InvertToggle" type="TextureButton" parent="Panel/Margin/VBox/ControlsSection/InvertRow" unique_id=840119]
+custom_minimum_size = Vector2(80, 40)
+layout_mode = 2
+texture_normal = ExtResource("6_toggle_inactive")
+texture_pressed = ExtResource("7_toggle_active")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="ProgressSection" type="VBoxContainer" parent="Panel/Margin/VBox" unique_id=840120]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="ProgressTitle" type="Label" parent="Panel/Margin/VBox/ProgressSection" unique_id=840121]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.95, 0.9, 1, 0.85)
+theme_override_font_sizes/font_size = 24
+text = "PROGRESSO"
+uppercase = true
+horizontal_alignment = 1
+
+[node name="ResetRow" type="HBoxContainer" parent="Panel/Margin/VBox/ProgressSection" unique_id=840122]
+layout_mode = 2
+size_flags_horizontal = 4
+alignment = 1
+
+[node name="ResetButton" type="Button" parent="Panel/Margin/VBox/ProgressSection/ResetRow" unique_id=840123]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 56)
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_danger")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_danger_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_hover")
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 0.4, 0.55, 1)
+theme_override_font_sizes/font_size = 22
+text = "Reset Progresso"
+
+[node name="ConfirmPanel" type="Control" parent="." unique_id=840125]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+visible = false
+process_mode = 2
+
+[node name="ConfirmBg" type="ColorRect" parent="ConfirmPanel" unique_id=840126]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.02, 0.02, 0.06, 0.7)
+
+[node name="ConfirmBox" type="Panel" parent="ConfirmPanel" unique_id=840134]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -200.0
+offset_right = 320.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_popup")
+
+[node name="ConfirmMargin" type="MarginContainer" parent="ConfirmPanel/ConfirmBox" unique_id=840127]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 28
+
+[node name="ConfirmVBox" type="VBoxContainer" parent="ConfirmPanel/ConfirmBox/ConfirmMargin" unique_id=840128]
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="ConfirmTitle" type="Label" parent="ConfirmPanel/ConfirmBox/ConfirmMargin/ConfirmVBox" unique_id=840129]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 0.23, 0.42, 1)
+theme_override_colors/font_shadow_color = Color(1, 0.23, 0.42, 0.6)
+theme_override_font_sizes/font_size = 40
+text = "CONFIRMAR RESET"
+horizontal_alignment = 1
+
+[node name="ConfirmMsg" type="Label" parent="ConfirmPanel/ConfirmBox/ConfirmMargin/ConfirmVBox" unique_id=840130]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.95, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "Todo o progresso será perdido permanentemente."
+horizontal_alignment = 1
+
+[node name="ConfirmButtons" type="HBoxContainer" parent="ConfirmPanel/ConfirmBox/ConfirmMargin/ConfirmVBox" unique_id=840131]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="ConfirmYes" type="Button" parent="ConfirmPanel/ConfirmBox/ConfirmMargin/ConfirmVBox/ConfirmButtons" unique_id=840132]
+custom_minimum_size = Vector2(150, 54)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_danger")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_danger_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_hover")
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 0.4, 0.55, 1)
+theme_override_font_sizes/font_size = 22
+text = "Confirmar"
+
+[node name="ConfirmNo" type="Button" parent="ConfirmPanel/ConfirmBox/ConfirmMargin/ConfirmVBox/ConfirmButtons" unique_id=840133]
+custom_minimum_size = Vector2(150, 54)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_hover")
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(0.027, 0.976, 0.98, 1)
+theme_override_font_sizes/font_size = 22
+text = "Cancelar"
+
+[node name="BackButton" type="TextureButton" parent="Panel/Margin/VBox" unique_id=840124]
+layout_mode = 2
+custom_minimum_size = Vector2(96, 96)
+texture_normal = ExtResource("4_home_inactive")
+texture_pressed = ExtResource("5_home_active")
+ignore_texture_size = true
+stretch_mode = 5

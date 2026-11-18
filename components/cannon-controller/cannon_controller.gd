@@ -134,10 +134,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_dragging_angle = event.pressed
 	elif event is InputEventMouseMotion and _dragging_angle:
-		cannon.rotate_cannon(-event.relative.y)
+		cannon.rotate_cannon(SettingsManager.angle_input(event.relative.y))
 	elif event is InputEventScreenTouch:
 		if event.index == 0:
 			_dragging_angle = event.pressed
 	elif event is InputEventScreenDrag:
 		if event.index == 0 and _dragging_angle:
-			cannon.rotate_cannon(-event.relative.y)
+			cannon.rotate_cannon(SettingsManager.angle_input(event.relative.y))

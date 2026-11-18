@@ -325,7 +325,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _panning:
 			game_camera.pan_by(-event.relative)
 		else:
-			cannon.rotate_cannon(-event.relative.y)
+			# Inversão do eixo Y (configurações): só a interpretação da
+			# entrada passa pelo hub; a física nunca é tocada.
+			cannon.rotate_cannon(SettingsManager.angle_input(event.relative.y))
 	elif event is InputEventScreenTouch:
 		if event.index == 0:
 			_dragging_angle = event.pressed and _press_in_world(event.position)
@@ -345,7 +347,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_touch_points[event.index] = event.position
 			_update_touch_camera()
 		elif event.index == 0 and _dragging_angle:
-			cannon.rotate_cannon(-event.relative.y)
+			cannon.rotate_cannon(SettingsManager.angle_input(event.relative.y))
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_EQUAL or event.keycode == KEY_KP_ADD:
 			game_camera.zoom_step_in()

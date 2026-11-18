@@ -49,12 +49,19 @@ static var current: InterfaceSoundManager
 var _voices: Array[AudioStreamPlayer] = []
 var _next := 0
 
+## Ganho do nível de SFX (0.0..1.0) vindo das configurações
+## (SettingsManager). Multiplica o trim VOLUME_DB sem alterá-lo.
+var _sfx_level := 1.0
+
 
 func _ready() -> void:
 	if is_instance_valid(current) and current != self:
 		queue_free()
 		return
 	current = self
+	# Configurações aplicadas ANTES de qualquer clique: o jogo nunca
+	# toca temporariamente com o volume errado no boot.
+	_sfx_level = clampf(float(SettingsManager.get_sfx_volume()) / 100.0, 0.0, 1.0)
 	# O clique precisa tocar com a árvore pausada (popup de pause) e
 	# atravessar a troca de cena (Autoload já sobrevive; o modo ALWAYS
 	# garante que o player não seja pausado junto).
@@ -62,7 +69,7 @@ func _ready() -> void:
 	for i in MAX_VOICES:
 		var voice := AudioStreamPlayer.new()
 		voice.name = "Voice%d" % (i + 1)
-		voice.volume_db = VOLUME_DB
+		voice.volume_db = VOLUME_DB + SettingsManager.level_to_db_gain(_sfx_level)
 		voice.process_mode = Node.PROCESS_MODE_ALWAYS
 		add_child(voice)
 		_voices.append(voice)
@@ -101,5 +108,15 @@ func _play(stream: AudioStream) -> void:
 	var voice := _voices[_next]
 	_next = (_next + 1) % _voices.size()
 	voice.stream = stream
-	voice.volume_db = VOLUME_DB
+	voice.volume_db = VOLUME_DB + SettingsManager.level_to_db_gain(_sfx_level)
 	voice.play()
+
+
+## Aplica o nível de SFX (0.0..1.0) das configurações: ganho somado ao
+## trim VOLUME_DB, sem alterá-lo. Vale para todas as vozes futuras; as
+## vozes ociosas já nascem com o nível atual.
+func set_sfx_level(level01: float) -> void:
+	_sfx_level = clampf(level01, 0.0, 1.0)
+	for voice in _voices:
+		if not voice.playing:
+			voice.volume_db = VOLUME_DB + SettingsManager.level_to_db_gain(_sfx_level)
