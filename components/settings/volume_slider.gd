@@ -1,11 +1,13 @@
 class_name VolumeSlider
 extends Control
-## Slider de volume horizontal (0..100), no padrão do power-slider:
-## arraste horizontal acumulado em `_raw_volume` (suave para mouse e
-## touch), snap para o inteiro mais próximo a cada movimento e emissão
-## de `volume_changed` com o valor em porcentagem. Clique na trilha
-## leva o valor direto para a posição clicada. O gerenciador de
-## configurações é quem persiste; este nó só representa a seleção.
+## Slider de volume horizontal (0..100), no padrão do *settings screen*:
+## trilha escura com borda roxa, preenchimento gradiente roxo→ciano
+## limitado pela posição do knob e alçamento ciano. Arraste horizontal
+## acumulado em `_raw_volume` (suave para mouse e touch), snap para o
+## inteiro mais próximo a cada movimento e emissão de `volume_changed`
+## com o valor em porcentagem. Clique na trilha leva o valor direto
+## para a posição clicada. O gerenciador de configurações é quem
+## persiste; este nó só representa a seleção.
 
 const MIN_VOLUME := 0
 const MAX_VOLUME := 100
@@ -13,7 +15,11 @@ const MAX_VOLUME := 100
 @onready var handle: Control = $Handle
 @onready var normal: TextureRect = $Handle/Normal
 @onready var pressed: TextureRect = $Handle/Pressed
-@onready var track: TextureRect = $Track
+## O Track é um Panel (estilo dark com borda roxa) com um
+## TextureRect "Fill" dentro, que recebe o gradiente
+## roxo→ciano limitado pela posição do knob.
+@onready var track: Panel = $Track
+@onready var fill: TextureRect = $Track/Fill
 
 @export_range(0.05, 2.0, 0.01)
 var sensitivity: float = 0.4
@@ -93,10 +99,10 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion:
-		update_volume(-event.relative.x)
+		update_volume(event.relative.x)
 	elif event is InputEventScreenDrag:
 		if event.index == 0:
-			update_volume(-event.relative.x)
+			update_volume(event.relative.x)
 
 
 ## Arraste horizontal: esquerda diminui, direita aumenta.
@@ -129,11 +135,18 @@ func update_handle_position() -> void:
 	var t := float(volume - MIN_VOLUME) / float(MAX_VOLUME - MIN_VOLUME)
 	var limits := get_handle_limits()
 	handle.position.x = lerpf(limits.x, limits.y, t)
+	# O Fill acompanha o knob: vai da borda interna esquerda da trilha
+	# até o centro do knob, sem passar por cima da borda direita.
+	var half := handle.size.x * 0.5
+	var knob_center := handle.position.x + half - track.position.x
+	fill.offset_right = clampf(knob_center, fill.offset_left, track.size.x - fill.offset_left)
 
 
 func get_handle_limits() -> Vector2:
-	# Limites para a POSIÇÃO (canto superior esquerdo) do alçamento,
-	# de modo que o centro dele percorra a trilha de ponta a ponta.
-	var left := track.position.x + 4.0
-	var right := track.position.x + track.size.x - handle.size.x - 4.0
+	# Limites para a POSIÇÃO (canto superior esquerdo) do knob de modo
+	# que o CENTRO dele percorra a trilha de ponta a ponta: em 0% o
+	# preenchimento fica vazio e em 100% encosta na extremidade direita.
+	var half := handle.size.x * 0.5
+	var left := track.position.x - half
+	var right := track.position.x + track.size.x - half
 	return Vector2(left, right)

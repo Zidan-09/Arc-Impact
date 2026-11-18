@@ -1,91 +1,125 @@
 extends Control
-## Tela de configurações: volumes (música/SFX), inversão do eixo Y e
-## reset de progresso com confirmação. Todas as preferências são lidas
-## e gravadas via SettingsManager (persistência automática, sem botão
-## de salvar); o reset chama SaveManager e preserva as configurações
-## porque os dois usam arquivos separados.
+## Tela de configurações fiel ao mockup (`docs/design/settings-screen.jpg`):
+## fundo de circuito, cabeçalho com "VOLTAR" + título e um painel com
+## MÚSICA / EFEITOS SONOROS (sliders), INVERTER EIXO Y (toggle ON/OFF)
+## e TIPO DE CONTROLE (3 opções). Todas as preferências são lidas e
+## gravadas via SettingsManager (persistência automática, sem botão de
+## salvar).
 
-const INVERT_ON_TEXTURE := preload("res://assets/sprite/buttons/pause/active_pause.png")
-const INVERT_OFF_TEXTURE := preload("res://assets/sprite/buttons/pause/inactive_pause.png")
+const PILL_BORDER := Color(0.65, 0.36, 0.94, 1)
+const PILL_GREEN := Color(0.21, 0.9, 0.5, 1)
+const PILL_DARK := Color(0.16, 0.08, 0.26, 1)
+const PILL_TEXT_ACTIVE := Color(0.98, 1, 0.98, 1)
+const PILL_TEXT_IDLE := Color(0.72, 0.5, 0.93, 1)
 
-@onready var music_slider: VolumeSlider = $Panel/Margin/VBox/AudioSection/MusicRow/MusicSlider
-@onready var music_value: Label = $Panel/Margin/VBox/AudioSection/MusicRow/MusicValue
-@onready var sfx_slider: VolumeSlider = $Panel/Margin/VBox/AudioSection/SFXRow/SFXSlider
-@onready var sfx_value: Label = $Panel/Margin/VBox/AudioSection/SFXRow/SFXValue
-@onready var invert_toggle: TextureButton = $Panel/Margin/VBox/ControlsSection/InvertRow/InvertToggle
-@onready var invert_label: Label = $Panel/Margin/VBox/ControlsSection/InvertRow/InvertLabel
-@onready var reset_button: Button = $Panel/Margin/VBox/ProgressSection/ResetRow/ResetButton
-@onready var back_button: TextureButton = $Panel/Margin/VBox/BackButton
+@onready var music_slider: VolumeSlider = $Panel/Margin/VBox/MusicSection/MusicSlider
+@onready var sfx_slider: VolumeSlider = $Panel/Margin/VBox/SfxSection/SfxSlider
+@onready var invert_on: Button = $Panel/Margin/VBox/InvertRow/OnButton
+@onready var invert_off: Button = $Panel/Margin/VBox/InvertRow/OffButton
+@onready var ctrl_buttons: Array[TextureButton] = [
+	$Panel/Margin/VBox/ControlTypeSection/ControlTypeRow/CtrlType0,
+	$Panel/Margin/VBox/ControlTypeSection/ControlTypeRow/CtrlType1,
+	$Panel/Margin/VBox/ControlTypeSection/ControlTypeRow/CtrlType2,
+]
+@onready var back_button: TextureButton = $Header/Back/Home
 
-@onready var confirm_panel: Control = $ConfirmPanel
-@onready var confirm_yes: Button = $ConfirmPanel/ConfirmBox/ConfirmMargin/ConfirmVBox/ConfirmButtons/ConfirmYes
-@onready var confirm_no: Button = $ConfirmPanel/ConfirmBox/ConfirmMargin/ConfirmVBox/ConfirmButtons/ConfirmNo
+## Metades do "pill" ON/OFF, recriadas por estado: a metade ativa fica
+## verde e a inativa fica escura, mantendo a borda roxa contínua.
+var _on_active: StyleBoxFlat
+var _on_idle: StyleBoxFlat
+var _off_active: StyleBoxFlat
+var _off_idle: StyleBoxFlat
 
 
 func _ready() -> void:
+	_on_active = _make_pill_half(true, PILL_GREEN)
+	_on_idle = _make_pill_half(true, PILL_DARK)
+	_off_active = _make_pill_half(false, PILL_GREEN)
+	_off_idle = _make_pill_half(false, PILL_DARK)
+
 	music_slider.volume_changed.connect(_on_music_changed)
 	sfx_slider.volume_changed.connect(_on_sfx_changed)
-	invert_toggle.pressed.connect(_on_invert_pressed)
-	reset_button.pressed.connect(_on_reset_pressed)
+	invert_on.pressed.connect(_on_invert_on)
+	invert_off.pressed.connect(_on_invert_off)
 	back_button.pressed.connect(_on_back_pressed)
-	confirm_yes.pressed.connect(_on_reset_confirmed)
-	confirm_no.pressed.connect(_on_cancel_reset)
-	confirm_panel.visible = false
+
+	for i in ctrl_buttons.size():
+		ctrl_buttons[i].toggled.connect(_on_ctrl_type_toggled.bind(i))
 
 	music_slider.set_volume(SettingsManager.get_music_volume())
-	music_value.text = str(SettingsManager.get_music_volume()) + "%"
-
 	sfx_slider.set_volume(SettingsManager.get_sfx_volume())
-	sfx_value.text = str(SettingsManager.get_sfx_volume()) + "%"
-
 	_update_invert_visual(SettingsManager.is_invert_y())
+
+	var control_type := SettingsManager.get_control_type()
+	for i in ctrl_buttons.size():
+		ctrl_buttons[i].set_pressed_no_signal(i == control_type)
+
+
+## Monta uma metade do toggle: `is_left` arredonda só o lado esquerdo
+## (botão ON) ou só o direito (botão OFF), formando o pill completo.
+func _make_pill_half(is_left: bool, background: Color) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = background
+	box.border_color = PILL_BORDER
+	box.border_width_top = 2
+	box.border_width_bottom = 2
+	box.border_width_left = 2
+	box.border_width_right = 2
+	if is_left:
+		box.corner_radius_top_left = 8
+		box.corner_radius_bottom_left = 8
+	else:
+		box.corner_radius_top_right = 8
+		box.corner_radius_bottom_right = 8
+	return box
 
 
 func _on_music_changed(value: int) -> void:
 	SettingsManager.set_music_volume(value)
-	music_value.text = str(value) + "%"
 
 
 func _on_sfx_changed(value: int) -> void:
 	SettingsManager.set_sfx_volume(value)
-	sfx_value.text = str(value) + "%"
 
 
-func _on_invert_pressed() -> void:
+func _on_invert_on() -> void:
 	InterfaceSoundManager.pluck()
-	var enabled := not SettingsManager.is_invert_y()
-	SettingsManager.set_invert_y(enabled)
-	_update_invert_visual(enabled)
+	SettingsManager.set_invert_y(true)
+	_update_invert_visual(true)
+
+
+func _on_invert_off() -> void:
+	InterfaceSoundManager.pluck()
+	SettingsManager.set_invert_y(false)
+	_update_invert_visual(false)
 
 
 func _update_invert_visual(enabled: bool) -> void:
-	if enabled:
-		invert_toggle.texture_normal = INVERT_ON_TEXTURE
-		invert_toggle.texture_pressed = INVERT_OFF_TEXTURE
-		invert_label.text = "Inversão do eixo Y: On"
-	else:
-		invert_toggle.texture_normal = INVERT_OFF_TEXTURE
-		invert_toggle.texture_pressed = INVERT_ON_TEXTURE
-		invert_label.text = "Inversão do eixo Y: Off"
+	_apply_pill_style(invert_on, _on_active if enabled else _on_idle,
+			PILL_TEXT_ACTIVE if enabled else PILL_TEXT_IDLE)
+	_apply_pill_style(invert_off, _off_idle if enabled else _off_active,
+			PILL_TEXT_IDLE if enabled else PILL_TEXT_ACTIVE)
 
 
-func _on_reset_pressed() -> void:
+func _apply_pill_style(button: Button, box: StyleBoxFlat, text_color: Color) -> void:
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		button.add_theme_stylebox_override(state, box)
+	button.add_theme_color_override("font_color", text_color)
+	button.add_theme_color_override("font_hover_color", text_color)
+	button.add_theme_color_override("font_pressed_color", text_color)
+	button.add_theme_color_override("font_focus_color", text_color)
+
+
+func _on_ctrl_type_toggled(pressed: bool, index: int) -> void:
+	if not pressed:
+		# Sempre existe uma opção marcada: reativa a que foi clicada.
+		ctrl_buttons[index].set_pressed_no_signal(true)
+		return
 	InterfaceSoundManager.pluck()
-	confirm_panel.visible = true
-	confirm_yes.grab_focus()
-
-
-func _on_cancel_reset() -> void:
-	InterfaceSoundManager.pluck()
-	confirm_panel.visible = false
-	reset_button.grab_focus()
-
-
-func _on_reset_confirmed() -> void:
-	InterfaceSoundManager.pluck()
-	SaveManager.reset_progress()
-	# Configurações intactas (user://settings.json separado do save).
-	get_tree().change_scene_to_file("res://screens/home.tscn")
+	for i in ctrl_buttons.size():
+		if i != index:
+			ctrl_buttons[i].set_pressed_no_signal(false)
+	SettingsManager.set_control_type(index)
 
 
 func _on_back_pressed() -> void:

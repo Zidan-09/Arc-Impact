@@ -1,5 +1,6 @@
 class_name SettingsManager extends RefCounted
-## Hub central das preferências do jogador (volumes + inversão do eixo Y).
+## Hub central das preferências do jogador (volumes + inversão do eixo Y +
+## tipo de controle).
 ##
 ## Arquivo: `user://settings.json` (JSON simples, SEPARADO do
 ## `user://save.json` do SaveManager). A separação é intencional: o reset
@@ -23,14 +24,17 @@ class_name SettingsManager extends RefCounted
 const SETTINGS_PATH := "user://settings.json"
 const SETTINGS_VERSION := 1
 
-## Padrões da primeira execução: volumes cheios, sem inversão (comportamento
-## atual do canhão preservado até o jogador optar).
+## Padrões da primeira execução: volumes cheios, sem inversão e
+## controle vertical (arrastar para cima/baixo) — comportamento atual
+## do canhão preservado até o jogador optar.
 const DEFAULT_MUSIC_VOLUME := 100
 const DEFAULT_SFX_VOLUME := 100
 const DEFAULT_INVERT_Y := false
+const DEFAULT_CONTROL_TYPE := 0
 
 const MIN_VOLUME := 0
 const MAX_VOLUME := 100
+const MAX_CONTROL_TYPE := 2
 
 ## Nível do mute em dB: 0% desliga na prática sem usar -INF (que o
 ## AudioServer trata como silêncio total, mas polui comparações).
@@ -39,6 +43,7 @@ const MUTE_DB := -80.0
 static var _music_volume := DEFAULT_MUSIC_VOLUME
 static var _sfx_volume := DEFAULT_SFX_VOLUME
 static var _invert_y := DEFAULT_INVERT_Y
+static var _control_type := DEFAULT_CONTROL_TYPE
 static var _loaded := false
 
 
@@ -51,6 +56,7 @@ static func load_settings(path: String = SETTINGS_PATH) -> Dictionary:
 		"music_volume": _music_volume,
 		"sfx_volume": _sfx_volume,
 		"invert_y": _invert_y,
+		"control_type": _control_type,
 	}
 
 
@@ -69,6 +75,12 @@ static func is_invert_y(path: String = SETTINGS_PATH) -> bool:
 	return _invert_y
 
 
+## Tipo de controle escolhido (0 = vertical, 1 = horizontal, 2 = arco).
+static func get_control_type(path: String = SETTINGS_PATH) -> int:
+	_ensure_loaded(path)
+	return _control_type
+
+
 ## Define o volume da música (0..100, clampado). Salva e aplica
 ## imediatamente; retorna true quando gravou, false quando o valor é o
 ## mesmo (sem escrita redundante) ou a gravação falhou.
@@ -77,7 +89,7 @@ static func set_music_volume(value: int, path: String = SETTINGS_PATH) -> bool:
 	var clean := clampi(value, MIN_VOLUME, MAX_VOLUME)
 	if clean == _music_volume:
 		return false
-	if not _write_dict(clean, _sfx_volume, _invert_y, path):
+	if not _write_dict(clean, _sfx_volume, _invert_y, _control_type, path):
 		return false
 	_music_volume = clean
 	apply_audio()
@@ -90,7 +102,7 @@ static func set_sfx_volume(value: int, path: String = SETTINGS_PATH) -> bool:
 	var clean := clampi(value, MIN_VOLUME, MAX_VOLUME)
 	if clean == _sfx_volume:
 		return false
-	if not _write_dict(_music_volume, clean, _invert_y, path):
+	if not _write_dict(_music_volume, clean, _invert_y, _control_type, path):
 		return false
 	_sfx_volume = clean
 	apply_audio()
@@ -102,9 +114,23 @@ static func set_invert_y(enabled: bool, path: String = SETTINGS_PATH) -> bool:
 	_ensure_loaded(path)
 	if enabled == _invert_y:
 		return false
-	if not _write_dict(_music_volume, _sfx_volume, enabled, path):
+	if not _write_dict(_music_volume, _sfx_volume, enabled, _control_type, path):
 		return false
 	_invert_y = enabled
+	return true
+
+
+## Define o tipo de controle (0 = vertical, 1 = horizontal, 2 = arco).
+## Apenas persiste a escolha; a interpretação da entrada fica em
+## `angle_input`/consumidores.
+static func set_control_type(value: int, path: String = SETTINGS_PATH) -> bool:
+	_ensure_loaded(path)
+	var clean := clampi(value, 0, MAX_CONTROL_TYPE)
+	if clean == _control_type:
+		return false
+	if not _write_dict(_music_volume, _sfx_volume, _invert_y, clean, path):
+		return false
+	_control_type = clean
 	return true
 
 
@@ -150,6 +176,7 @@ static func reset_cache() -> void:
 	_music_volume = DEFAULT_MUSIC_VOLUME
 	_sfx_volume = DEFAULT_SFX_VOLUME
 	_invert_y = DEFAULT_INVERT_Y
+	_control_type = DEFAULT_CONTROL_TYPE
 
 
 static func _ensure_loaded(path: String) -> void:
@@ -158,14 +185,16 @@ static func _ensure_loaded(path: String) -> void:
 	var data := _read_file(path)
 	if data.is_empty():
 		# Sem arquivo válido: (re)cria com os padrões.
-		_write_dict(DEFAULT_MUSIC_VOLUME, DEFAULT_SFX_VOLUME, DEFAULT_INVERT_Y, path)
+		_write_dict(DEFAULT_MUSIC_VOLUME, DEFAULT_SFX_VOLUME, DEFAULT_INVERT_Y, DEFAULT_CONTROL_TYPE, path)
 		_music_volume = DEFAULT_MUSIC_VOLUME
 		_sfx_volume = DEFAULT_SFX_VOLUME
 		_invert_y = DEFAULT_INVERT_Y
+		_control_type = DEFAULT_CONTROL_TYPE
 	else:
 		_music_volume = int(data["music_volume"])
 		_sfx_volume = int(data["sfx_volume"])
 		_invert_y = bool(data["invert_y"])
+		_control_type = int(data["control_type"])
 	_loaded = true
 
 
@@ -196,10 +225,12 @@ static func _read_file(path: String) -> Dictionary:
 	var data: Dictionary = parsed
 	var music := _sanitize_volume(data.get("music_volume", -1))
 	var sfx := _sanitize_volume(data.get("sfx_volume", -1))
+	var ctrl := _sanitize_control_type(data.get("control_type", -1))
 	return {
 		"music_volume": music if music >= MIN_VOLUME else DEFAULT_MUSIC_VOLUME,
 		"sfx_volume": sfx if sfx >= MIN_VOLUME else DEFAULT_SFX_VOLUME,
 		"invert_y": data["invert_y"] if data.get("invert_y") is bool else DEFAULT_INVERT_Y,
+		"control_type": ctrl if ctrl >= 0 else DEFAULT_CONTROL_TYPE,
 	}
 
 
@@ -216,18 +247,33 @@ static func _sanitize_volume(value: Variant) -> int:
 	return -1
 
 
+## Tipo de controle válido: inteiro de 0 a MAX_CONTROL_TYPE. JSON
+## decodifica números como float, então aceita 2.0 como 2.
+static func _sanitize_control_type(value: Variant) -> int:
+	if value is bool:
+		return -1
+	if value is int and value >= 0 and value <= MAX_CONTROL_TYPE:
+		return value
+	if value is float and value == floor(value) and value >= 0.0 and value <= float(MAX_CONTROL_TYPE):
+		return int(value)
+	return -1
+
+
 ## Serializa e grava de forma atômica (mesmo protocolo do SaveManager:
 ## escreve no `.tmp`, preserva o atual como `.bak` e renomeia por cima).
-static func _write_dict(music_volume: int, sfx_volume: int, invert_y: bool, path: String) -> bool:
+static func _write_dict(music_volume: int, sfx_volume: int, invert_y: bool, control_type: int, path: String) -> bool:
 	if music_volume < MIN_VOLUME or music_volume > MAX_VOLUME:
 		return false
 	if sfx_volume < MIN_VOLUME or sfx_volume > MAX_VOLUME:
+		return false
+	if control_type < 0 or control_type > MAX_CONTROL_TYPE:
 		return false
 	var payload := {
 		"version": SETTINGS_VERSION,
 		"music_volume": music_volume,
 		"sfx_volume": sfx_volume,
 		"invert_y": invert_y,
+		"control_type": control_type,
 	}
 	var tmp := _tmp_path(path)
 	var file := FileAccess.open(tmp, FileAccess.WRITE)
