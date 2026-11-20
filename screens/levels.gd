@@ -1,16 +1,17 @@
 extends Control
 ## Tela Levels: mapa horizontal de progressão com seleção de fase.
+## FORA do sistema deslizante (troca destrutiva, como antes): quem chega
+## aqui veio do Main e o Main foi liberado; voltar/selecionar reconstrói
+## o Main do zero através de `ScreenNavigator.start_*`.
 ##
 ## Lê o progresso salvo apenas para exibir e posicionar o mapa — nunca
-## escreve nele. A fase escolhida é repassada ao jogo pelo estado de
-## sessão em `screens/game.gd` (`requested_level` / `return_scene`), e o
-## popup "Home" do jogo retorna para cá, preservando a navegação.
+## escreve nele. Nada é gravado aqui — jogar uma fase antiga não move o
+## progresso máximo.
 
 const LevelMap := preload("res://components/level-map/level_map.gd")
-const GAME_SCRIPT := preload("res://screens/game.gd")
 
-const GAME_SCENE := "res://screens/game.tscn"
-const HOME_SCENE := "res://screens/home.tscn"
+## Reconstrução do Main (único destino destrutivo desta tela).
+const MAIN_SCENE := "res://screens/main.tscn"
 const LEVELS_SCENE := "res://screens/levels.tscn"
 ## Duração do aviso de fase bloqueada (s) e início do fade.
 const HINT_DURATION := 1.6
@@ -42,22 +43,25 @@ func _wait_for_layout() -> void:
 		await get_tree().process_frame
 
 
+## Voltar: reconstrói o Main no Home (o Main anterior foi liberado).
 func _on_back_pressed() -> void:
 	InterfaceSoundManager.pluck()
-	get_tree().change_scene_to_file(HOME_SCENE)
+	ScreenNavigator.start_target = "home"
+	ScreenNavigator.start_level = 0
+	get_tree().change_scene_to_file(MAIN_SCENE)
 
 
-## Fase desbloqueada escolhida: inicia exatamente ela no jogo, usando o
-## gerador procedural existente. Nada é gravado aqui — jogar uma fase
-## antiga não move o progresso máximo.
+## Fase desbloqueada escolhida: reconstrói o Main já nascendo no Game
+## com exatamente ela (seed pela regra +1 ancorada no save). Nada é
+## gravado aqui — jogar uma fase antiga não move o progresso máximo.
 func _on_level_selected(level: int) -> void:
 	InterfaceSoundManager.select_sound()
-	GAME_SCRIPT.requested_level = level
-	GAME_SCRIPT.return_scene = LEVELS_SCENE
-	get_tree().change_scene_to_file(GAME_SCENE)
+	ScreenNavigator.start_target = "game"
+	ScreenNavigator.start_level = level
+	get_tree().change_scene_to_file(MAIN_SCENE)
 
 
-## Fase bloqueada: feedback visual, sem iniciar a fase.
+## Fase bloqueada: feedback visual, sem sair da tela.
 func _on_blocked_selected(level: int) -> void:
 	InterfaceSoundManager.select_sound()
 	_show_hint("Fase %d bloqueada" % level)

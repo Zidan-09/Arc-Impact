@@ -2,7 +2,6 @@
 
 [ext_resource type="PackedScene" path="res://components/settings/volume_slider.tscn" id="1_music_slider"]
 [ext_resource type="PackedScene" path="res://components/settings/volume_slider.tscn" id="2_sfx_slider"]
-[ext_resource type="PackedScene" path="res://components/background/levels/Background.tscn" id="3_bg"]
 [ext_resource type="Script" path="res://screens/settings.gd" id="4_settings_script"]
 [ext_resource type="Texture2D" path="res://assets/sprite/buttons/game-popup/inactive_home.png" id="5_home_inactive"]
 [ext_resource type="Texture2D" path="res://assets/sprite/buttons/game-popup/active_home.png" id="6_home_active"]
@@ -49,9 +48,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("4_settings_script")
-
-[node name="Background" parent="." instance=ExtResource("3_bg")]
-layout_mode = 1
 
 [node name="Dim" type="ColorRect" parent="."]
 layout_mode = 1

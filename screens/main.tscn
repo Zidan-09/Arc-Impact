@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://screens/screen_navigator.gd" id="1_nav"]
+[ext_resource type="PackedScene" path="res://components/background/home/Background.tscn" id="2_bg"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_nav")
+
+[node name="BackgroundLayer" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="Background" parent="BackgroundLayer" instance=ExtResource("2_bg")]
+mouse_filter = 2
+
+[node name="ScreenHost" type="Control" parent="."]
+unique_id = 770001001
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="BlockLayer" type="CanvasLayer" parent="."]
+layer = 100
+
+[node name="BlockInput" type="Control" parent="BlockLayer"]
+unique_id = 770001002
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0

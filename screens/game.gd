@@ -2,7 +2,8 @@ extends Control
 
 const END_DELAY := 8.0
 const DEFAULT_SEED := 1
-## Tela de fases (mapa de progressão) aberta pelo botão do popup de pausa.
+## Tela de fases DESTRUTIVA (fora do sistema deslizante): clicar em Fases
+## sai da partida — o Main inteiro (inclusive este painel) é liberado.
 const LEVELS_SCENE := "res://screens/levels.tscn"
 
 ## Grupos transitórios da fase: projéteis, rastros, shards e onomatopeias
@@ -11,16 +12,12 @@ const LEVELS_SCENE := "res://screens/levels.tscn"
 ## nova fase, e um texto solto flutuaria sobre a nova fase.
 const TRANSIENT_GROUPS: Array[String] = ["bullets", "bullet_trails", "shards", "impact_texts"]
 
-## Fase a iniciar no próximo `_ready` (0 = usar o progresso salvo).
-## Definida pela tela Levels antes de trocar de cena; consumida (zerada)
-## no `_ready`. Estático de propósito: o script fica em cache no
-## ResourceLoader, então o valor sobrevive à troca de cena sem criar um
-## mecanismo de estado paralelo.
-static var requested_level := 0
-
-## Cena para a qual o popup "Home" retorna. Permite que quem entrou no
-## jogo pela tela Levels volte para ela, preservando a navegação.
-static var return_scene := "res://screens/home.tscn"
+## Modo painel: quando instanciado pelo `ScreenNavigator` (Main), o `_ready`
+## NÃO carrega fase nenhuma — o carregamento fica a cargo do `enter()`
+## (chamado pelo Navigator antes do slide). Modo standalone (testes que
+## instanciam `game.tscn` direto, fora do Main) mantém o `_ready` clássico:
+## carrega o progresso imediatamente. Setado pelo Navigator antes do add.
+var panel_mode := false
 
 @onready var world_area: Control = $WorldArea
 @onready var world: Node2D = $WorldArea/World
@@ -76,21 +73,74 @@ func _ready() -> void:
 	hud.pause_pressed.connect(_on_pause_pressed)
 	builder = LevelBuilder.new()
 	add_child(builder)
-	# Progresso persistente antes da primeira geração: evita gerar a
-	# fase 1 para depois substituir — a fase inicial já nasce correta.
+	if not panel_mode:
+		# Standalone (fora do Navigator: testes, debug): carrega direto.
+		await _boot_from_progress()
+
+
+## Boot clássico: progresso salvo -> load. Usado pelo `_ready`
+## standalone e como fallback do `enter({})` sem nível explícito.
+func _boot_from_progress() -> void:
 	var progress: Dictionary = SaveManager.load_progress()
 	level_number = int(progress["level"])
 	current_seed = int(progress["seed"])
-	# Seleção vinda da tela Levels: inicia exatamente a fase escolhida,
-	# com a seed derivada da mesma regra de progressão (+1 por fase) e
-	# ancorada no save — mesma (seed, versão, fase) => mesma fase.
-	if requested_level > 0:
-		level_number = requested_level
-		current_seed = SaveManager.seed_for_level(
-			requested_level, int(progress["level"]), int(progress["seed"])
+	await load_level(current_seed, level_number)
+
+
+## Contrato do ScreenNavigator: preparar/atualizar ao ser exibido.
+## `params.level`: 0 = progresso salvo (fluxo normal), N = fase exata
+## (vinda de Levels via `MainStartupArgs`). Recarrega a fase pedida;
+## sem `level`, mantém a fase atual (slide de retorno Home->Game sem
+## rebuild — preserva scroll, pause e progresso).
+func enter(params: Dictionary = {}) -> void:
+	var lvl := int(params.get("level", 0))
+	if not _ready_done():
+		if lvl > 0:
+			var progress: Dictionary = SaveManager.load_progress()
+			level_number = lvl
+			current_seed = SaveManager.seed_for_level(
+				lvl, int(progress["level"]), int(progress["seed"])
+			)
+		else:
+			var progress: Dictionary = SaveManager.load_progress()
+			level_number = int(progress["level"])
+			current_seed = int(progress["seed"])
+		await load_level(current_seed, level_number)
+		return
+	if lvl > 0 and lvl != level_number:
+		var progress: Dictionary = SaveManager.load_progress()
+		await load_level(
+			SaveManager.seed_for_level(lvl, int(progress["level"]), int(progress["seed"])),
+			lvl
 		)
-		requested_level = 0
-	load_level(current_seed, level_number)
+		return
+	if _loading:
+		while _loading:
+			await get_tree().process_frame
+	game_over = false if current_def != null else true
+	refresh_camera_view()
+
+
+## `_ready` já rodou até o fim (builder criado).
+func _ready_done() -> bool:
+	return is_instance_valid(builder)
+
+
+## Contrato do ScreenNavigator: nada a liberar (painel persistente).
+func exit() -> void:
+	pass
+
+
+## Reenquadra a câmera com as medidas reais da viewport. Chamado pelo
+## Navigator após slides/resizes que aconteceram com o painel offscreen
+## (o `WorldHitArea` fora da viewport mede tamanho zero).
+func refresh_camera_view() -> void:
+	if not is_instance_valid(game_camera):
+		return
+	if current_def != null:
+		_reset_camera_view()
+	else:
+		game_camera.refresh()
 
 
 func load_level(seed_value: int, new_level_number: int) -> void:
@@ -179,6 +229,8 @@ func shoot() -> void:
 		return
 	if game_over or _loading or _is_paused:
 		return
+	if _nav_busy():
+		return
 	if ammo_left <= 0:
 		return
 	ammo_left -= 1
@@ -226,9 +278,13 @@ func _on_power_changed(value: float) -> void:
 func _on_popup_home() -> void:
 	_is_paused = false
 	get_tree().paused = false
-	# Retorno à tela de origem (home ou Levels, guardado em `return_scene`).
-	# Nada aqui escreve no save: o progresso permanece intacto.
-	get_tree().change_scene_to_file(return_scene)
+	# Slide de retorno ao Home (sem rebuild, sem tocar no save).
+	var nav := _navigator()
+	if nav != null:
+		nav.navigate_to("home")
+		return
+	# Fallback standalone (fora do Main): destrutivo clássico.
+	get_tree().change_scene_to_file("res://screens/home.tscn")
 
 
 func _on_popup_retry() -> void:
@@ -237,10 +293,10 @@ func _on_popup_retry() -> void:
 	load_level(current_seed, level_number)
 
 
-## Botão "Fases" do popup de pausa: abre o mapa de progressão. Só troca
-## de cena — o progresso salvo permanece intacto (a tela Levels apenas
-## lê o save). A árvore é despausada antes da troca para que a cena nova
-## já entre rodando.
+## Botão "Fases" do popup de pausa: SAI DA PARTIDA (destrutivo, fora do
+## sistema deslizante). O progresso salvo permanece intacto; o Main
+## inteiro é liberado e a tela Levels monta do zero. Despausa antes para
+## a Levels não nascer pausada.
 func _on_popup_levels() -> void:
 	_is_paused = false
 	get_tree().paused = false
@@ -261,6 +317,8 @@ func _on_popup_next() -> void:
 
 func _on_pause_pressed() -> void:
 	if _loading or _is_paused:
+		return
+	if _nav_busy():
 		return
 	if game_over or won:
 		return
@@ -299,6 +357,8 @@ func _input(event: InputEvent) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _is_paused:
+		return
+	if _nav_busy():
 		return
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
@@ -444,3 +504,20 @@ func _reset_camera_view() -> void:
 func _on_viewport_size_changed() -> void:
 	if is_instance_valid(game_camera):
 		game_camera.refresh()
+
+
+## Navigator acima de nós na árvore (null no modo standalone/testes).
+## Duck-typing: qualquer nó com `navigate_to`/`is_navigating`.
+func _navigator():
+	var n := get_parent()
+	while n != null:
+		if n.has_method("navigate_to") and n.has_method("is_navigating"):
+			return n
+		n = n.get_parent()
+	return null
+
+
+## True se um slide do Navigator está em andamento (input bloqueado).
+func _nav_busy() -> bool:
+	var nav := _navigator()
+	return nav != null and nav.is_navigating()

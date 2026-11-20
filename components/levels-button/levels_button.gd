@@ -1,8 +1,8 @@
 extends TextureButton
 
-## Botão "Fases" da home: abre o mapa de progresso (tela Levels).
-## Não toca no save — apenas troca de cena; quem lê o progresso é a
-## própria tela Levels.
+## Botão "Fases" da home: SAI DO MAIN (destrutivo, fora do sistema
+## deslizante). A cena atual é liberada e a tela Levels monta do zero,
+## como antes. Sem args: Levels sempre volta para o Main.
 
 const LEVELS_SCENE := "res://screens/levels.tscn"
 
@@ -13,4 +13,5 @@ func _ready() -> void:
 
 func _on_pressed() -> void:
 	InterfaceSoundManager.pluck()
+	disabled = true
 	get_tree().change_scene_to_file(LEVELS_SCENE)

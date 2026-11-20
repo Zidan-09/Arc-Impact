@@ -1,6 +1,5 @@
 [gd_scene format=3 uid="uid://dumyp43ikp2a4"]
 
-[ext_resource type="PackedScene" path="res://components/background/home/Background.tscn" id="1_xi7s7"]
 [ext_resource type="PackedScene" uid="uid://d1u475kwrl2io" path="res://components/play-button/PlayButton.tscn" id="2_xtd6d"]
 [ext_resource type="PackedScene" uid="uid://b8sku5tp0h8m2" path="res://components/levels-button/LevelsButton.tscn" id="4_lvlbtn"]
 [ext_resource type="PackedScene" path="res://components/settings-button/SettingsButton.tscn" id="5_settings"]
@@ -12,9 +11,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="Background" parent="." unique_id=1989326724 instance=ExtResource("1_xi7s7")]
-layout_mode = 1
 
 [node name="Menu" type="CenterContainer" parent="." unique_id=903468440]
 layout_mode = 1

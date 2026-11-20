@@ -46,6 +46,28 @@ func _ready() -> void:
 	for i in ctrl_buttons.size():
 		ctrl_buttons[i].toggled.connect(_on_ctrl_type_toggled.bind(i))
 
+	refresh()
+
+
+## Contrato do ScreenNavigator: reler as preferências ao ser exibido
+## (podem ter mudado via debug/testes; painel nunca é liberado).
+func enter(_params: Dictionary = {}) -> void:
+	if not is_node_ready():
+		await ready
+	refresh()
+
+
+## Contrato do ScreenNavigator: nada a liberar (painel persistente).
+func exit() -> void:
+	pass
+
+
+## Sincroniza todos os controles com o SettingsManager.
+func refresh() -> void:
+	if not is_node_ready():
+		return
+	if _on_active == null:
+		return
 	music_slider.set_volume(SettingsManager.get_music_volume())
 	sfx_slider.set_volume(SettingsManager.get_sfx_volume())
 	_update_invert_visual(SettingsManager.is_invert_y())
@@ -124,4 +146,21 @@ func _on_ctrl_type_toggled(pressed: bool, index: int) -> void:
 
 func _on_back_pressed() -> void:
 	InterfaceSoundManager.pluck()
+	# Slide de retorno ao Home (sem rebuild, sem tocar no save).
+	var nav = _navigator()
+	if nav != null:
+		nav.navigate_to("home")
+		return
+	# Fallback standalone (fora do Main): destrutivo clássico.
 	get_tree().change_scene_to_file("res://screens/home.tscn")
+
+
+## Navigator acima de nós (Camada própria -> ScreenHost -> Main).
+## Duck-typing: qualquer nó com `navigate_to`.
+func _navigator():
+	var n := get_parent()
+	while n != null:
+		if n.has_method("navigate_to") and n.has_method("is_navigating"):
+			return n
+		n = n.get_parent()
+	return null
