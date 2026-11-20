@@ -2,12 +2,13 @@ class_name VolumeSlider
 extends Control
 ## Slider de volume horizontal (0..100), no padrão do *settings screen*:
 ## trilha escura com borda roxa, preenchimento gradiente roxo→ciano
-## limitado pela posição do knob e alçamento ciano. Arraste horizontal
-## acumulado em `_raw_volume` (suave para mouse e touch), snap para o
-## inteiro mais próximo a cada movimento e emissão de `volume_changed`
-## com o valor em porcentagem. Clique na trilha leva o valor direto
-## para a posição clicada. O gerenciador de configurações é quem
-## persiste; este nó só representa a seleção.
+## limitado pela posição do knob e alçamento ciano. O valor é sempre
+## derivado da POSIÇÃO ABSOLUTA do cursor sobre a trilha (mapeamento
+## linear 0..track.size.x → 0..100, com clamp), de modo que o centro do
+## knob acompanha o mouse 1:1 em qualquer resolução/escala de interface.
+## Clique na trilha leva o valor direto para a posição clicada. O
+## gerenciador de configurações é quem persiste; este nó só representa
+## a seleção.
 
 const MIN_VOLUME := 0
 const MAX_VOLUME := 100
@@ -21,17 +22,16 @@ const MAX_VOLUME := 100
 @onready var track: Panel = $Track
 @onready var fill: TextureRect = $Track/Fill
 
-@export_range(0.05, 2.0, 0.01)
-var sensitivity: float = 0.4
-
 var dragging := false
 
 ## Valor atual em porcentagem (0..100). Fonte da verdade do slider.
 var volume: int = 50
 
-## Acumulador contínuo do arraste: mantém o movimento suave e é
-## convertido no inteiro mais próximo a cada movimento.
-var _raw_volume: float = 50.0
+## Deslocamento (em pixels locais da trilha) entre o centro do knob e o
+## cursor no momento em que o arraste começou pelo handle. Preserva a
+## "pegada" para o knob não pular para o cursor no primeiro movimento;
+## o movimento continua 1:1 (sem sensibilidade / sem acumulador).
+var _drag_offset := 0.0
 
 signal volume_changed(value: int)
 
@@ -62,27 +62,38 @@ func update_visual() -> void:
 
 
 ## Clique/tap na trilha: leva o valor direto para a posição e inicia
-## o arraste (arrastar em seguida continua a ajustar).
+## o arraste (arrastar em seguida continua a ajustar). A pegada é zerada
+## aqui porque o centro do knob vai exatamente para o cursor.
 func _on_track_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			_drag_offset = 0.0
 			_seek_to(event.position.x)
 			set_dragging(true)
 			get_viewport().set_input_as_handled()
 	elif event is InputEventScreenTouch:
 		if event.pressed:
+			_drag_offset = 0.0
 			_seek_to(event.position.x)
 			set_dragging(true)
 			get_viewport().set_input_as_handled()
 
 
-## Arraste pelo alçamento (handle): alterna o estado visual.
+## Pressão no knob (handle): alterna o estado visual e memoriza a pegada
+## (distância entre o centro do knob e o cursor) para o knob não pular
+## para o cursor no primeiro movimento. O `event.position` chega nas
+## coordenadas locais do receptor (Normal/Pressed preenchem o Handle por
+## inteiro, logo equivalem às coordenadas do Handle).
 func _on_slider_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_grab_at(event.position.x)
 			set_dragging(event.pressed)
 			get_viewport().set_input_as_handled()
 	elif event is InputEventScreenTouch:
+		if event.pressed:
+			_grab_at(event.position.x)
 		set_dragging(event.pressed)
 		get_viewport().set_input_as_handled()
 
@@ -99,23 +110,35 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion:
-		update_volume(event.relative.x)
+		var local_motion := track.make_input_local(event) as InputEventMouseMotion
+		_seek_to(local_motion.position.x + _drag_offset)
 	elif event is InputEventScreenDrag:
 		if event.index == 0:
-			update_volume(event.relative.x)
+			var local_drag := track.make_input_local(event) as InputEventScreenDrag
+			_seek_to(local_drag.position.x + _drag_offset)
 
 
-## Arraste horizontal: esquerda diminui, direita aumenta.
-func update_volume(delta: float) -> void:
-	_raw_volume = clampf(_raw_volume + delta * sensitivity, float(MIN_VOLUME), float(MAX_VOLUME))
-	_select_volume(int(round(_raw_volume)))
+## Memoriza a pegada no knob: distância entre o centro do handle e o
+## ponto pressionado, em pixels locais da trilha.
+func _grab_at(handle_local_x: float) -> void:
+	var pressed_track_x := _handle_local_to_track_x(handle_local_x)
+	_drag_offset = _knob_center_track_x() - pressed_track_x
+
+
+## Converte um X local do Handle (0..handle.size.x) para o X local da
+## trilha, compensando o deslocamento entre os dois controles.
+func _handle_local_to_track_x(handle_local_x: float) -> float:
+	return handle.position.x + handle_local_x - track.position.x
+
+
+## Centro atual do knob em pixels locais da trilha (0..track.size.x).
+func _knob_center_track_x() -> float:
+	return handle.position.x + handle.size.x * 0.5 - track.position.x
 
 
 ## Seleciona o valor por comando direto (fora da faixa é clampado).
 func set_volume(value: int) -> void:
-	var clean := clampi(value, MIN_VOLUME, MAX_VOLUME)
-	_raw_volume = float(clean)
-	_select_volume(clean)
+	_select_volume(clampi(value, MIN_VOLUME, MAX_VOLUME))
 
 
 func _seek_to(local_x: float) -> void:
